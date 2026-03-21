@@ -1,13 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import type { Student } from "@/data/mockData";
 import { Eye, EyeOff, GraduationCap, ShieldCheck, Users } from "lucide-react";
 import { useState } from "react";
@@ -32,7 +25,7 @@ export default function Login({ onLogin, students }: Props) {
 
   // Parent login state
   const [showParentSelector, setShowParentSelector] = useState(false);
-  const [selectedStudentId, setSelectedStudentId] = useState<string>("");
+  const [studentNameInput, setStudentNameInput] = useState("");
   const [parentPassword, setParentPassword] = useState("");
   const [showParentPass, setShowParentPass] = useState(false);
   const [parentError, setParentError] = useState("");
@@ -46,12 +39,18 @@ export default function Login({ onLogin, students }: Props) {
   }
 
   function handleParentLogin() {
-    if (!selectedStudentId) return;
-    if (parentPassword === PARENT_PASSWORD) {
-      onLogin("parent", Number(selectedStudentId));
-    } else {
-      setParentError("Incorrect password. Please try again.");
+    const matched = students.find((s) =>
+      s.name.toLowerCase().includes(studentNameInput.trim().toLowerCase()),
+    );
+    if (!matched) {
+      setParentError("No student found with that name.");
+      return;
     }
+    if (parentPassword !== PARENT_PASSWORD) {
+      setParentError("Incorrect password. Please try again.");
+      return;
+    }
+    onLogin("parent", matched.id);
   }
 
   return (
@@ -270,6 +269,7 @@ export default function Login({ onLogin, students }: Props) {
                   setShowParentSelector(true);
                   setParentError("");
                   setParentPassword("");
+                  setStudentNameInput("");
                 }}
                 className="w-full border-emerald-300 text-emerald-800 hover:bg-emerald-50 bg-emerald-50/50 font-semibold gap-2"
               >
@@ -279,23 +279,21 @@ export default function Login({ onLogin, students }: Props) {
             ) : (
               <div className="space-y-2 p-3 rounded-xl border border-emerald-200 bg-emerald-50/40">
                 <p className="text-xs font-medium text-emerald-700 mb-2">
-                  Select your child to continue:
+                  Enter your child's name to continue:
                 </p>
-                <Select
-                  onValueChange={setSelectedStudentId}
-                  value={selectedStudentId}
-                >
-                  <SelectTrigger data-ocid="login.select" className="bg-white">
-                    <SelectValue placeholder="Choose student..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {students.map((s) => (
-                      <SelectItem key={s.id} value={String(s.id)}>
-                        {s.name} — Class {s.class}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Input
+                  type="text"
+                  placeholder="Type student name..."
+                  value={studentNameInput}
+                  onChange={(e) => {
+                    setStudentNameInput(e.target.value);
+                    setParentError("");
+                  }}
+                  onKeyDown={(e) => e.key === "Enter" && handleParentLogin()}
+                  className="bg-white"
+                  data-ocid="login.input"
+                  autoFocus
+                />
                 <div className="relative">
                   <Input
                     type={showParentPass ? "text" : "password"}
@@ -317,7 +315,12 @@ export default function Login({ onLogin, students }: Props) {
                   </button>
                 </div>
                 {parentError && (
-                  <p className="text-xs text-red-500">{parentError}</p>
+                  <p
+                    className="text-xs text-red-500"
+                    data-ocid="login.error_state"
+                  >
+                    {parentError}
+                  </p>
                 )}
                 <div className="flex gap-2">
                   <Button
@@ -326,7 +329,7 @@ export default function Login({ onLogin, students }: Props) {
                     size="sm"
                     onClick={() => {
                       setShowParentSelector(false);
-                      setSelectedStudentId("");
+                      setStudentNameInput("");
                       setParentPassword("");
                       setParentError("");
                     }}
@@ -337,7 +340,7 @@ export default function Login({ onLogin, students }: Props) {
                   <Button
                     data-ocid="login.confirm_button"
                     size="sm"
-                    disabled={!selectedStudentId || !parentPassword}
+                    disabled={!studentNameInput.trim() || !parentPassword}
                     onClick={handleParentLogin}
                     className="flex-1 bg-emerald-600 hover:bg-emerald-700"
                   >

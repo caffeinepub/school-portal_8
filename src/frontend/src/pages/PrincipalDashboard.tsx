@@ -9,12 +9,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { Student } from "@/data/mockData";
-import { Search, UserPen, Users } from "lucide-react";
+import { Plus, Search, UserPen, Users } from "lucide-react";
 import { useState } from "react";
 
 interface Props {
   students: Student[];
   onEditStudent: (id: number) => void;
+  onNavigateToAdd?: () => void;
 }
 
 function getWorstFeeStatus(fees: Student["fees"]): string {
@@ -51,7 +52,11 @@ function feeStatusBadge(status: string) {
 
 const CLASSES = ["All", "9-A", "10-A", "10-B", "11-A", "11-B", "12-A"];
 
-export default function PrincipalDashboard({ students, onEditStudent }: Props) {
+export default function PrincipalDashboard({
+  students,
+  onEditStudent,
+  onNavigateToAdd,
+}: Props) {
   const [search, setSearch] = useState("");
   const [classFilter, setClassFilter] = useState("All");
 
@@ -80,9 +85,22 @@ export default function PrincipalDashboard({ students, onEditStudent }: Props) {
             </p>
           </div>
         </div>
-        <Badge className="bg-indigo-600 text-white hover:bg-indigo-600 text-sm px-3 py-1">
-          {students.length} Students
-        </Badge>
+        <div className="flex items-center gap-2">
+          <Badge className="bg-indigo-600 text-white hover:bg-indigo-600 text-sm px-3 py-1">
+            {students.length} Students
+          </Badge>
+          {onNavigateToAdd && (
+            <Button
+              size="sm"
+              data-ocid="students.primary_button"
+              onClick={onNavigateToAdd}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white gap-1.5"
+            >
+              <Plus size={14} />
+              Add Student
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Filters */}

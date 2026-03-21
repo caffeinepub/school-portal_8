@@ -1,3 +1,14 @@
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,19 +22,21 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Student } from "@/data/mockData";
-import { ArrowLeft, Save } from "lucide-react";
+import { ArrowLeft, Save, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
 interface Props {
   student: Student;
   onUpdateStudent: (student: Student) => void;
+  onDeleteStudent: (id: number) => void;
   onBack: () => void;
 }
 
 export default function StudentEditPage({
   student,
   onUpdateStudent,
+  onDeleteStudent,
   onBack,
 }: Props) {
   const [draft, setDraft] = useState<Student>({
@@ -59,6 +72,31 @@ export default function StudentEditPage({
     });
   }
 
+  function addFeeRow() {
+    setDraft((prev) => ({
+      ...prev,
+      fees: [
+        ...prev.fees,
+        {
+          id: Date.now(),
+          type: "New Fee",
+          amount: 0,
+          paid: 0,
+          dueDate: "-",
+          paidDate: "-",
+          status: "Pending",
+        },
+      ],
+    }));
+  }
+
+  function removeFeeRow(idx: number) {
+    setDraft((prev) => ({
+      ...prev,
+      fees: prev.fees.filter((_, i) => i !== idx),
+    }));
+  }
+
   function setAttendance(idx: number, status: string) {
     setDraft((prev) => {
       const attendance = prev.attendance.map((a, i) =>
@@ -68,9 +106,44 @@ export default function StudentEditPage({
     });
   }
 
+  function addAttendanceRow() {
+    const today = new Date();
+    const dateStr = today.toLocaleDateString("en-IN", {
+      month: "short",
+      day: "numeric",
+    });
+    const dayStr = today
+      .toLocaleDateString("en-IN", { weekday: "short" })
+      .slice(0, 3);
+    setDraft((prev) => ({
+      ...prev,
+      attendance: [
+        ...prev.attendance,
+        { date: dateStr, day: dayStr, status: "Present" },
+      ],
+    }));
+  }
+
+  function addMarkRow() {
+    setDraft((prev) => ({
+      ...prev,
+      marks: [
+        ...prev.marks,
+        { subject: "New Subject", midterm: 0, final: 0, max: 100 },
+      ],
+    }));
+  }
+
+  function removeMarkRow(idx: number) {
+    setDraft((prev) => ({
+      ...prev,
+      marks: prev.marks.filter((_, i) => i !== idx),
+    }));
+  }
+
   function handleSave() {
     onUpdateStudent(draft);
-    toast.success(`${draft.name}'s record saved successfully!`);
+    toast.success(`${draft.name}'s record saved permanently!`);
   }
 
   const totalPresent = draft.attendance.filter(
@@ -86,33 +159,70 @@ export default function StudentEditPage({
 
   return (
     <div className="space-y-5 max-w-4xl mx-auto">
-      <div className="flex items-center gap-3">
-        <Button
-          variant="outline"
-          size="sm"
-          data-ocid="student_edit.cancel_button"
-          onClick={onBack}
-          className="gap-1.5"
-        >
-          <ArrowLeft size={14} />
-          Back to Students
-        </Button>
-        <div className="flex items-center gap-3 ml-1">
-          <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold">
-            {draft.name
-              .split(" ")
-              .map((w) => w[0])
-              .join("")
-              .slice(0, 2)
-              .toUpperCase()}
-          </div>
-          <div>
-            <h2 className="text-lg font-bold text-gray-900">{draft.name}</h2>
-            <p className="text-sm text-gray-500">
-              Class {draft.class} · Roll #{draft.rollNo}
-            </p>
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-3">
+          <Button
+            variant="outline"
+            size="sm"
+            data-ocid="student_edit.cancel_button"
+            onClick={onBack}
+            className="gap-1.5"
+          >
+            <ArrowLeft size={14} />
+            Back to Students
+          </Button>
+          <div className="flex items-center gap-3 ml-1">
+            <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold">
+              {draft.name
+                .split(" ")
+                .map((w) => w[0])
+                .join("")
+                .slice(0, 2)
+                .toUpperCase()}
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-gray-900">{draft.name}</h2>
+              <p className="text-sm text-gray-500">
+                Class {draft.class} · Roll #{draft.rollNo}
+              </p>
+            </div>
           </div>
         </div>
+
+        {/* Delete Student */}
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+            >
+              <Trash2 size={14} />
+              Delete Student
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete {student.name}?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will permanently remove {student.name}'s record from the
+                school portal. This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                className="bg-red-600 hover:bg-red-700"
+                onClick={() => {
+                  toast.success(`${student.name} has been removed.`);
+                  onDeleteStudent(student.id);
+                }}
+              >
+                Yes, Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
 
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
@@ -200,16 +310,30 @@ export default function StudentEditPage({
                     <th className="text-left pb-3 text-sm font-semibold text-gray-700">
                       %
                     </th>
+                    <th className="pb-3" />
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {draft.marks.map((m, idx) => (
                     <tr
-                      key={m.subject}
+                      key={`mark-${m.subject}-${idx}`}
                       data-ocid={`student_edit.marks.row.${idx + 1}`}
                     >
-                      <td className="py-3 pr-4 text-sm font-medium text-gray-800">
-                        {m.subject}
+                      <td className="py-3 pr-4">
+                        <Input
+                          value={m.subject}
+                          onChange={(e) =>
+                            setDraft((prev) => ({
+                              ...prev,
+                              marks: prev.marks.map((mk, i) =>
+                                i === idx
+                                  ? { ...mk, subject: e.target.value }
+                                  : mk,
+                              ),
+                            }))
+                          }
+                          className="w-36 h-8 text-sm"
+                        />
                       </td>
                       <td className="py-3 pr-4">
                         <Input
@@ -235,10 +359,25 @@ export default function StudentEditPage({
                           className="w-20 h-8 text-sm"
                         />
                       </td>
-                      <td className="py-3 pr-4 text-sm text-gray-500">
-                        {m.max}
+                      <td className="py-3 pr-4">
+                        <Input
+                          type="number"
+                          min={1}
+                          value={m.max}
+                          onChange={(e) =>
+                            setDraft((prev) => ({
+                              ...prev,
+                              marks: prev.marks.map((mk, i) =>
+                                i === idx
+                                  ? { ...mk, max: Number(e.target.value) }
+                                  : mk,
+                              ),
+                            }))
+                          }
+                          className="w-16 h-8 text-sm"
+                        />
                       </td>
-                      <td className="py-3">
+                      <td className="py-3 pr-4">
                         <Badge
                           className={`${
                             Math.round(
@@ -258,11 +397,29 @@ export default function StudentEditPage({
                           %
                         </Badge>
                       </td>
+                      <td className="py-3">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeMarkRow(idx)}
+                          className="h-8 w-8 p-0 text-red-400 hover:text-red-600 hover:bg-red-50"
+                        >
+                          <Trash2 size={14} />
+                        </Button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={addMarkRow}
+              className="mt-4 gap-1.5 text-indigo-600 border-indigo-200 hover:bg-indigo-50"
+            >
+              + Add Subject
+            </Button>
           </TabsContent>
 
           {/* Fees Tab */}
@@ -286,6 +443,7 @@ export default function StudentEditPage({
                     <th className="text-left pb-3 text-sm font-semibold text-gray-700">
                       Status
                     </th>
+                    <th className="pb-3" />
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
@@ -294,8 +452,12 @@ export default function StudentEditPage({
                       key={f.id}
                       data-ocid={`student_edit.fees.row.${idx + 1}`}
                     >
-                      <td className="py-3 pr-4 text-sm font-medium text-gray-800">
-                        {f.type}
+                      <td className="py-3 pr-4">
+                        <Input
+                          value={f.type}
+                          onChange={(e) => setFee(idx, "type", e.target.value)}
+                          className="w-36 h-8 text-sm"
+                        />
                       </td>
                       <td className="py-3 pr-4">
                         <Input
@@ -317,10 +479,16 @@ export default function StudentEditPage({
                           className="w-24 h-8 text-sm"
                         />
                       </td>
-                      <td className="py-3 pr-4 text-sm text-gray-600">
-                        {f.dueDate}
+                      <td className="py-3 pr-4">
+                        <Input
+                          value={f.dueDate}
+                          onChange={(e) =>
+                            setFee(idx, "dueDate", e.target.value)
+                          }
+                          className="w-28 h-8 text-sm"
+                        />
                       </td>
-                      <td className="py-3">
+                      <td className="py-3 pr-4">
                         <Select
                           value={f.status}
                           onValueChange={(v) => setFee(idx, "status", v)}
@@ -338,11 +506,29 @@ export default function StudentEditPage({
                           </SelectContent>
                         </Select>
                       </td>
+                      <td className="py-3">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeFeeRow(idx)}
+                          className="h-8 w-8 p-0 text-red-400 hover:text-red-600 hover:bg-red-50"
+                        >
+                          <Trash2 size={14} />
+                        </Button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={addFeeRow}
+              className="mt-4 gap-1.5 text-indigo-600 border-indigo-200 hover:bg-indigo-50"
+            >
+              + Add Fee Row
+            </Button>
           </TabsContent>
 
           {/* Attendance Tab */}
@@ -401,11 +587,37 @@ export default function StudentEditPage({
                       key={`${a.date}-${idx}`}
                       data-ocid={`student_edit.attendance.row.${idx + 1}`}
                     >
-                      <td className="py-2.5 pr-4 text-sm text-gray-800 font-medium">
-                        {a.date}
+                      <td className="py-2.5 pr-4">
+                        <Input
+                          value={a.date}
+                          onChange={(e) =>
+                            setDraft((prev) => ({
+                              ...prev,
+                              attendance: prev.attendance.map((att, i) =>
+                                i === idx
+                                  ? { ...att, date: e.target.value }
+                                  : att,
+                              ),
+                            }))
+                          }
+                          className="w-24 h-8 text-sm"
+                        />
                       </td>
-                      <td className="py-2.5 pr-4 text-sm text-gray-500">
-                        {a.day}
+                      <td className="py-2.5 pr-4">
+                        <Input
+                          value={a.day}
+                          onChange={(e) =>
+                            setDraft((prev) => ({
+                              ...prev,
+                              attendance: prev.attendance.map((att, i) =>
+                                i === idx
+                                  ? { ...att, day: e.target.value }
+                                  : att,
+                              ),
+                            }))
+                          }
+                          className="w-20 h-8 text-sm"
+                        />
                       </td>
                       <td className="py-2.5">
                         <Select
@@ -430,6 +642,14 @@ export default function StudentEditPage({
                 </tbody>
               </table>
             </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={addAttendanceRow}
+              className="mt-4 gap-1.5 text-indigo-600 border-indigo-200 hover:bg-indigo-50"
+            >
+              + Add Attendance Row
+            </Button>
           </TabsContent>
         </Tabs>
       </div>

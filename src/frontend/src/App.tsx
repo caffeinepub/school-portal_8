@@ -1,5 +1,5 @@
 import { Toaster } from "@/components/ui/sonner";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Layout from "./components/Layout";
 import ParentLayout from "./components/ParentLayout";
 import PrincipalLayout from "./components/PrincipalLayout";
@@ -43,25 +43,69 @@ type PrincipalPage =
 export type Notification = (typeof mockNotifications)[number];
 export type SyllabusSubject = (typeof mockSyllabus)[number];
 
+// --- localStorage helpers ---
+function loadStorage<T>(key: string, fallback: T): T {
+  try {
+    const raw = localStorage.getItem(key);
+    if (raw) return JSON.parse(raw) as T;
+  } catch {}
+  return fallback;
+}
+
+function saveStorage<T>(key: string, value: T) {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch {}
+}
+
 export default function App() {
   const [role, setRole] = useState<Role>(null);
   const [page, setPage] = useState("dashboard");
-  const [students, setStudents] = useState<Student[]>(mockStudents);
+
+  // Persistent state — loaded from localStorage on first render
+  const [students, setStudents] = useState<Student[]>(() =>
+    loadStorage("lords_students", mockStudents),
+  );
+  const [notifications, setNotifications] = useState<Notification[]>(() =>
+    loadStorage("lords_notifications", mockNotifications),
+  );
+  const [syllabus, setSyllabus] = useState<SyllabusSubject[]>(() =>
+    loadStorage("lords_syllabus", mockSyllabus),
+  );
+
+  // Sync to localStorage whenever data changes
+  useEffect(() => saveStorage("lords_students", students), [students]);
+  useEffect(
+    () => saveStorage("lords_notifications", notifications),
+    [notifications],
+  );
+  useEffect(() => saveStorage("lords_syllabus", syllabus), [syllabus]);
+
   const [principalPage, setPrincipalPage] = useState<PrincipalPage>("list");
   const [selectedStudentId, setSelectedStudentId] = useState<number | null>(
     null,
   );
   const [parentStudentId, setParentStudentId] = useState<number | null>(null);
-  const [notifications, setNotifications] =
-    useState<Notification[]>(mockNotifications);
-  const [syllabus, setSyllabus] = useState<SyllabusSubject[]>(mockSyllabus);
 
   const handleUpdateStudent = (updated: Student) => {
     setStudents((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
   };
 
+  const handleDeleteStudent = (id: number) => {
+    setStudents((prev) => prev.filter((s) => s.id !== id));
+    setPrincipalPage("list");
+    setSelectedStudentId(null);
+  };
+
   const handleAddStudent = (newStudent: Omit<Student, "id">) => {
     setStudents((prev) => [...prev, { ...newStudent, id: Date.now() }]);
+  };
+
+  const handleBulkAddStudents = (newStudents: Omit<Student, "id">[]) => {
+    setStudents((prev) => [
+      ...prev,
+      ...newStudents.map((s, i) => ({ ...s, id: Date.now() + i })),
+    ]);
   };
 
   const handleEditStudent = (id: number) => {
@@ -102,6 +146,7 @@ export default function App() {
         >
           <ParentView
             student={parentStudent}
+            allStudents={students}
             notifications={notifications}
             syllabus={syllabus}
           />
@@ -139,18 +184,21 @@ export default function App() {
             <PrincipalDashboard
               students={students}
               onEditStudent={handleEditStudent}
+              onNavigateToAdd={() => setPrincipalPage("add")}
             />
           )}
           {principalPage === "edit" && selectedStudent && (
             <StudentEditPage
               student={selectedStudent}
               onUpdateStudent={handleUpdateStudent}
+              onDeleteStudent={handleDeleteStudent}
               onBack={() => setPrincipalPage("list")}
             />
           )}
           {principalPage === "add" && (
             <AddStudentPage
               onAddStudent={handleAddStudent}
+              onBulkAddStudents={handleBulkAddStudents}
               onBack={() => setPrincipalPage("list")}
             />
           )}

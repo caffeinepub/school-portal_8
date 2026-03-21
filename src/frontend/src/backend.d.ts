@@ -8,4 +8,5 @@ export interface None {
 }
 export type Option<T> = Some<T> | None;
 export interface backendInterface {
+    _initializeAccessControlWithSecret(token: string): Promise<void>;
 }
