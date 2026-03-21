@@ -2,6 +2,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import type { backendInterface } from "../backend";
 import { createActorWithConfig } from "../config";
+import { getSecretParameter } from "../utils/urlParams";
 import { useInternetIdentity } from "./useInternetIdentity";
 
 const ACTOR_QUERY_KEY = "actor";
@@ -23,7 +24,17 @@ export function useActor() {
         },
       };
 
-      return await createActorWithConfig(actorOptions);
+      const actor = await createActorWithConfig(actorOptions);
+      const adminToken = getSecretParameter("caffeineAdminToken") || "";
+      const actorAny = actor as unknown as Record<string, unknown>;
+      if (typeof actorAny._initializeAccessControlWithSecret === "function") {
+        await (
+          actorAny._initializeAccessControlWithSecret as (
+            token: string,
+          ) => Promise<void>
+        )(adminToken);
+      }
+      return actor;
     },
     staleTime: Number.POSITIVE_INFINITY,
     enabled: true,
