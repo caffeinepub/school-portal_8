@@ -1,33 +1,38 @@
 import type { Notification, SyllabusSubject } from "@/App";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Student } from "@/data/mockData";
 import {
   AlertCircle,
-  ArrowLeft,
   BookOpen,
   Calendar,
   CheckCircle2,
   Clock,
   GraduationCap,
+  Image,
+  Info,
   Phone,
-  Search,
   Star,
+  Trophy,
   User,
-  Users,
+  Video,
   XCircle,
 } from "lucide-react";
 import { useState } from "react";
 
 interface Props {
   student: Student;
-  allStudents: Student[];
   notifications: Notification[];
   syllabus: SyllabusSubject[];
+}
+
+interface MediaItem {
+  id: string;
+  type: "photo" | "video";
+  url: string;
+  caption: string;
+  uploadedAt: string;
 }
 
 const statusBadge: Record<string, string> = {
@@ -60,21 +65,27 @@ const notifTypeIcon: Record<string, React.ReactNode> = {
   Exam: <BookOpen size={16} className="text-blue-500" />,
 };
 
-const CLASS_FILTERS = ["All", "9-A", "10-A", "10-B", "11-A", "11-B", "12-A"];
+function getGrade(pct: number) {
+  if (pct >= 90) return { grade: "A+", color: "bg-green-100 text-green-700" };
+  if (pct >= 80) return { grade: "A", color: "bg-blue-100 text-blue-700" };
+  if (pct >= 70) return { grade: "B", color: "bg-indigo-100 text-indigo-700" };
+  if (pct >= 60) return { grade: "C", color: "bg-yellow-100 text-yellow-700" };
+  return { grade: "D", color: "bg-red-100 text-red-700" };
+}
 
-function StudentDetailView({
+function loadMedia(studentId: number): MediaItem[] {
+  try {
+    const raw = localStorage.getItem(`lords_media_${studentId}`);
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return [];
+}
+
+export default function ParentView({
   student,
   notifications,
   syllabus,
-  onBack,
-  isMyChild,
-}: {
-  student: Student;
-  notifications: Notification[];
-  syllabus: SyllabusSubject[];
-  onBack: () => void;
-  isMyChild: boolean;
-}) {
+}: Props) {
   const presentCount = student.attendance.filter(
     (a) => a.status === "Present",
   ).length;
@@ -86,24 +97,31 @@ function StudentDetailView({
   const paidFees = student.fees.reduce((s, f) => s + f.paid, 0);
   const overdueFees = student.fees.filter((f) => f.status === "Overdue");
 
+  const grandTotal = student.marks.reduce(
+    (sum, m) => sum + m.pt1 + m.pt2 + m.pt3 + m.term1 + m.term2,
+    0,
+  );
+
+  const [media] = useState<MediaItem[]>(() => loadMedia(student.id));
+
   return (
     <div className="space-y-6">
-      {/* Back + header */}
+      {/* Welcome header */}
       <div className="flex items-center gap-3">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onBack}
-          className="gap-1.5 text-indigo-600 hover:text-indigo-800"
-          data-ocid="parent.secondary_button"
-        >
-          <ArrowLeft size={16} /> Back to All Students
-        </Button>
-        {isMyChild && (
-          <Badge className="bg-indigo-100 text-indigo-700 border-0 gap-1">
-            <Star size={11} /> My Child
-          </Badge>
-        )}
+        <div className="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-lg flex-shrink-0">
+          {student.name.charAt(0)}
+        </div>
+        <div>
+          <div className="flex items-center gap-2">
+            <h2 className="text-lg font-bold text-gray-800">{student.name}</h2>
+            <Badge className="bg-indigo-100 text-indigo-700 border-0 gap-1">
+              <Star size={11} /> My Child
+            </Badge>
+          </div>
+          <p className="text-sm text-gray-500">
+            Class {student.class} · Roll No. {student.rollNo}
+          </p>
+        </div>
       </div>
 
       {/* Quick stats */}
@@ -165,6 +183,13 @@ function StudentDetailView({
           <TabsTrigger value="notifications" data-ocid="parent.tab">
             Notices
           </TabsTrigger>
+          <TabsTrigger
+            value="media"
+            data-ocid="parent.tab"
+            className="flex items-center gap-1.5"
+          >
+            <Image size={13} /> Media
+          </TabsTrigger>
         </TabsList>
 
         {/* Profile */}
@@ -219,47 +244,179 @@ function StudentDetailView({
         </TabsContent>
 
         {/* Marks */}
-        <TabsContent value="marks" className="mt-4">
+        <TabsContent value="marks" className="mt-4 space-y-4">
+          {/* Summary cards */}
+          <div className="grid grid-cols-2 gap-3">
+            <Card className="border-0 shadow-sm bg-indigo-50">
+              <CardContent className="p-4 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center flex-shrink-0">
+                  <Trophy size={18} className="text-indigo-600" />
+                </div>
+                <div>
+                  <p className="text-xs text-indigo-500 mb-0.5">Class Rank</p>
+                  <p className="text-2xl font-bold text-indigo-700">
+                    #{student.rank ?? "—"}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="border-0 shadow-sm bg-green-50">
+              <CardContent className="p-4 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center flex-shrink-0">
+                  <GraduationCap size={18} className="text-green-600" />
+                </div>
+                <div>
+                  <p className="text-xs text-green-600 mb-0.5">Total Marks</p>
+                  <p className="text-2xl font-bold text-green-700">
+                    {grandTotal}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Read-only note */}
+          <div
+            className="flex items-center gap-2 px-3 py-2 rounded-xl bg-amber-50 border border-amber-100 text-amber-700 text-xs"
+            data-ocid="marks.panel"
+          >
+            <Info size={13} className="flex-shrink-0" />
+            <span>Read Only — Only the principal can edit marks</span>
+          </div>
+
+          {/* Marks table */}
           <Card className="border-0 shadow-sm">
-            <CardHeader>
+            <CardHeader className="pb-2">
               <CardTitle className="text-base flex items-center gap-2">
-                <GraduationCap size={16} className="text-indigo-600" />{" "}
+                <GraduationCap size={16} className="text-indigo-600" />
                 Examination Marks
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              {student.marks.map((m) => {
-                const avg = Math.round((m.midterm + m.final) / 2);
-                const pct = Math.round((avg / m.max) * 100);
-                const grade =
-                  pct >= 90
-                    ? "A+"
-                    : pct >= 80
-                      ? "A"
-                      : pct >= 70
-                        ? "B"
-                        : pct >= 60
-                          ? "C"
-                          : "D";
-                return (
-                  <div key={m.subject}>
-                    <div className="flex justify-between mb-1">
-                      <span className="text-sm font-medium text-gray-700">
-                        {m.subject}
-                      </span>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-gray-400">
-                          Mid: {m.midterm} | Final: {m.final}
+            <CardContent className="p-0">
+              {/* Desktop table */}
+              <div className="hidden sm:block overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-gray-50 border-b border-gray-100">
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                        Subject
+                      </th>
+                      <th className="text-center px-3 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                        PT 1
+                      </th>
+                      <th className="text-center px-3 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                        PT 2
+                      </th>
+                      <th className="text-center px-3 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                        PT 3
+                      </th>
+                      <th className="text-center px-3 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                        Term 1
+                      </th>
+                      <th className="text-center px-3 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                        Term 2
+                      </th>
+                      <th className="text-center px-3 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                        Total
+                      </th>
+                      <th className="text-center px-3 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                        Grade
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {student.marks.map((m, idx) => {
+                      const total = m.pt1 + m.pt2 + m.pt3 + m.term1 + m.term2;
+                      const maxTotal = m.max * 5;
+                      const pct = Math.round((total / maxTotal) * 100);
+                      const { grade, color } = getGrade(pct);
+                      return (
+                        <tr
+                          key={m.subject}
+                          className={
+                            idx % 2 === 0 ? "bg-white" : "bg-gray-50/50"
+                          }
+                          data-ocid={`marks.row.${idx + 1}`}
+                        >
+                          <td className="px-4 py-3 font-medium text-gray-800">
+                            {m.subject}
+                          </td>
+                          <td className="px-3 py-3 text-center text-gray-600">
+                            {m.pt1}
+                          </td>
+                          <td className="px-3 py-3 text-center text-gray-600">
+                            {m.pt2}
+                          </td>
+                          <td className="px-3 py-3 text-center text-gray-600">
+                            {m.pt3}
+                          </td>
+                          <td className="px-3 py-3 text-center text-gray-600">
+                            {m.term1}
+                          </td>
+                          <td className="px-3 py-3 text-center text-gray-600">
+                            {m.term2}
+                          </td>
+                          <td className="px-3 py-3 text-center font-semibold text-gray-800">
+                            {total}
+                            <span className="text-xs text-gray-400 font-normal">
+                              /{maxTotal}
+                            </span>
+                          </td>
+                          <td className="px-3 py-3 text-center">
+                            <Badge className={`border-0 text-xs ${color}`}>
+                              {grade}
+                            </Badge>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile cards */}
+              <div className="sm:hidden divide-y divide-gray-100">
+                {student.marks.map((m) => {
+                  const total = m.pt1 + m.pt2 + m.pt3 + m.term1 + m.term2;
+                  const maxTotal = m.max * 5;
+                  const pct = Math.round((total / maxTotal) * 100);
+                  const { grade, color } = getGrade(pct);
+                  return (
+                    <div key={m.subject} className="px-4 py-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="font-semibold text-gray-800">
+                          {m.subject}
                         </span>
-                        <Badge className="bg-indigo-100 text-indigo-700 border-0 text-xs">
+                        <Badge className={`border-0 text-xs ${color}`}>
                           {grade}
                         </Badge>
                       </div>
+                      <div className="grid grid-cols-3 gap-2">
+                        {[
+                          { label: "PT 1", val: m.pt1 },
+                          { label: "PT 2", val: m.pt2 },
+                          { label: "PT 3", val: m.pt3 },
+                          { label: "Term 1", val: m.term1 },
+                          { label: "Term 2", val: m.term2 },
+                          { label: "Total", val: `${total}/${maxTotal}` },
+                        ].map(({ label, val }) => (
+                          <div
+                            key={label}
+                            className="bg-gray-50 rounded-lg px-2 py-1.5 text-center"
+                          >
+                            <p className="text-xs text-gray-400 mb-0.5">
+                              {label}
+                            </p>
+                            <p className="text-sm font-semibold text-gray-700">
+                              {val}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                    <Progress value={pct} className="h-2" />
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -418,175 +575,85 @@ function StudentDetailView({
             ))}
           </div>
         </TabsContent>
-      </Tabs>
-    </div>
-  );
-}
 
-export default function ParentView({
-  student,
-  allStudents,
-  notifications,
-  syllabus,
-}: Props) {
-  const [selectedViewStudentId, setSelectedViewStudentId] = useState<
-    number | null
-  >(null);
-  const [search, setSearch] = useState("");
-  const [classFilter, setClassFilter] = useState("All");
-
-  const selectedViewStudent =
-    selectedViewStudentId !== null
-      ? (allStudents.find((s) => s.id === selectedViewStudentId) ?? null)
-      : null;
-
-  if (selectedViewStudent) {
-    return (
-      <StudentDetailView
-        student={selectedViewStudent}
-        notifications={notifications}
-        syllabus={syllabus}
-        onBack={() => setSelectedViewStudentId(null)}
-        isMyChild={selectedViewStudent.id === student.id}
-      />
-    );
-  }
-
-  const filtered = allStudents.filter((s) => {
-    const matchClass = classFilter === "All" || s.class === classFilter;
-    const matchSearch =
-      search === "" ||
-      s.name.toLowerCase().includes(search.toLowerCase()) ||
-      String(s.rollNo).includes(search);
-    return matchClass && matchSearch;
-  });
-
-  // Put my child first
-  const sorted = [
-    ...filtered.filter((s) => s.id === student.id),
-    ...filtered.filter((s) => s.id !== student.id),
-  ];
-
-  return (
-    <div className="space-y-5">
-      {/* Header */}
-      <div className="flex items-center gap-2">
-        <Users size={20} className="text-indigo-600" />
-        <h2 className="text-lg font-bold text-gray-800">Student Directory</h2>
-        <Badge className="bg-indigo-100 text-indigo-700 border-0 ml-auto">
-          {allStudents.length} Students
-        </Badge>
-      </div>
-
-      {/* Search + filter */}
-      <div className="flex flex-col sm:flex-row gap-2">
-        <div className="relative flex-1">
-          <Search
-            size={15}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-          />
-          <Input
-            placeholder="Search by name or roll no…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
-            data-ocid="parent.search_input"
-          />
-        </div>
-        <div className="flex gap-1 flex-wrap">
-          {CLASS_FILTERS.map((c) => (
-            <button
-              key={c}
-              type="button"
-              onClick={() => setClassFilter(c)}
-              data-ocid="parent.tab"
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                classFilter === c
-                  ? "bg-indigo-600 text-white"
-                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-              }`}
+        {/* Media */}
+        <TabsContent value="media" className="mt-4">
+          {media.length === 0 ? (
+            <div
+              className="flex flex-col items-center justify-center py-16 text-center"
+              data-ocid="media.empty_state"
             >
-              {c}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Student list */}
-      <div className="space-y-2" data-ocid="parent.list">
-        {sorted.length === 0 && (
-          <div
-            className="text-center py-12 text-gray-400"
-            data-ocid="parent.empty_state"
-          >
-            No students found.
-          </div>
-        )}
-        {sorted.map((s, idx) => {
-          const present = s.attendance.filter(
-            (a) => a.status === "Present",
-          ).length;
-          const attPct =
-            s.attendance.length > 0
-              ? Math.round((present / s.attendance.length) * 100)
-              : 0;
-          const hasOverdue = s.fees.some((f) => f.status === "Overdue");
-          const isMyChild = s.id === student.id;
-          return (
-            <button
-              key={s.id}
-              type="button"
-              data-ocid={`parent.item.${idx + 1}`}
-              className={`w-full flex items-center justify-between rounded-2xl border p-4 cursor-pointer transition-all hover:shadow-md text-left ${
-                isMyChild
-                  ? "border-indigo-200 bg-indigo-50"
-                  : "border-gray-100 bg-white hover:border-indigo-100"
-              }`}
-              onClick={() => setSelectedViewStudentId(s.id)}
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-sm flex-shrink-0">
-                  {s.name.charAt(0)}
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm font-semibold text-gray-800">
-                      {s.name}
-                    </p>
-                    {isMyChild && (
-                      <Badge className="bg-indigo-100 text-indigo-700 border-0 text-xs gap-1 py-0">
-                        <Star size={9} /> My Child
-                      </Badge>
-                    )}
-                  </div>
-                  <p className="text-xs text-gray-400">
-                    Class {s.class} · Roll {s.rollNo}
-                  </p>
-                </div>
+              <div className="w-16 h-16 rounded-2xl bg-indigo-50 flex items-center justify-center mb-4">
+                <Image size={28} className="text-indigo-300" />
               </div>
-              <div className="flex items-center gap-3 flex-shrink-0">
-                <div className="text-right hidden sm:block">
-                  <p className="text-xs text-gray-400">Attendance</p>
-                  <p
-                    className={`text-sm font-bold ${attPct >= 75 ? "text-green-600" : "text-red-500"}`}
-                  >
-                    {attPct}%
-                  </p>
-                </div>
-                <Badge
-                  className={`border-0 text-xs ${
-                    hasOverdue
-                      ? "bg-red-100 text-red-600"
-                      : "bg-green-100 text-green-700"
-                  }`}
+              <p className="text-gray-500 font-medium">
+                No media shared by the principal yet.
+              </p>
+              <p className="text-sm text-gray-400 mt-1">
+                Photos and videos uploaded by the principal will appear here.
+              </p>
+            </div>
+          ) : (
+            <div
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+              data-ocid="media.list"
+            >
+              {media.map((item, idx) => (
+                <Card
+                  key={item.id}
+                  className="border-0 shadow-sm overflow-hidden"
+                  data-ocid={`media.item.${idx + 1}`}
                 >
-                  {hasOverdue ? "Overdue" : "Fees OK"}
-                </Badge>
-              </div>
-            </button>
-          );
-        })}
-      </div>
+                  <div className="relative bg-gray-100">
+                    {item.type === "photo" ? (
+                      <img
+                        src={item.url}
+                        alt={item.caption || "Shared photo"}
+                        className="w-full h-48 object-cover"
+                      />
+                    ) : (
+                      <video
+                        src={item.url}
+                        controls
+                        className="w-full h-48 object-cover bg-black"
+                      >
+                        <track kind="captions" />
+                      </video>
+                    )}
+                    <div className="absolute top-2 right-2">
+                      <Badge className="border-0 text-xs gap-1 bg-black/60 text-white">
+                        {item.type === "photo" ? (
+                          <>
+                            <Image size={10} /> Photo
+                          </>
+                        ) : (
+                          <>
+                            <Video size={10} /> Video
+                          </>
+                        )}
+                      </Badge>
+                    </div>
+                  </div>
+                  <CardContent className="p-3">
+                    {item.caption && (
+                      <p className="text-sm font-medium text-gray-800 mb-1">
+                        {item.caption}
+                      </p>
+                    )}
+                    <p className="text-xs text-gray-400">
+                      {new Date(item.uploadedAt).toLocaleDateString("en-IN", {
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric",
+                      })}
+                    </p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

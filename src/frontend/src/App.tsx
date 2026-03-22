@@ -27,6 +27,7 @@ import SchoolInfo from "./pages/SchoolInfo";
 import SchoolRecords from "./pages/SchoolRecords";
 import StudentDoubts from "./pages/StudentDoubts";
 import StudentEditPage from "./pages/StudentEditPage";
+import StudentMedia from "./pages/StudentMedia";
 import Syllabus from "./pages/Syllabus";
 import TeacherChat from "./pages/TeacherChat";
 
@@ -43,7 +44,6 @@ type PrincipalPage =
 export type Notification = (typeof mockNotifications)[number];
 export type SyllabusSubject = (typeof mockSyllabus)[number];
 
-// --- localStorage helpers ---
 function loadStorage<T>(key: string, fallback: T): T {
   try {
     const raw = localStorage.getItem(key);
@@ -62,7 +62,6 @@ export default function App() {
   const [role, setRole] = useState<Role>(null);
   const [page, setPage] = useState("dashboard");
 
-  // Persistent state — loaded from localStorage on first render
   const [students, setStudents] = useState<Student[]>(() =>
     loadStorage("lords_students", mockStudents),
   );
@@ -73,7 +72,6 @@ export default function App() {
     loadStorage("lords_syllabus", mockSyllabus),
   );
 
-  // Sync to localStorage whenever data changes
   useEffect(() => saveStorage("lords_students", students), [students]);
   useEffect(
     () => saveStorage("lords_notifications", notifications),
@@ -146,7 +144,6 @@ export default function App() {
         >
           <ParentView
             student={parentStudent}
-            allStudents={students}
             notifications={notifications}
             syllabus={syllabus}
           />
@@ -248,6 +245,7 @@ export default function App() {
         {page === "notifications" && (
           <Notifications notifications={notifications} />
         )}
+        {page === "media" && <StudentMedia />}
       </Layout>
       <Toaster />
     </>

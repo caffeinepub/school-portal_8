@@ -1,6 +1,5 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import type { Student } from "@/data/mockData";
 import { Eye, EyeOff, GraduationCap, ShieldCheck, Users } from "lucide-react";
 import { useState } from "react";
@@ -14,9 +13,6 @@ const PRINCIPAL_PASSWORD = "principal123";
 const PARENT_PASSWORD = "parent123";
 
 export default function Login({ onLogin, students }: Props) {
-  const [showPass, setShowPass] = useState(false);
-  const [tab, setTab] = useState<"signin" | "signup">("signin");
-
   // Principal login state
   const [showPrincipalLogin, setShowPrincipalLogin] = useState(false);
   const [principalPassword, setPrincipalPassword] = useState("");
@@ -67,113 +63,7 @@ export default function Login({ onLogin, students }: Props) {
         </div>
 
         <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
-          <div className="flex rounded-xl bg-gray-100 p-1 mb-6">
-            {(["signin", "signup"] as const).map((t) => (
-              <button
-                type="button"
-                key={t}
-                onClick={() => setTab(t)}
-                className={`flex-1 py-2 text-sm font-medium rounded-lg transition-colors ${
-                  tab === t
-                    ? "bg-white text-gray-900 shadow-sm"
-                    : "text-gray-500"
-                }`}
-              >
-                {t === "signin" ? "Sign In" : "Sign Up"}
-              </button>
-            ))}
-          </div>
-
-          {tab === "signin" ? (
-            <div className="space-y-4">
-              <div>
-                <Label className="text-sm font-medium text-gray-700">
-                  Email Address
-                </Label>
-                <Input
-                  type="email"
-                  placeholder="student@school.edu"
-                  className="mt-1"
-                />
-              </div>
-              <div>
-                <Label className="text-sm font-medium text-gray-700">
-                  Password
-                </Label>
-                <div className="relative mt-1">
-                  <Input
-                    type={showPass ? "text" : "password"}
-                    placeholder="Enter your password"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPass(!showPass)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
-                  >
-                    {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
-                  </button>
-                </div>
-              </div>
-              <Button
-                data-ocid="login.submit_button"
-                onClick={() => onLogin("student")}
-                className="w-full bg-blue-600 hover:bg-blue-700 mt-2"
-              >
-                Sign In
-              </Button>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <div>
-                <Label className="text-sm font-medium text-gray-700">
-                  Full Name
-                </Label>
-                <Input
-                  type="text"
-                  placeholder="Enter your full name"
-                  className="mt-1"
-                />
-              </div>
-              <div>
-                <Label className="text-sm font-medium text-gray-700">
-                  Email Address
-                </Label>
-                <Input
-                  type="email"
-                  placeholder="student@school.edu"
-                  className="mt-1"
-                />
-              </div>
-              <div>
-                <Label className="text-sm font-medium text-gray-700">
-                  Password
-                </Label>
-                <Input
-                  type="password"
-                  placeholder="Create a password"
-                  className="mt-1"
-                />
-              </div>
-              <Button
-                data-ocid="login.submit_button"
-                onClick={() => onLogin("student")}
-                className="w-full bg-blue-600 hover:bg-blue-700 mt-2"
-              >
-                Create Account
-              </Button>
-            </div>
-          )}
-
-          <div className="mt-4 space-y-3">
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-200" />
-              </div>
-              <div className="relative flex justify-center text-xs text-gray-400">
-                <span className="bg-white px-3">or quick access</span>
-              </div>
-            </div>
-
+          <div className="space-y-3">
             <Button
               data-ocid="login.primary_button"
               variant="outline"

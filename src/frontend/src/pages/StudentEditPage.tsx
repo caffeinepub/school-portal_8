@@ -1,3 +1,4 @@
+import { FileType } from "@/backend";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,9 +23,51 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Student } from "@/data/mockData";
-import { ArrowLeft, Save, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useActor } from "@/hooks/useActor";
+import {
+  ArrowLeft,
+  Edit2,
+  Film,
+  Image as ImageIcon,
+  PlayCircle,
+  Save,
+  Trash2,
+  Upload,
+} from "lucide-react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
+
+interface MediaItem {
+  id: string;
+  blobReferenceId: string;
+  url: string;
+  fileType: "photo" | "video";
+  caption: string;
+  uploadedAt: string;
+}
+
+function loadMedia(studentId: number): MediaItem[] {
+  try {
+    const raw = localStorage.getItem(`lords_media_${studentId}`);
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return [];
+}
+
+function saveMedia(studentId: number, items: MediaItem[]) {
+  try {
+    localStorage.setItem(`lords_media_${studentId}`, JSON.stringify(items));
+  } catch {}
+}
+
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
 
 interface Props {
   student: Student;
@@ -39,6 +82,7 @@ export default function StudentEditPage({
   onDeleteStudent,
   onBack,
 }: Props) {
+  const { actor } = useActor();
   const [draft, setDraft] = useState<Student>({
     ...student,
     marks: student.marks.map((m) => ({ ...m })),
@@ -46,17 +90,28 @@ export default function StudentEditPage({
     attendance: student.attendance.map((a) => ({ ...a })),
   });
 
+  const [media, setMedia] = useState<MediaItem[]>(() => loadMedia(student.id));
+  const [editingCaption, setEditingCaption] = useState<string | null>(null);
+  const [captionDraft, setCaptionDraft] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const replaceInputRef = useRef<HTMLInputElement>(null);
+  const [replacingId, setReplacingId] = useState<string | null>(null);
+
   function setField<K extends keyof Student>(key: K, value: Student[K]) {
     setDraft((prev) => ({ ...prev, [key]: value }));
   }
 
-  function setMark(idx: number, field: "midterm" | "final", value: number) {
-    setDraft((prev) => {
-      const marks = prev.marks.map((m, i) =>
+  function setMark(
+    idx: number,
+    field: "pt1" | "pt2" | "pt3" | "term1" | "term2",
+    value: number,
+  ) {
+    setDraft((prev) => ({
+      ...prev,
+      marks: prev.marks.map((m, i) =>
         i === idx ? { ...m, [field]: value } : m,
-      );
-      return { ...prev, marks };
-    });
+      ),
+    }));
   }
 
   function setFee(
@@ -64,12 +119,10 @@ export default function StudentEditPage({
     field: keyof Student["fees"][0],
     value: string | number,
   ) {
-    setDraft((prev) => {
-      const fees = prev.fees.map((f, i) =>
-        i === idx ? { ...f, [field]: value } : f,
-      );
-      return { ...prev, fees };
-    });
+    setDraft((prev) => ({
+      ...prev,
+      fees: prev.fees.map((f, i) => (i === idx ? { ...f, [field]: value } : f)),
+    }));
   }
 
   function addFeeRow() {
@@ -98,12 +151,12 @@ export default function StudentEditPage({
   }
 
   function setAttendance(idx: number, status: string) {
-    setDraft((prev) => {
-      const attendance = prev.attendance.map((a, i) =>
+    setDraft((prev) => ({
+      ...prev,
+      attendance: prev.attendance.map((a, i) =>
         i === idx ? { ...a, status } : a,
-      );
-      return { ...prev, attendance };
-    });
+      ),
+    }));
   }
 
   function addAttendanceRow() {
@@ -129,7 +182,15 @@ export default function StudentEditPage({
       ...prev,
       marks: [
         ...prev.marks,
-        { subject: "New Subject", midterm: 0, final: 0, max: 100 },
+        {
+          subject: "New Subject",
+          pt1: 0,
+          pt2: 0,
+          pt3: 0,
+          term1: 0,
+          term2: 0,
+          max: 100,
+        },
       ],
     }));
   }
@@ -144,6 +205,74 @@ export default function StudentEditPage({
   function handleSave() {
     onUpdateStudent(draft);
     toast.success(`${draft.name}'s record saved permanently!`);
+  }
+
+  async function handleUploadMedia(file: File, replaceItem?: MediaItem) {
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("File is too large (max 5MB). Please choose a smaller file.");
+      return;
+    }
+    const isVideo = file.type.startsWith("video/");
+    const fileType: "photo" | "video" = isVideo ? "video" : "photo";
+    try {
+      const dataUrl = await fileToBase64(file);
+      const blobReferenceId = crypto.randomUUID();
+      const newItem: MediaItem = {
+        id: blobReferenceId,
+        blobReferenceId,
+        url: dataUrl,
+        fileType,
+        caption: replaceItem ? replaceItem.caption : "",
+        uploadedAt: new Date().toISOString(),
+      };
+
+      let updatedMedia: MediaItem[];
+      if (replaceItem) {
+        updatedMedia = media.map((m) =>
+          m.id === replaceItem.id ? newItem : m,
+        );
+        // Delete old from backend, add new
+        actor?.deleteMedia(replaceItem.blobReferenceId).catch(() => {});
+      } else {
+        updatedMedia = [...media, newItem];
+      }
+
+      setMedia(updatedMedia);
+      saveMedia(student.id, updatedMedia);
+
+      actor
+        ?.addMedia({
+          studentId: BigInt(student.id),
+          fileType: fileType === "photo" ? FileType.photo : FileType.video,
+          timestamp: newItem.uploadedAt,
+          caption: newItem.caption,
+          blobReferenceId,
+        })
+        .catch(() => {});
+
+      toast.success(replaceItem ? "Media replaced!" : "Media uploaded!");
+    } catch {
+      toast.error("Failed to process file.");
+    }
+  }
+
+  async function handleDeleteMedia(item: MediaItem) {
+    const updatedMedia = media.filter((m) => m.id !== item.id);
+    setMedia(updatedMedia);
+    saveMedia(student.id, updatedMedia);
+    actor?.deleteMedia(item.blobReferenceId).catch(() => {});
+    toast.success("Media deleted.");
+  }
+
+  async function handleSaveCaption(item: MediaItem, newCaption: string) {
+    const updatedMedia = media.map((m) =>
+      m.id === item.id ? { ...m, caption: newCaption } : m,
+    );
+    setMedia(updatedMedia);
+    saveMedia(student.id, updatedMedia);
+    setEditingCaption(null);
+    actor?.updateCaption(item.blobReferenceId, newCaption).catch(() => {});
+    toast.success("Caption updated.");
   }
 
   const totalPresent = draft.attendance.filter(
@@ -189,7 +318,6 @@ export default function StudentEditPage({
           </div>
         </div>
 
-        {/* Delete Student */}
         <AlertDialog>
           <AlertDialogTrigger asChild>
             <Button
@@ -210,8 +338,11 @@ export default function StudentEditPage({
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogCancel data-ocid="student_edit.delete_cancel_button">
+                Cancel
+              </AlertDialogCancel>
               <AlertDialogAction
+                data-ocid="student_edit.delete_confirm_button"
                 className="bg-red-600 hover:bg-red-700"
                 onClick={() => {
                   toast.success(`${student.name} has been removed.`);
@@ -228,7 +359,7 @@ export default function StudentEditPage({
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
         <Tabs defaultValue="profile">
           <TabsList className="w-full rounded-none border-b border-gray-200 bg-gray-50 h-auto p-0">
-            {["profile", "marks", "fees", "attendance"].map((t) => (
+            {["profile", "marks", "fees", "attendance", "media"].map((t) => (
               <TabsTrigger
                 key={t}
                 value={t}
@@ -291,124 +422,197 @@ export default function StudentEditPage({
 
           {/* Marks Tab */}
           <TabsContent value="marks" className="p-6">
+            {/* Rank Field */}
+            <div className="flex items-center gap-4 mb-6 p-4 bg-indigo-50 rounded-xl border border-indigo-100">
+              <Label className="text-sm font-semibold text-indigo-800 whitespace-nowrap">
+                Class Rank
+              </Label>
+              <Input
+                data-ocid="student_edit.rank_input"
+                type="number"
+                min={1}
+                value={draft.rank ?? ""}
+                onChange={(e) => setField("rank", Number(e.target.value))}
+                className="w-24 h-8 text-sm"
+              />
+              <span className="text-sm text-indigo-600">
+                Set the student's class rank
+              </span>
+            </div>
             <div className="overflow-x-auto">
-              <table className="w-full">
+              <table className="w-full min-w-[900px]">
                 <thead>
                   <tr className="border-b border-gray-200">
                     <th className="text-left pb-3 text-sm font-semibold text-gray-700">
                       Subject
                     </th>
                     <th className="text-left pb-3 text-sm font-semibold text-gray-700">
-                      Midterm
+                      PT 1
                     </th>
                     <th className="text-left pb-3 text-sm font-semibold text-gray-700">
-                      Final
+                      PT 2
+                    </th>
+                    <th className="text-left pb-3 text-sm font-semibold text-gray-700">
+                      PT 3
+                    </th>
+                    <th className="text-left pb-3 text-sm font-semibold text-gray-700">
+                      Term 1
+                    </th>
+                    <th className="text-left pb-3 text-sm font-semibold text-gray-700">
+                      Term 2
+                    </th>
+                    <th className="text-left pb-3 text-sm font-semibold text-gray-700">
+                      Total
                     </th>
                     <th className="text-left pb-3 text-sm font-semibold text-gray-700">
                       Max
                     </th>
                     <th className="text-left pb-3 text-sm font-semibold text-gray-700">
-                      %
+                      Grade
                     </th>
                     <th className="pb-3" />
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {draft.marks.map((m, idx) => (
-                    <tr
-                      key={`mark-${m.subject}-${idx}`}
-                      data-ocid={`student_edit.marks.row.${idx + 1}`}
-                    >
-                      <td className="py-3 pr-4">
-                        <Input
-                          value={m.subject}
-                          onChange={(e) =>
-                            setDraft((prev) => ({
-                              ...prev,
-                              marks: prev.marks.map((mk, i) =>
-                                i === idx
-                                  ? { ...mk, subject: e.target.value }
-                                  : mk,
-                              ),
-                            }))
-                          }
-                          className="w-36 h-8 text-sm"
-                        />
-                      </td>
-                      <td className="py-3 pr-4">
-                        <Input
-                          type="number"
-                          min={0}
-                          max={m.max}
-                          value={m.midterm}
-                          onChange={(e) =>
-                            setMark(idx, "midterm", Number(e.target.value))
-                          }
-                          className="w-20 h-8 text-sm"
-                        />
-                      </td>
-                      <td className="py-3 pr-4">
-                        <Input
-                          type="number"
-                          min={0}
-                          max={m.max}
-                          value={m.final}
-                          onChange={(e) =>
-                            setMark(idx, "final", Number(e.target.value))
-                          }
-                          className="w-20 h-8 text-sm"
-                        />
-                      </td>
-                      <td className="py-3 pr-4">
-                        <Input
-                          type="number"
-                          min={1}
-                          value={m.max}
-                          onChange={(e) =>
-                            setDraft((prev) => ({
-                              ...prev,
-                              marks: prev.marks.map((mk, i) =>
-                                i === idx
-                                  ? { ...mk, max: Number(e.target.value) }
-                                  : mk,
-                              ),
-                            }))
-                          }
-                          className="w-16 h-8 text-sm"
-                        />
-                      </td>
-                      <td className="py-3 pr-4">
-                        <Badge
-                          className={`${
-                            Math.round(
-                              ((m.midterm + m.final) / (m.max * 2)) * 100,
-                            ) >= 75
-                              ? "bg-green-100 text-green-700"
-                              : Math.round(
-                                    ((m.midterm + m.final) / (m.max * 2)) * 100,
-                                  ) >= 50
-                                ? "bg-yellow-100 text-yellow-700"
-                                : "bg-red-100 text-red-700"
-                          } hover:bg-inherit`}
-                        >
-                          {Math.round(
-                            ((m.midterm + m.final) / (m.max * 2)) * 100,
-                          )}
-                          %
-                        </Badge>
-                      </td>
-                      <td className="py-3">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removeMarkRow(idx)}
-                          className="h-8 w-8 p-0 text-red-400 hover:text-red-600 hover:bg-red-50"
-                        >
-                          <Trash2 size={14} />
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
+                  {draft.marks.map((m, idx) => {
+                    const total = m.pt1 + m.pt2 + m.pt3 + m.term1 + m.term2;
+                    const pct = Math.round((total / (m.max * 5)) * 100);
+                    const gradeLabel =
+                      pct >= 90
+                        ? "A+"
+                        : pct >= 80
+                          ? "A"
+                          : pct >= 70
+                            ? "B"
+                            : pct >= 60
+                              ? "C"
+                              : "D";
+                    const gradeColor =
+                      pct >= 75
+                        ? "bg-green-100 text-green-700"
+                        : pct >= 50
+                          ? "bg-yellow-100 text-yellow-700"
+                          : "bg-red-100 text-red-700";
+                    return (
+                      <tr
+                        key={`mark-${m.subject}-${idx}`}
+                        data-ocid={`student_edit.marks.row.${idx + 1}`}
+                      >
+                        <td className="py-3 pr-3">
+                          <Input
+                            value={m.subject}
+                            onChange={(e) =>
+                              setDraft((prev) => ({
+                                ...prev,
+                                marks: prev.marks.map((mk, i) =>
+                                  i === idx
+                                    ? { ...mk, subject: e.target.value }
+                                    : mk,
+                                ),
+                              }))
+                            }
+                            className="w-32 h-8 text-sm"
+                          />
+                        </td>
+                        <td className="py-3 pr-2">
+                          <Input
+                            type="number"
+                            min={0}
+                            max={m.max}
+                            value={m.pt1}
+                            onChange={(e) =>
+                              setMark(idx, "pt1", Number(e.target.value))
+                            }
+                            className="w-16 h-8 text-sm"
+                          />
+                        </td>
+                        <td className="py-3 pr-2">
+                          <Input
+                            type="number"
+                            min={0}
+                            max={m.max}
+                            value={m.pt2}
+                            onChange={(e) =>
+                              setMark(idx, "pt2", Number(e.target.value))
+                            }
+                            className="w-16 h-8 text-sm"
+                          />
+                        </td>
+                        <td className="py-3 pr-2">
+                          <Input
+                            type="number"
+                            min={0}
+                            max={m.max}
+                            value={m.pt3}
+                            onChange={(e) =>
+                              setMark(idx, "pt3", Number(e.target.value))
+                            }
+                            className="w-16 h-8 text-sm"
+                          />
+                        </td>
+                        <td className="py-3 pr-2">
+                          <Input
+                            type="number"
+                            min={0}
+                            max={m.max}
+                            value={m.term1}
+                            onChange={(e) =>
+                              setMark(idx, "term1", Number(e.target.value))
+                            }
+                            className="w-16 h-8 text-sm"
+                          />
+                        </td>
+                        <td className="py-3 pr-2">
+                          <Input
+                            type="number"
+                            min={0}
+                            max={m.max}
+                            value={m.term2}
+                            onChange={(e) =>
+                              setMark(idx, "term2", Number(e.target.value))
+                            }
+                            className="w-16 h-8 text-sm"
+                          />
+                        </td>
+                        <td className="py-3 pr-3">
+                          <Badge className="bg-indigo-100 text-indigo-700 border-0 font-semibold">
+                            {total}
+                          </Badge>
+                        </td>
+                        <td className="py-3 pr-3">
+                          <Input
+                            type="number"
+                            min={1}
+                            value={m.max}
+                            onChange={(e) =>
+                              setDraft((prev) => ({
+                                ...prev,
+                                marks: prev.marks.map((mk, i) =>
+                                  i === idx
+                                    ? { ...mk, max: Number(e.target.value) }
+                                    : mk,
+                                ),
+                              }))
+                            }
+                            className="w-16 h-8 text-sm"
+                          />
+                        </td>
+                        <td className="py-3 pr-3">
+                          <Badge className={gradeColor}>{gradeLabel}</Badge>
+                        </td>
+                        <td className="py-3">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeMarkRow(idx)}
+                            className="h-8 w-8 p-0 text-red-400 hover:text-red-600 hover:bg-red-50"
+                          >
+                            <Trash2 size={14} />
+                          </Button>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -565,7 +769,6 @@ export default function StudentEditPage({
                 </div>
               ))}
             </div>
-
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
@@ -651,13 +854,195 @@ export default function StudentEditPage({
               + Add Attendance Row
             </Button>
           </TabsContent>
+
+          {/* Media Tab */}
+          <TabsContent value="media" className="p-6">
+            {/* Hidden file inputs */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*,video/*"
+              className="hidden"
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (file) await handleUploadMedia(file);
+                e.target.value = "";
+              }}
+            />
+            <input
+              ref={replaceInputRef}
+              type="file"
+              accept="image/*,video/*"
+              className="hidden"
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                const replaceItem = media.find((m) => m.id === replacingId);
+                if (file && replaceItem)
+                  await handleUploadMedia(file, replaceItem);
+                setReplacingId(null);
+                e.target.value = "";
+              }}
+            />
+
+            <div className="flex items-center justify-between mb-5">
+              <div>
+                <h3 className="font-semibold text-gray-900">Student Media</h3>
+                <p className="text-sm text-gray-500 mt-0.5">
+                  Upload photos and videos for {draft.name}. Students can view
+                  these in their portal.
+                </p>
+              </div>
+              <Button
+                data-ocid="student_edit.media.upload_button"
+                onClick={() => fileInputRef.current?.click()}
+                className="gap-2 bg-indigo-600 hover:bg-indigo-700"
+              >
+                <Upload size={15} />
+                Upload Media
+              </Button>
+            </div>
+
+            {media.length === 0 ? (
+              <div
+                data-ocid="student_edit.media.empty_state"
+                className="border-2 border-dashed border-gray-200 rounded-xl p-12 flex flex-col items-center justify-center text-center"
+              >
+                <div className="w-14 h-14 bg-gray-100 rounded-full flex items-center justify-center mb-3">
+                  <Film size={24} className="text-gray-400" />
+                </div>
+                <p className="text-gray-600 font-medium">
+                  No media uploaded yet
+                </p>
+                <p className="text-gray-400 text-sm mt-1">
+                  Click "Upload Media" to add photos or videos for this student.
+                </p>
+                <p className="text-gray-400 text-xs mt-3">
+                  Max file size: 5MB per file
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {media.map((item, idx) => (
+                  <div
+                    key={item.id}
+                    data-ocid={`student_edit.media.item.${idx + 1}`}
+                    className="bg-gray-50 rounded-xl border border-gray-200 overflow-hidden group"
+                  >
+                    <div className="relative bg-black aspect-video">
+                      {item.fileType === "photo" ? (
+                        <img
+                          src={item.url}
+                          alt={item.caption || "Photo"}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <video
+                          src={item.url}
+                          controls
+                          className="w-full h-full"
+                        >
+                          <track kind="captions" />
+                        </video>
+                      )}
+                      <div className="absolute top-2 left-2">
+                        <span
+                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
+                            item.fileType === "photo"
+                              ? "bg-blue-100 text-blue-700"
+                              : "bg-purple-100 text-purple-700"
+                          }`}
+                        >
+                          {item.fileType === "photo" ? (
+                            <ImageIcon size={11} />
+                          ) : (
+                            <PlayCircle size={11} />
+                          )}
+                          {item.fileType === "photo" ? "Photo" : "Video"}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="p-3 space-y-2">
+                      {editingCaption === item.id ? (
+                        <div className="flex gap-2">
+                          <Input
+                            data-ocid={`student_edit.media.caption_input.${idx + 1}`}
+                            value={captionDraft}
+                            onChange={(e) => setCaptionDraft(e.target.value)}
+                            placeholder="Add a caption..."
+                            className="h-8 text-sm flex-1"
+                            autoFocus
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter")
+                                handleSaveCaption(item, captionDraft);
+                              if (e.key === "Escape") setEditingCaption(null);
+                            }}
+                          />
+                          <Button
+                            size="sm"
+                            data-ocid={`student_edit.media.save_button.${idx + 1}`}
+                            className="h-8 px-2 bg-indigo-600 hover:bg-indigo-700"
+                            onClick={() =>
+                              handleSaveCaption(item, captionDraft)
+                            }
+                          >
+                            <Save size={13} />
+                          </Button>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          className="text-sm text-gray-600 hover:text-indigo-600 text-left w-full transition-colors"
+                          onClick={() => {
+                            setEditingCaption(item.id);
+                            setCaptionDraft(item.caption);
+                          }}
+                        >
+                          {item.caption || (
+                            <span className="text-gray-400 italic">
+                              Click to add caption...
+                            </span>
+                          )}
+                        </button>
+                      )}
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          data-ocid={`student_edit.media.edit_button.${idx + 1}`}
+                          className="flex-1 h-8 gap-1.5 text-xs border-gray-200 text-gray-600 hover:text-indigo-600 hover:border-indigo-200"
+                          onClick={() => {
+                            setReplacingId(item.id);
+                            replaceInputRef.current?.click();
+                          }}
+                        >
+                          <Edit2 size={12} />
+                          Replace
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          data-ocid={`student_edit.media.delete_button.${idx + 1}`}
+                          className="flex-1 h-8 gap-1.5 text-xs border-red-200 text-red-500 hover:bg-red-50 hover:text-red-600"
+                          onClick={() => handleDeleteMedia(item)}
+                        >
+                          <Trash2 size={12} />
+                          Delete
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </TabsContent>
         </Tabs>
       </div>
 
       <div className="flex justify-end gap-3 pb-4">
         <Button
           variant="outline"
-          data-ocid="student_edit.cancel_button"
+          data-ocid="student_edit.back_button"
           onClick={onBack}
         >
           Cancel

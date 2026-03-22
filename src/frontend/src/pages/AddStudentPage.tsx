@@ -49,6 +49,7 @@ function newRow(): BulkRow {
     marks: [],
     fees: [],
     attendance: [],
+    rank: 0,
   };
 }
 
@@ -85,6 +86,7 @@ const EMPTY_FORM: Omit<Student, "id"> = {
   marks: [],
   fees: [],
   attendance: [],
+  rank: 0,
 };
 
 export default function AddStudentPage({
@@ -180,6 +182,7 @@ export default function AddStudentPage({
         marks: [],
         fees: [],
         attendance: [],
+        rank: 0,
       };
     });
     setBulkRows(parsed);

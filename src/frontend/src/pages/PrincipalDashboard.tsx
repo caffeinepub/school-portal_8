@@ -158,6 +158,12 @@ export default function PrincipalDashboard({
                     Roll No
                   </th>
                   <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                    Rank
+                  </th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                    Total Marks
+                  </th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
                     Fees
                   </th>
                   <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
@@ -200,6 +206,18 @@ export default function PrincipalDashboard({
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-600">
                         {student.rollNo}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 font-bold text-sm">
+                          {student.rank ?? "-"}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-sm font-medium text-gray-800">
+                        {student.marks.reduce(
+                          (sum, m) =>
+                            sum + m.pt1 + m.pt2 + m.pt3 + m.term1 + m.term2,
+                          0,
+                        )}
                       </td>
                       <td className="px-4 py-3">{feeStatusBadge(feeStatus)}</td>
                       <td className="px-4 py-3">

@@ -9,43 +9,49 @@ function grade(pct: number) {
 }
 
 export default function ExaminationMarks() {
+  const avgPT = Math.round(
+    marks.reduce((s, m) => s + Math.round((m.pt1 + m.pt2 + m.pt3) / 3), 0) /
+      marks.length,
+  );
+  const avgTerm = Math.round(
+    marks.reduce((s, m) => s + Math.round((m.term1 + m.term2) / 2), 0) /
+      marks.length,
+  );
+  const overallAvg = Math.round(
+    marks.reduce((s, m) => {
+      const total = m.pt1 + m.pt2 + m.pt3 + m.term1 + m.term2;
+      return s + Math.round((total / (m.max * 5)) * 100);
+    }, 0) / marks.length,
+  );
+
   return (
     <div className="space-y-6">
       {/* Summary */}
       <div className="grid grid-cols-3 gap-4">
-        {(["Mid-term", "Final"] as const).map((exam) => {
-          const key = exam === "Mid-term" ? "midterm" : "final";
-          const avg = Math.round(
-            marks.reduce((s, m) => s + m[key as "midterm" | "final"], 0) /
-              marks.length,
-          );
-          return (
-            <div
-              key={exam}
-              className="bg-white rounded-xl p-4 shadow-sm border border-gray-100"
-            >
-              <p className="text-xs text-gray-400">{exam} Average</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">{avg}%</p>
-              <span
-                className={`text-xs px-2 py-0.5 rounded-full ${grade(avg).color}`}
-              >
-                {grade(avg).g}
-              </span>
-            </div>
-          );
-        })}
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+          <p className="text-xs text-gray-400">PT Average</p>
+          <p className="text-2xl font-bold text-gray-900 mt-1">{avgPT}%</p>
+          <span
+            className={`text-xs px-2 py-0.5 rounded-full ${grade(avgPT).color}`}
+          >
+            {grade(avgPT).g}
+          </span>
+        </div>
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+          <p className="text-xs text-gray-400">Term Average</p>
+          <p className="text-2xl font-bold text-gray-900 mt-1">{avgTerm}%</p>
+          <span
+            className={`text-xs px-2 py-0.5 rounded-full ${grade(avgTerm).color}`}
+          >
+            {grade(avgTerm).g}
+          </span>
+        </div>
         <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
           <p className="text-xs text-gray-400">Overall Grade</p>
           <p className="text-2xl font-bold text-gray-900 mt-1">
-            {
-              grade(
-                Math.round(
-                  marks.reduce((s, m) => s + m.final, 0) / marks.length,
-                ),
-              ).g
-            }
+            {grade(overallAvg).g}
           </p>
-          <span className="text-xs text-gray-400">Final Exams</span>
+          <span className="text-xs text-gray-400">All Exams</span>
         </div>
       </div>
 
@@ -55,43 +61,56 @@ export default function ExaminationMarks() {
           <h3 className="font-semibold text-gray-800">Subject-wise Marks</h3>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full min-w-[700px]">
             <thead>
               <tr className="bg-gray-50 text-xs text-gray-500 uppercase">
                 <th className="text-left px-6 py-3">Subject</th>
-                <th className="text-center px-4 py-3">Mid-term</th>
-                <th className="text-center px-4 py-3">Final</th>
-                <th className="text-center px-4 py-3">%</th>
-                <th className="text-center px-4 py-3">Grade</th>
-                <th className="px-6 py-3">Progress</th>
+                <th className="text-center px-3 py-3">PT 1</th>
+                <th className="text-center px-3 py-3">PT 2</th>
+                <th className="text-center px-3 py-3">PT 3</th>
+                <th className="text-center px-3 py-3">Term 1</th>
+                <th className="text-center px-3 py-3">Term 2</th>
+                <th className="text-center px-3 py-3">Total</th>
+                <th className="text-center px-3 py-3">Grade</th>
+                <th className="px-4 py-3">Progress</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
               {marks.map((m) => {
-                const pct = m.final;
+                const total = m.pt1 + m.pt2 + m.pt3 + m.term1 + m.term2;
+                const pct = Math.round((total / (m.max * 5)) * 100);
                 const g = grade(pct);
                 return (
                   <tr key={m.subject} className="hover:bg-gray-50">
                     <td className="px-6 py-4 text-sm font-medium text-gray-800">
                       {m.subject}
                     </td>
-                    <td className="px-4 py-4 text-center text-sm text-gray-600">
-                      {m.midterm}/{m.max}
+                    <td className="px-3 py-4 text-center text-sm text-gray-600">
+                      {m.pt1}
                     </td>
-                    <td className="px-4 py-4 text-center text-sm text-gray-600">
-                      {m.final}/{m.max}
+                    <td className="px-3 py-4 text-center text-sm text-gray-600">
+                      {m.pt2}
                     </td>
-                    <td className="px-4 py-4 text-center text-sm font-medium text-gray-800">
-                      {pct}%
+                    <td className="px-3 py-4 text-center text-sm text-gray-600">
+                      {m.pt3}
                     </td>
-                    <td className="px-4 py-4 text-center">
+                    <td className="px-3 py-4 text-center text-sm text-gray-600">
+                      {m.term1}
+                    </td>
+                    <td className="px-3 py-4 text-center text-sm text-gray-600">
+                      {m.term2}
+                    </td>
+                    <td className="px-3 py-4 text-center text-sm font-semibold text-indigo-700">
+                      {total}/{m.max * 5}
+                    </td>
+                    <td className="px-3 py-4 text-center">
                       <span
                         className={`text-xs px-2 py-1 rounded-full font-medium ${g.color}`}
                       >
                         {g.g}
                       </span>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-4">
                       <div className="w-32 bg-gray-100 rounded-full h-2">
                         <div
                           className="bg-blue-500 h-2 rounded-full"

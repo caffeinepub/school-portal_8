@@ -13,7 +13,14 @@ export default function Dashboard() {
   const pendingFees = fees.filter((f) => f.status !== "Paid").length;
   const unread = notifications.filter((n) => !n.read).length;
   const avgFinal = Math.round(
-    marks.reduce((s, m) => s + m.final, 0) / marks.length,
+    marks.reduce(
+      (s, m) =>
+        s +
+        Math.round(
+          ((m.pt1 + m.pt2 + m.pt3 + m.term1 + m.term2) / (m.max * 5)) * 100,
+        ),
+      0,
+    ) / marks.length,
   );
 
   const stats = [
@@ -103,11 +110,18 @@ export default function Dashboard() {
                 <div className="flex-1 bg-gray-100 rounded-full h-2">
                   <div
                     className="bg-blue-500 h-2 rounded-full"
-                    style={{ width: `${m.final}%` }}
+                    style={{
+                      width: `${Math.round(((m.pt1 + m.pt2 + m.pt3 + m.term1 + m.term2) / (m.max * 5)) * 100)}%`,
+                    }}
                   />
                 </div>
                 <span className="text-sm font-medium text-gray-700 w-10 text-right">
-                  {m.final}%
+                  {Math.round(
+                    ((m.pt1 + m.pt2 + m.pt3 + m.term1 + m.term2) /
+                      (m.max * 5)) *
+                      100,
+                  )}
+                  %
                 </span>
               </div>
             ))}
