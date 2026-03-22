@@ -20,6 +20,7 @@ import ParentView from "./pages/ParentView";
 import PrincipalAnnouncementsPage from "./pages/PrincipalAnnouncementsPage";
 import PrincipalDashboard from "./pages/PrincipalDashboard";
 import PrincipalHolidaysPage from "./pages/PrincipalHolidaysPage";
+import PrincipalSchoolInfoEditor from "./pages/PrincipalSchoolInfoEditor";
 import PrincipalSyllabusPage from "./pages/PrincipalSyllabusPage";
 import Profile from "./pages/Profile";
 import SchoolFees from "./pages/SchoolFees";
@@ -159,7 +160,7 @@ export default function App() {
     const allNavLabels: Record<string, string> = {
       list: "All Students",
       add: "Add Student",
-      info: "School Info",
+      info: "Edit School Info",
       holidays: "Manage Holidays",
       "school-syllabus": "Manage Syllabus",
       announcements: "Announcements",
@@ -199,7 +200,7 @@ export default function App() {
               onBack={() => setPrincipalPage("list")}
             />
           )}
-          {principalPage === "info" && <SchoolInfo />}
+          {principalPage === "info" && <PrincipalSchoolInfoEditor />}
           {principalPage === "holidays" && (
             <PrincipalHolidaysPage
               notifications={notifications}
