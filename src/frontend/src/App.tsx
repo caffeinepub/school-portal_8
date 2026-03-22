@@ -9,6 +9,7 @@ import {
   syllabus as mockSyllabus,
 } from "./data/mockData";
 import type { Student } from "./data/mockData";
+import { PRINCIPALS } from "./data/principals";
 import AbsentRecord from "./pages/AbsentRecord";
 import AddStudentPage from "./pages/AddStudentPage";
 import Dashboard from "./pages/Dashboard";
@@ -64,23 +65,56 @@ function saveStorage<T>(key: string, value: T) {
 export default function App() {
   const [role, setRole] = useState<Role>(null);
   const [page, setPage] = useState("dashboard");
+  const [activePrincipalId, setActivePrincipalId] = useState<string | null>(
+    null,
+  );
+  const [parentPrincipalId, setParentPrincipalId] = useState<string | null>(
+    null,
+  );
+
+  // Derive namespace keys
+  const ns = activePrincipalId ?? "default";
 
   const [students, setStudents] = useState<Student[]>(() =>
-    loadStorage("lords_students", mockStudents),
+    loadStorage(`lords_students_${ns}`, mockStudents),
   );
   const [notifications, setNotifications] = useState<Notification[]>(() =>
-    loadStorage("lords_notifications", mockNotifications),
+    loadStorage(`lords_notifications_${ns}`, mockNotifications),
   );
   const [syllabus, setSyllabus] = useState<SyllabusSubject[]>(() =>
-    loadStorage("lords_syllabus", mockSyllabus),
+    loadStorage(`lords_syllabus_${ns}`, mockSyllabus),
   );
 
-  useEffect(() => saveStorage("lords_students", students), [students]);
-  useEffect(
-    () => saveStorage("lords_notifications", notifications),
-    [notifications],
-  );
-  useEffect(() => saveStorage("lords_syllabus", syllabus), [syllabus]);
+  // When principal changes, reload their data
+  useEffect(() => {
+    if (activePrincipalId) {
+      setStudents(
+        loadStorage(`lords_students_${activePrincipalId}`, mockStudents),
+      );
+      setNotifications(
+        loadStorage(
+          `lords_notifications_${activePrincipalId}`,
+          mockNotifications,
+        ),
+      );
+      setSyllabus(
+        loadStorage(`lords_syllabus_${activePrincipalId}`, mockSyllabus),
+      );
+    }
+  }, [activePrincipalId]);
+
+  useEffect(() => {
+    if (activePrincipalId)
+      saveStorage(`lords_students_${activePrincipalId}`, students);
+  }, [students, activePrincipalId]);
+  useEffect(() => {
+    if (activePrincipalId)
+      saveStorage(`lords_notifications_${activePrincipalId}`, notifications);
+  }, [notifications, activePrincipalId]);
+  useEffect(() => {
+    if (activePrincipalId)
+      saveStorage(`lords_syllabus_${activePrincipalId}`, syllabus);
+  }, [syllabus, activePrincipalId]);
 
   const [principalPage, setPrincipalPage] = useState<PrincipalPage>("list");
   const [selectedStudentId, setSelectedStudentId] = useState<number | null>(
@@ -119,10 +153,17 @@ export default function App() {
     if (p !== "edit") setSelectedStudentId(null);
   };
 
-  const handleLogin = (r: string, studentId?: number) => {
+  const handleLogin = (r: string, studentId?: number, principalId?: string) => {
     setRole(r as Role);
+    if (r === "principal" && principalId) {
+      setActivePrincipalId(principalId);
+    }
     if (studentId !== undefined) setParentStudentId(studentId);
+    if (principalId && r === "parent") setParentPrincipalId(principalId);
   };
+
+  const activePrincipalName =
+    PRINCIPALS.find((p) => p.id === activePrincipalId)?.name ?? "Principal";
 
   if (!role) {
     return (
@@ -134,8 +175,27 @@ export default function App() {
   }
 
   if (role === "parent") {
-    const parentStudent =
-      students.find((s) => s.id === parentStudentId) ?? students[0];
+    // Find student across parent's principal data (or fallback)
+    let parentStudent = students.find((s) => s.id === parentStudentId);
+    if (!parentStudent && parentPrincipalId) {
+      const principalStudents = loadStorage(
+        `lords_students_${parentPrincipalId}`,
+        mockStudents,
+      );
+      parentStudent = principalStudents.find((s) => s.id === parentStudentId);
+    }
+    if (!parentStudent) parentStudent = mockStudents[0];
+
+    const parentNotifications = parentPrincipalId
+      ? loadStorage(
+          `lords_notifications_${parentPrincipalId}`,
+          mockNotifications,
+        )
+      : notifications;
+    const parentSyllabus = parentPrincipalId
+      ? loadStorage(`lords_syllabus_${parentPrincipalId}`, mockSyllabus)
+      : syllabus;
+
     return (
       <>
         <ParentLayout
@@ -143,12 +203,14 @@ export default function App() {
           onLogout={() => {
             setRole(null);
             setParentStudentId(null);
+            setParentPrincipalId(null);
           }}
         >
           <ParentView
             student={parentStudent}
-            notifications={notifications}
-            syllabus={syllabus}
+            notifications={parentNotifications}
+            syllabus={parentSyllabus}
+            principalId={parentPrincipalId ?? "default"}
           />
         </ParentLayout>
         <Toaster />
@@ -177,9 +239,11 @@ export default function App() {
           onPageChange={handlePrincipalPageChange}
           onLogout={() => {
             setRole(null);
+            setActivePrincipalId(null);
             setPrincipalPage("list");
           }}
           pageLabel={allNavLabels[principalPage] ?? "Student Management"}
+          principalName={activePrincipalName}
         >
           {principalPage === "list" && (
             <PrincipalDashboard
@@ -223,7 +287,10 @@ export default function App() {
             />
           )}
           {principalPage === "doubt-chat" && (
-            <PrincipalDoubtChat students={students} />
+            <PrincipalDoubtChat
+              students={students}
+              principalId={activePrincipalId ?? "default"}
+            />
           )}
         </PrincipalLayout>
         <Toaster />

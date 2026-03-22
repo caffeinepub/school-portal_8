@@ -36,6 +36,7 @@ interface Props {
   onLogout: () => void;
   children: React.ReactNode;
   pageLabel?: string;
+  principalName?: string;
 }
 
 export default function PrincipalLayout({
@@ -44,6 +45,7 @@ export default function PrincipalLayout({
   onLogout,
   children,
   pageLabel,
+  principalName = "Principal",
 }: Props) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -79,15 +81,17 @@ export default function PrincipalLayout({
           <div className="w-9 h-9 bg-indigo-500 rounded-lg flex items-center justify-center flex-shrink-0">
             <GraduationCap size={20} />
           </div>
-          <div>
-            <div className="font-bold text-sm leading-tight">
+          <div className="min-w-0">
+            <div className="font-bold text-sm leading-tight truncate">
               Lord's International School Group
             </div>
-            <div className="text-indigo-300 text-xs">Principal Portal</div>
+            <div className="text-indigo-300 text-xs font-medium mt-0.5">
+              {principalName}
+            </div>
           </div>
           <button
             type="button"
-            className="ml-auto lg:hidden"
+            className="ml-auto lg:hidden flex-shrink-0"
             onClick={() => setSidebarOpen(false)}
           >
             <X size={18} className="text-indigo-300" />
@@ -207,7 +211,7 @@ export default function PrincipalLayout({
               <ShieldCheck size={16} />
             </div>
             <span className="hidden sm:block text-sm text-gray-700 font-medium">
-              Principal
+              {principalName}
             </span>
           </div>
         </header>

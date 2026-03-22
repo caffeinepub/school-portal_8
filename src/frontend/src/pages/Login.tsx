@@ -1,6 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { Student } from "@/data/mockData";
+import { students as mockStudents } from "@/data/mockData";
+import { PRINCIPALS } from "@/data/principals";
 import {
   Eye,
   EyeOff,
@@ -15,11 +17,10 @@ import {
 import { useState } from "react";
 
 interface Props {
-  onLogin: (role: string, studentId?: number) => void;
+  onLogin: (role: string, studentId?: number, principalId?: string) => void;
   students: Student[];
 }
 
-const PRINCIPAL_PASSWORD = "principal123";
 const PARENT_PASSWORD = "parent123";
 
 const SCHOOL_BRANCHES = [
@@ -92,10 +93,28 @@ function GoogleLogo() {
       />
       <path
         fill="#EA4335"
-        d="M24 10.75c3.23 0 6.13 1.11 8.41 3.29l6.31-6.31C34.91 4.18 29.93 2 24 2 15.4 2 7.96 6.93 4.34 14.12l7.35 5.7c1.73-5.2 6.58-9.07 12.31-9.07z"
+        d="M24 10.75c3.23 0 6.13 1.11 8.41 3.29l6.31-6.31C34.91 4.18 29.93 2 24 2 15.4 2 7.96 6.93 4.34 14.12l7.35 5.7z"
       />
     </svg>
   );
+}
+
+// Search all principals' student lists to find a student by name
+function findStudentAcrossPrincipals(
+  name: string,
+): { student: Student; principalId: string } | null {
+  for (const p of PRINCIPALS) {
+    let list: Student[] = mockStudents;
+    try {
+      const raw = localStorage.getItem(`lords_students_${p.id}`);
+      if (raw) list = JSON.parse(raw) as Student[];
+    } catch {}
+    const found = list.find((s) =>
+      s.name.toLowerCase().includes(name.trim().toLowerCase()),
+    );
+    if (found) return { student: found, principalId: p.id };
+  }
+  return null;
 }
 
 export default function Login({ onLogin, students }: Props) {
@@ -103,11 +122,16 @@ export default function Login({ onLogin, students }: Props) {
   const [email, setEmail] = useState("");
   const [emailError, setEmailError] = useState("");
 
+  // Principal login state
   const [showPrincipalLogin, setShowPrincipalLogin] = useState(false);
+  const [selectedPrincipalId, setSelectedPrincipalId] = useState<string | null>(
+    null,
+  );
   const [principalPassword, setPrincipalPassword] = useState("");
   const [showPrincipalPass, setShowPrincipalPass] = useState(false);
   const [principalError, setPrincipalError] = useState("");
 
+  // Parent login state
   const [showParentSelector, setShowParentSelector] = useState(false);
   const [studentNameInput, setStudentNameInput] = useState("");
   const [parentPassword, setParentPassword] = useState("");
@@ -124,26 +148,42 @@ export default function Login({ onLogin, students }: Props) {
   }
 
   function handlePrincipalLogin() {
-    if (principalPassword === PRINCIPAL_PASSWORD) {
-      onLogin("principal");
+    if (!selectedPrincipalId) {
+      setPrincipalError("Please select a principal account.");
+      return;
+    }
+    const principal = PRINCIPALS.find((p) => p.id === selectedPrincipalId);
+    if (!principal) return;
+    if (principalPassword === principal.password) {
+      onLogin("principal", undefined, selectedPrincipalId);
     } else {
       setPrincipalError("Incorrect password. Please try again.");
     }
   }
 
   function handleParentLogin() {
-    const matched = students.find((s) =>
-      s.name.toLowerCase().includes(studentNameInput.trim().toLowerCase()),
-    );
-    if (!matched) {
-      setParentError("No student found with that name.");
+    const result = findStudentAcrossPrincipals(studentNameInput);
+    if (!result) {
+      // Fallback to current students prop
+      const matched = students.find((s) =>
+        s.name.toLowerCase().includes(studentNameInput.trim().toLowerCase()),
+      );
+      if (!matched) {
+        setParentError("No student found with that name.");
+        return;
+      }
+      if (parentPassword !== PARENT_PASSWORD) {
+        setParentError("Incorrect password. Please try again.");
+        return;
+      }
+      onLogin("parent", matched.id);
       return;
     }
     if (parentPassword !== PARENT_PASSWORD) {
       setParentError("Incorrect password. Please try again.");
       return;
     }
-    onLogin("parent", matched.id);
+    onLogin("parent", result.student.id, result.principalId);
   }
 
   if (step === "google") {
@@ -287,6 +327,7 @@ export default function Login({ onLogin, students }: Props) {
           </div>
 
           <div className="space-y-3">
+            {/* Demo Student */}
             <Button
               data-ocid="login.primary_button"
               variant="outline"
@@ -296,6 +337,7 @@ export default function Login({ onLogin, students }: Props) {
               Login as Demo Student
             </Button>
 
+            {/* Principal Login */}
             {!showPrincipalLogin ? (
               <Button
                 data-ocid="login.secondary_button"
@@ -304,6 +346,7 @@ export default function Login({ onLogin, students }: Props) {
                   setShowPrincipalLogin(true);
                   setPrincipalError("");
                   setPrincipalPassword("");
+                  setSelectedPrincipalId(null);
                 }}
                 className="w-full border-indigo-300 text-indigo-800 hover:bg-indigo-50 bg-indigo-50/50 font-semibold gap-2"
               >
@@ -311,40 +354,101 @@ export default function Login({ onLogin, students }: Props) {
                 Login as Principal
               </Button>
             ) : (
-              <div className="space-y-2 p-3 rounded-xl border border-indigo-200 bg-indigo-50/40">
-                <p className="text-xs font-medium text-indigo-700 mb-2 flex items-center gap-1">
-                  <ShieldCheck size={14} /> Enter Principal Password:
+              <div className="space-y-3 p-3 rounded-xl border border-indigo-200 bg-indigo-50/40">
+                <p className="text-xs font-semibold text-indigo-700 flex items-center gap-1">
+                  <ShieldCheck size={14} /> Select Principal Account:
                 </p>
-                <div className="relative">
-                  <Input
-                    type={showPrincipalPass ? "text" : "password"}
-                    placeholder="Principal password"
-                    value={principalPassword}
-                    onChange={(e) => {
-                      setPrincipalPassword(e.target.value);
-                      setPrincipalError("");
-                    }}
-                    onKeyDown={(e) =>
-                      e.key === "Enter" && handlePrincipalLogin()
-                    }
-                    className="bg-white pr-10"
-                    autoFocus
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPrincipalPass(!showPrincipalPass)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
-                  >
-                    {showPrincipalPass ? (
-                      <EyeOff size={16} />
-                    ) : (
-                      <Eye size={16} />
-                    )}
-                  </button>
+
+                {/* 5 principal cards */}
+                <div className="grid grid-cols-1 gap-1.5">
+                  {PRINCIPALS.map((p, idx) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      data-ocid={`login.principal_card.${idx + 1}`}
+                      onClick={() => {
+                        setSelectedPrincipalId(p.id);
+                        setPrincipalError("");
+                        setPrincipalPassword("");
+                      }}
+                      className={`flex items-center gap-3 px-3 py-2 rounded-lg border text-left transition-all ${
+                        selectedPrincipalId === p.id
+                          ? "border-indigo-500 bg-indigo-100 text-indigo-900"
+                          : "border-indigo-100 bg-white text-gray-700 hover:border-indigo-300 hover:bg-indigo-50"
+                      }`}
+                    >
+                      <div
+                        className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${
+                          selectedPrincipalId === p.id
+                            ? "bg-indigo-600 text-white"
+                            : "bg-indigo-100 text-indigo-600"
+                        }`}
+                      >
+                        {p.name.slice(-1)}
+                      </div>
+                      <span className="text-sm font-medium">{p.name}</span>
+                      {selectedPrincipalId === p.id && (
+                        <span className="ml-auto text-indigo-500 text-xs font-semibold">
+                          Selected
+                        </span>
+                      )}
+                    </button>
+                  ))}
                 </div>
-                {principalError && (
-                  <p className="text-xs text-red-500">{principalError}</p>
+
+                {/* Password input — only shown after selecting */}
+                {selectedPrincipalId && (
+                  <div className="space-y-2">
+                    <p className="text-xs text-indigo-600">
+                      Enter password for{" "}
+                      <strong>
+                        {
+                          PRINCIPALS.find((p) => p.id === selectedPrincipalId)
+                            ?.name
+                        }
+                      </strong>
+                      :
+                    </p>
+                    <div className="relative">
+                      <Input
+                        type={showPrincipalPass ? "text" : "password"}
+                        placeholder="Principal password"
+                        value={principalPassword}
+                        onChange={(e) => {
+                          setPrincipalPassword(e.target.value);
+                          setPrincipalError("");
+                        }}
+                        onKeyDown={(e) =>
+                          e.key === "Enter" && handlePrincipalLogin()
+                        }
+                        className="bg-white pr-10"
+                        data-ocid="login.input"
+                        autoFocus
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPrincipalPass(!showPrincipalPass)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
+                      >
+                        {showPrincipalPass ? (
+                          <EyeOff size={16} />
+                        ) : (
+                          <Eye size={16} />
+                        )}
+                      </button>
+                    </div>
+                  </div>
                 )}
+
+                {principalError && (
+                  <p
+                    className="text-xs text-red-500"
+                    data-ocid="login.error_state"
+                  >
+                    {principalError}
+                  </p>
+                )}
+
                 <div className="flex gap-2">
                   <Button
                     data-ocid="login.cancel_button"
@@ -352,6 +456,7 @@ export default function Login({ onLogin, students }: Props) {
                     size="sm"
                     onClick={() => {
                       setShowPrincipalLogin(false);
+                      setSelectedPrincipalId(null);
                       setPrincipalPassword("");
                       setPrincipalError("");
                     }}
@@ -362,7 +467,7 @@ export default function Login({ onLogin, students }: Props) {
                   <Button
                     data-ocid="login.confirm_button"
                     size="sm"
-                    disabled={!principalPassword}
+                    disabled={!selectedPrincipalId || !principalPassword}
                     onClick={handlePrincipalLogin}
                     className="flex-1 bg-indigo-600 hover:bg-indigo-700"
                   >
@@ -372,6 +477,7 @@ export default function Login({ onLogin, students }: Props) {
               </div>
             )}
 
+            {/* Parent Login */}
             {!showParentSelector ? (
               <Button
                 data-ocid="login.open_modal_button"

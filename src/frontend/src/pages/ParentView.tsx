@@ -30,6 +30,7 @@ interface Props {
   student: Student;
   notifications: Notification[];
   syllabus: SyllabusSubject[];
+  principalId?: string;
 }
 
 interface MediaItem {
@@ -105,6 +106,7 @@ export default function ParentView({
   student,
   notifications,
   syllabus,
+  principalId = "default",
 }: Props) {
   const presentCount = student.attendance.filter(
     (a) => a.status === "Present",
@@ -721,6 +723,18 @@ export default function ParentView({
               ))}
             </div>
           )}
+        </TabsContent>
+        {/* Doubt Chat */}
+        <TabsContent value="doubt-chat" className="mt-4">
+          <Card className="border-0 shadow-sm">
+            <CardContent className="p-4">
+              <ParentDoubtChat
+                studentId={student.id}
+                studentName={student.name}
+                principalId={principalId}
+              />
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>
