@@ -19,6 +19,7 @@ import OnlineClasses from "./pages/OnlineClasses";
 import ParentView from "./pages/ParentView";
 import PrincipalAnnouncementsPage from "./pages/PrincipalAnnouncementsPage";
 import PrincipalDashboard from "./pages/PrincipalDashboard";
+import PrincipalDoubtChat from "./pages/PrincipalDoubtChat";
 import PrincipalHolidaysPage from "./pages/PrincipalHolidaysPage";
 import PrincipalSchoolInfoEditor from "./pages/PrincipalSchoolInfoEditor";
 import PrincipalSyllabusPage from "./pages/PrincipalSyllabusPage";
@@ -40,7 +41,8 @@ type PrincipalPage =
   | "info"
   | "holidays"
   | "school-syllabus"
-  | "announcements";
+  | "announcements"
+  | "doubt-chat";
 
 export type Notification = (typeof mockNotifications)[number];
 export type SyllabusSubject = (typeof mockSyllabus)[number];
@@ -164,6 +166,7 @@ export default function App() {
       holidays: "Manage Holidays",
       "school-syllabus": "Manage Syllabus",
       announcements: "Announcements",
+      "doubt-chat": "Doubt Chat",
       edit: "Edit Student",
     };
 
@@ -218,6 +221,9 @@ export default function App() {
               notifications={notifications}
               setNotifications={setNotifications}
             />
+          )}
+          {principalPage === "doubt-chat" && (
+            <PrincipalDoubtChat students={students} />
           )}
         </PrincipalLayout>
         <Toaster />

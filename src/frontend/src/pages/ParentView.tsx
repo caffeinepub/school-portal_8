@@ -15,6 +15,7 @@ import {
   GraduationCap,
   Image,
   Info,
+  MessageCircle,
   Phone,
   Star,
   Trophy,
@@ -23,6 +24,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import ParentDoubtChat from "./ParentDoubtChat";
 
 interface Props {
   student: Student;
@@ -224,6 +226,13 @@ export default function ParentView({
             className="flex items-center gap-1.5"
           >
             <Image size={13} /> Media
+          </TabsTrigger>
+          <TabsTrigger
+            value="doubt-chat"
+            data-ocid="parent.tab"
+            className="flex items-center gap-1.5"
+          >
+            <MessageCircle size={13} /> Doubt Chat
           </TabsTrigger>
         </TabsList>
 

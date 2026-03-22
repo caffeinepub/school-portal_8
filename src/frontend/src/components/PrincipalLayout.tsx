@@ -6,6 +6,7 @@ import {
   LogOut,
   Megaphone,
   Menu,
+  MessageCircle,
   ShieldCheck,
   UserPlus,
   Users,
@@ -25,6 +26,10 @@ const schoolNavItems = [
   { id: "announcements", label: "Announcements", icon: Megaphone },
 ];
 
+const communicationNavItems = [
+  { id: "doubt-chat", label: "Doubt Chat", icon: MessageCircle },
+];
+
 interface Props {
   currentPage: string;
   onPageChange: (page: string) => void;
@@ -42,7 +47,11 @@ export default function PrincipalLayout({
 }: Props) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const allItems = [...studentNavItems, ...schoolNavItems];
+  const allItems = [
+    ...studentNavItems,
+    ...schoolNavItems,
+    ...communicationNavItems,
+  ];
   const currentLabel =
     pageLabel ??
     allItems.find((n) => n.id === currentPage)?.label ??
@@ -119,6 +128,33 @@ export default function PrincipalLayout({
             </p>
             <div className="space-y-0.5">
               {schoolNavItems.map(({ id, label, icon: Icon }) => (
+                <button
+                  type="button"
+                  key={id}
+                  data-ocid="principal_nav.link"
+                  onClick={() => {
+                    onPageChange(id);
+                    setSidebarOpen(false);
+                  }}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
+                    currentPage === id
+                      ? "bg-indigo-600 text-white font-medium"
+                      : "text-indigo-300 hover:bg-indigo-800 hover:text-white"
+                  }`}
+                >
+                  <Icon size={17} className="flex-shrink-0" />
+                  <span className="truncate">{label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <p className="text-indigo-400 text-xs font-semibold uppercase tracking-wider px-3 mb-1">
+              Communication
+            </p>
+            <div className="space-y-0.5">
+              {communicationNavItems.map(({ id, label, icon: Icon }) => (
                 <button
                   type="button"
                   key={id}

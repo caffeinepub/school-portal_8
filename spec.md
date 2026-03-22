@@ -1,27 +1,29 @@
 # Lord's International School Group
 
 ## Current State
-The Principal panel has a read-only "School Info" page (SchoolInfo.tsx) showing the three branch details. It shares the same component with the student view and has no editing capability.
+Parent panel has tabs: Profile, Marks, Fees, Attendance, Syllabus, Notices, Media.
+Principal panel has: All Students, Add Student, Edit School Info, Holidays, Syllabus, Announcements.
 
 ## Requested Changes (Diff)
 
 ### Add
-- `PrincipalSchoolInfoEditor.tsx`: A new full-featured editor page for the Principal panel that allows:
-  - Edit school group name, tagline, and "About" description
-  - Add/edit/delete branch cards with name, description, and contact details
-  - Upload a thumbnail/photo per branch (stored as base64 in localStorage)
-  - Add custom free-text or announcement sections
-  - Save all changes to localStorage; reflected in read-only SchoolInfo view
+- "Doubt Chat" tab in the Parent panel
+- Parents can type and send messages (doubts) to the principal
+- Parents can edit their already-sent messages
+- Principal panel gets a "Doubt Chat" section to view all messages from all parents
+- Messages stored in localStorage keyed by student id
 
 ### Modify
-- `App.tsx`: When principal navigates to "info", render `PrincipalSchoolInfoEditor` instead of `SchoolInfo`
-- `SchoolInfo.tsx`: Read from localStorage for editable content (group name, about text, branches, custom sections, branch photos) so student/parent view reflects principal edits
+- ParentView: add Doubt Chat tab
+- App.tsx: pass doubt chat messages state, add principal page for doubts
+- PrincipalLayout: add Doubt Chat nav item
 
 ### Remove
-- Nothing removed
+- Nothing
 
 ## Implementation Plan
-1. Create `PrincipalSchoolInfoEditor.tsx` with tabs: Overview, Branches, Custom Sections
-2. Use localStorage key `lords_school_info` for persisting all editable school info
-3. Update `SchoolInfo.tsx` to merge localStorage data over defaults
-4. Wire `PrincipalSchoolInfoEditor` into `App.tsx` for principal role
+1. Create `ParentDoubtChat.tsx` - chat UI for parents to send/edit messages
+2. Create `PrincipalDoubtChat.tsx` - view for principal to see all parent messages
+3. Update `ParentView.tsx` to include Doubt Chat tab
+4. Update `App.tsx` to add doubt chat page to principal nav
+5. Update `PrincipalLayout.tsx` to add Doubt Chat nav link
