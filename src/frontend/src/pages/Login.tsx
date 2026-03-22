@@ -56,7 +56,9 @@ export default function Login({ onLogin, students }: Props) {
           <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-2xl mb-4">
             <GraduationCap size={32} className="text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">Lord's Group</h1>
+          <h1 className="text-2xl font-bold text-gray-900">
+            Lord's International School Group
+          </h1>
           <p className="text-gray-500 text-sm mt-1">
             Student Management Portal
           </p>
@@ -243,7 +245,8 @@ export default function Login({ onLogin, students }: Props) {
         </div>
 
         <p className="text-center text-xs text-gray-400 mt-6">
-          © {new Date().getFullYear()} Lord's Group. All rights reserved.
+          © {new Date().getFullYear()} Lord's International School Group. All
+          rights reserved.
         </p>
       </div>
     </div>

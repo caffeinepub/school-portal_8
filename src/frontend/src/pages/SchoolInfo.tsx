@@ -4,7 +4,9 @@ export default function SchoolInfo() {
   return (
     <div className="space-y-6 max-w-3xl">
       <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl p-6 text-white">
-        <h2 className="text-2xl font-bold mb-1">Lord's Group</h2>
+        <h2 className="text-2xl font-bold mb-1">
+          Lord's International School Group
+        </h2>
         <p className="text-blue-200">
           Established 1985 &bull; Excellence in Education
         </p>
@@ -13,11 +15,12 @@ export default function SchoolInfo() {
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
         <h3 className="font-semibold text-gray-800 mb-3">About the School</h3>
         <p className="text-sm text-gray-600 leading-relaxed">
-          Lord's Group is one of the premier educational institutions, committed
-          to providing quality education and holistic development of students.
-          With state-of-the-art facilities, experienced faculty, and a focus on
-          both academics and extracurricular activities, Lord's Group has been
-          shaping young minds for over four decades.
+          Lord's International School Group is one of the premier educational
+          institutions, committed to providing quality education and holistic
+          development of students. With state-of-the-art facilities, experienced
+          faculty, and a focus on both academics and extracurricular activities,
+          Lord's International School Group has been shaping young minds for
+          over four decades.
         </p>
       </div>
 
@@ -32,14 +35,14 @@ export default function SchoolInfo() {
           <div>
             <p className="font-medium text-gray-800">Dr. Sunita Kapoor</p>
             <p className="text-xs text-gray-400 mb-3">
-              Principal, Lord's Group
+              Principal, Lord's International School Group
             </p>
             <p className="text-sm text-gray-600 leading-relaxed">
               "Education is not just about academic excellence but about
               building character, fostering creativity, and developing a love
-              for learning. At Lord's Group, we strive to create an environment
-              where every student can discover their potential and grow into
-              responsible citizens."
+              for learning. At Lord's International School Group, we strive to
+              create an environment where every student can discover their
+              potential and grow into responsible citizens."
             </p>
           </div>
         </div>

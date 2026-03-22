@@ -1,14 +1,17 @@
 import type { Notification, SyllabusSubject } from "@/App";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Student } from "@/data/mockData";
+import { getMediaBlobUrl } from "@/utils/mediaStorage";
 import {
   AlertCircle,
   BookOpen,
   Calendar,
   CheckCircle2,
   Clock,
+  Download,
   GraduationCap,
   Image,
   Info,
@@ -19,7 +22,7 @@ import {
   Video,
   XCircle,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 interface Props {
   student: Student;
@@ -29,7 +32,7 @@ interface Props {
 
 interface MediaItem {
   id: string;
-  type: "photo" | "video";
+  fileType: "photo" | "video";
   url: string;
   caption: string;
   uploadedAt: string;
@@ -81,6 +84,21 @@ function loadMedia(studentId: number): MediaItem[] {
   return [];
 }
 
+function downloadMedia(
+  blobUrl: string,
+  fileType: "photo" | "video",
+  caption: string,
+) {
+  const ext = fileType === "photo" ? "jpg" : "mp4";
+  const filename = caption ? `${caption}.${ext}` : `${fileType}.${ext}`;
+  const a = document.createElement("a");
+  a.href = blobUrl;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
 export default function ParentView({
   student,
   notifications,
@@ -103,6 +121,23 @@ export default function ParentView({
   );
 
   const [media] = useState<MediaItem[]>(() => loadMedia(student.id));
+  const [blobUrls, setBlobUrls] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      for (const item of media) {
+        const url = await getMediaBlobUrl(item.id);
+        if (url && !cancelled) {
+          setBlobUrls((prev) => ({ ...prev, [item.id]: url }));
+        }
+      }
+    };
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [media]);
 
   return (
     <div className="space-y-6">
@@ -605,24 +640,30 @@ export default function ParentView({
                   data-ocid={`media.item.${idx + 1}`}
                 >
                   <div className="relative bg-gray-100">
-                    {item.type === "photo" ? (
-                      <img
-                        src={item.url}
-                        alt={item.caption || "Shared photo"}
-                        className="w-full h-48 object-cover"
-                      />
+                    {blobUrls[item.id] ? (
+                      item.fileType === "photo" ? (
+                        <img
+                          src={blobUrls[item.id]}
+                          alt={item.caption || "Shared photo"}
+                          className="w-full h-48 object-cover"
+                        />
+                      ) : (
+                        <video
+                          src={blobUrls[item.id]}
+                          controls
+                          className="w-full h-48 object-contain bg-black"
+                        >
+                          <track kind="captions" />
+                        </video>
+                      )
                     ) : (
-                      <video
-                        src={item.url}
-                        controls
-                        className="w-full h-48 object-cover bg-black"
-                      >
-                        <track kind="captions" />
-                      </video>
+                      <div className="w-full h-48 flex items-center justify-center bg-gray-200">
+                        <div className="w-6 h-6 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+                      </div>
                     )}
                     <div className="absolute top-2 right-2">
                       <Badge className="border-0 text-xs gap-1 bg-black/60 text-white">
-                        {item.type === "photo" ? (
+                        {item.fileType === "photo" ? (
                           <>
                             <Image size={10} /> Photo
                           </>
@@ -640,13 +681,32 @@ export default function ParentView({
                         {item.caption}
                       </p>
                     )}
-                    <p className="text-xs text-gray-400">
-                      {new Date(item.uploadedAt).toLocaleDateString("en-IN", {
-                        day: "numeric",
-                        month: "short",
-                        year: "numeric",
-                      })}
-                    </p>
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs text-gray-400">
+                        {new Date(item.uploadedAt).toLocaleDateString("en-IN", {
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                        })}
+                      </p>
+                      {blobUrls[item.id] && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 text-xs gap-1.5 border-indigo-200 text-indigo-600 hover:bg-indigo-50"
+                          onClick={() =>
+                            downloadMedia(
+                              blobUrls[item.id],
+                              item.fileType,
+                              item.caption,
+                            )
+                          }
+                        >
+                          <Download size={12} />
+                          Download
+                        </Button>
+                      )}
+                    </div>
                   </CardContent>
                 </Card>
               ))}

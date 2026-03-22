@@ -1,5 +1,6 @@
+import { getMediaBlobUrl } from "@/utils/mediaStorage";
 import { Film, Image as ImageIcon, PlayCircle } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface MediaItem {
   id: string;
@@ -14,6 +15,8 @@ const DEMO_STUDENT_ID = 1;
 
 export default function StudentMedia() {
   const [media, setMedia] = useState<MediaItem[]>([]);
+  const [blobUrls, setBlobUrls] = useState<Record<string, string>>({});
+  const loadedIds = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     try {
@@ -21,6 +24,27 @@ export default function StudentMedia() {
       if (raw) setMedia(JSON.parse(raw));
     } catch {}
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    const idsToLoad = media
+      .map((item) => item.id)
+      .filter((id) => !loadedIds.current.has(id));
+    if (idsToLoad.length === 0) return;
+    for (const id of idsToLoad) loadedIds.current.add(id);
+    const load = async () => {
+      for (const id of idsToLoad) {
+        const url = await getMediaBlobUrl(id);
+        if (url && !cancelled) {
+          setBlobUrls((prev) => ({ ...prev, [id]: url }));
+        }
+      }
+    };
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [media]);
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
@@ -61,20 +85,26 @@ export default function StudentMedia() {
               className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm"
             >
               <div className="relative bg-gray-100 aspect-video">
-                {item.fileType === "photo" ? (
-                  <img
-                    src={item.url}
-                    alt={item.caption || "Photo"}
-                    className="w-full h-full object-cover"
-                  />
+                {blobUrls[item.id] ? (
+                  item.fileType === "photo" ? (
+                    <img
+                      src={blobUrls[item.id]}
+                      alt={item.caption || "Photo"}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <video
+                      src={blobUrls[item.id]}
+                      controls
+                      className="w-full h-full object-contain"
+                    >
+                      <track kind="captions" />
+                    </video>
+                  )
                 ) : (
-                  <video
-                    src={item.url}
-                    controls
-                    className="w-full h-full object-cover"
-                  >
-                    <track kind="captions" />
-                  </video>
+                  <div className="w-full h-full flex items-center justify-center bg-gray-200">
+                    <div className="w-6 h-6 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+                  </div>
                 )}
                 <div className="absolute top-2 right-2">
                   <span

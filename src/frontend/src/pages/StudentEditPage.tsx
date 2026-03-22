@@ -25,6 +25,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Student } from "@/data/mockData";
 import { useActor } from "@/hooks/useActor";
 import {
+  deleteMediaBlob,
+  getMediaBlobUrl,
+  saveMediaBlob,
+} from "@/utils/mediaStorage";
+import {
   ArrowLeft,
   Edit2,
   Film,
@@ -34,7 +39,7 @@ import {
   Trash2,
   Upload,
 } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 interface MediaItem {
@@ -58,15 +63,6 @@ function saveMedia(studentId: number, items: MediaItem[]) {
   try {
     localStorage.setItem(`lords_media_${studentId}`, JSON.stringify(items));
   } catch {}
-}
-
-function fileToBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
 }
 
 interface Props {
@@ -96,6 +92,27 @@ export default function StudentEditPage({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const replaceInputRef = useRef<HTMLInputElement>(null);
   const [replacingId, setReplacingId] = useState<string | null>(null);
+  const [blobUrls, setBlobUrls] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      for (const item of media) {
+        const url = await getMediaBlobUrl(item.id);
+        if (url && !cancelled) {
+          setBlobUrls((prev) => {
+            if (prev[item.id]) return prev;
+            return { ...prev, [item.id]: url };
+          });
+        }
+      }
+    };
+    load();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [media]);
 
   function setField<K extends keyof Student>(key: K, value: Student[K]) {
     setDraft((prev) => ({ ...prev, [key]: value }));
@@ -208,31 +225,34 @@ export default function StudentEditPage({
   }
 
   async function handleUploadMedia(file: File, replaceItem?: MediaItem) {
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("File is too large (max 5MB). Please choose a smaller file.");
-      return;
-    }
     const isVideo = file.type.startsWith("video/");
     const fileType: "photo" | "video" = isVideo ? "video" : "photo";
     try {
-      const dataUrl = await fileToBase64(file);
       const blobReferenceId = crypto.randomUUID();
       const newItem: MediaItem = {
         id: blobReferenceId,
         blobReferenceId,
-        url: dataUrl,
+        url: "",
         fileType,
         caption: replaceItem ? replaceItem.caption : "",
         uploadedAt: new Date().toISOString(),
       };
+
+      if (replaceItem) {
+        await deleteMediaBlob(replaceItem.id);
+        actor?.deleteMedia(replaceItem.blobReferenceId).catch(() => {});
+      }
+      await saveMediaBlob(blobReferenceId, file);
+
+      // Generate blob URL and store in state
+      const objUrl = URL.createObjectURL(file);
+      setBlobUrls((prev) => ({ ...prev, [blobReferenceId]: objUrl }));
 
       let updatedMedia: MediaItem[];
       if (replaceItem) {
         updatedMedia = media.map((m) =>
           m.id === replaceItem.id ? newItem : m,
         );
-        // Delete old from backend, add new
-        actor?.deleteMedia(replaceItem.blobReferenceId).catch(() => {});
       } else {
         updatedMedia = [...media, newItem];
       }
@@ -252,7 +272,7 @@ export default function StudentEditPage({
 
       toast.success(replaceItem ? "Media replaced!" : "Media uploaded!");
     } catch {
-      toast.error("Failed to process file.");
+      toast.error("Failed to save media. Storage quota may be exceeded.");
     }
   }
 
@@ -260,7 +280,13 @@ export default function StudentEditPage({
     const updatedMedia = media.filter((m) => m.id !== item.id);
     setMedia(updatedMedia);
     saveMedia(student.id, updatedMedia);
+    deleteMediaBlob(item.id).catch(() => {});
     actor?.deleteMedia(item.blobReferenceId).catch(() => {});
+    setBlobUrls((prev) => {
+      const next = { ...prev };
+      delete next[item.id];
+      return next;
+    });
     toast.success("Media deleted.");
   }
 
@@ -917,7 +943,7 @@ export default function StudentEditPage({
                   Click "Upload Media" to add photos or videos for this student.
                 </p>
                 <p className="text-gray-400 text-xs mt-3">
-                  Max file size: 5MB per file
+                  Max file size: 100MB per file
                 </p>
               </div>
             ) : (
@@ -929,20 +955,26 @@ export default function StudentEditPage({
                     className="bg-gray-50 rounded-xl border border-gray-200 overflow-hidden group"
                   >
                     <div className="relative bg-black aspect-video">
-                      {item.fileType === "photo" ? (
-                        <img
-                          src={item.url}
-                          alt={item.caption || "Photo"}
-                          className="w-full h-full object-cover"
-                        />
+                      {blobUrls[item.id] ? (
+                        item.fileType === "photo" ? (
+                          <img
+                            src={blobUrls[item.id]}
+                            alt={item.caption || "Photo"}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <video
+                            src={blobUrls[item.id]}
+                            controls
+                            className="w-full h-full object-contain"
+                          >
+                            <track kind="captions" />
+                          </video>
+                        )
                       ) : (
-                        <video
-                          src={item.url}
-                          controls
-                          className="w-full h-full"
-                        >
-                          <track kind="captions" />
-                        </video>
+                        <div className="w-full h-full flex items-center justify-center bg-gray-200">
+                          <div className="w-6 h-6 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+                        </div>
                       )}
                       <div className="absolute top-2 left-2">
                         <span

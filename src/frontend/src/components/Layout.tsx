@@ -76,7 +76,9 @@ export default function Layout({
             <GraduationCap size={20} />
           </div>
           <div>
-            <div className="font-bold text-sm leading-tight">Lord's Group</div>
+            <div className="font-bold text-sm leading-tight">
+              Lord's International School Group
+            </div>
             <div className="text-gray-400 text-xs">Student Portal</div>
           </div>
           <button
