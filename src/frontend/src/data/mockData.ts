@@ -42,6 +42,7 @@ export interface Student {
   attendance: StudentAttendance[];
   rank: number;
   password?: string;
+  parentPassword?: string;
 }
 
 export const students: Student[] = [

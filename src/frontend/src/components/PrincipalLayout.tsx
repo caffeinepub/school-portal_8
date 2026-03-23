@@ -3,7 +3,6 @@ import {
   Calendar,
   GraduationCap,
   Info,
-  KeyRound,
   LayoutGrid,
   LogOut,
   Megaphone,
@@ -33,10 +32,6 @@ const communicationNavItems = [
   { id: "doubt-chat", label: "Doubt Chat", icon: MessageCircle },
 ];
 
-const settingsNavItems = [
-  { id: "parent-settings", label: "Parent Settings", icon: KeyRound },
-];
-
 interface Props {
   currentPage: string;
   onPageChange: (page: string) => void;
@@ -60,7 +55,6 @@ export default function PrincipalLayout({
     ...studentNavItems,
     ...schoolNavItems,
     ...communicationNavItems,
-    ...settingsNavItems,
   ];
   const currentLabel =
     pageLabel ??
@@ -152,15 +146,6 @@ export default function PrincipalLayout({
             </p>
             <div className="space-y-0.5">
               {renderNavSection(communicationNavItems)}
-            </div>
-          </div>
-
-          <div>
-            <p className="text-indigo-400 text-xs font-semibold uppercase tracking-wider px-3 mb-1">
-              Settings
-            </p>
-            <div className="space-y-0.5">
-              {renderNavSection(settingsNavItems)}
             </div>
           </div>
         </nav>

@@ -67,6 +67,7 @@ function saveMedia(studentId: number, items: MediaItem[]) {
 
 interface Props {
   student: Student;
+  principalId: string;
   onUpdateStudent: (student: Student) => void;
   onDeleteStudent: (id: number) => void;
   onBack: () => void;
@@ -74,6 +75,7 @@ interface Props {
 
 export default function StudentEditPage({
   student,
+  principalId,
   onUpdateStudent,
   onDeleteStudent,
   onBack,
@@ -221,6 +223,12 @@ export default function StudentEditPage({
 
   function handleSave() {
     onUpdateStudent(draft);
+    if (draft.parentPassword) {
+      localStorage.setItem(
+        `lords_parent_password_student_${draft.id}_${principalId}`,
+        draft.parentPassword,
+      );
+    }
     toast.success(`${draft.name}'s record saved permanently!`);
   }
 
@@ -456,6 +464,22 @@ export default function StudentEditPage({
                 />
                 <p className="text-xs text-gray-500 mt-1">
                   Students use this password to log in to their dashboard.
+                </p>
+              </div>
+              <div className="sm:col-span-2">
+                <Label className="text-sm font-medium text-gray-700 mb-1 block">
+                  Parent Login Password
+                </Label>
+                <Input
+                  data-ocid="student_edit.parent_password_input"
+                  type="text"
+                  placeholder="Set a password for this student's parent"
+                  value={draft.parentPassword ?? ""}
+                  onChange={(e) => setField("parentPassword", e.target.value)}
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Parent uses this password to log in and view only this
+                  student's account.
                 </p>
               </div>
             </div>

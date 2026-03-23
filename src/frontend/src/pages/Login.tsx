@@ -23,7 +23,7 @@ interface Props {
   students: Student[];
 }
 
-const PARENT_PASSWORD = "parent123";
+const _PARENT_PASSWORD = "parent123";
 
 const SCHOOL_BRANCHES = [
   {
@@ -248,31 +248,30 @@ export default function Login({ onLogin, students }: Props) {
       setParentError("Please enter your password.");
       return;
     }
-    const matched: { student: Student; principalId: string }[] = [];
+
+    // Search all principals' students for a matching parentPassword
     for (const p of PRINCIPALS) {
-      const effectivePassword =
-        localStorage.getItem(`lords_parent_password_${p.id}`) ??
-        PARENT_PASSWORD;
-      if (parentPassword === effectivePassword) {
-        let list: Student[] = mockStudents;
-        try {
-          const raw = localStorage.getItem(`lords_students_${p.id}`);
-          if (raw) list = JSON.parse(raw) as Student[];
-        } catch {}
-        for (const s of list) matched.push({ student: s, principalId: p.id });
+      let list: Student[] = mockStudents;
+      try {
+        const raw = localStorage.getItem(`lords_students_${p.id}`);
+        if (raw) list = JSON.parse(raw) as Student[];
+      } catch {}
+
+      for (const s of list) {
+        const storedParentPw = localStorage.getItem(
+          `lords_parent_password_student_${s.id}_${p.id}`,
+        );
+        const effectivePw = storedParentPw ?? s.parentPassword ?? null;
+
+        if (effectivePw && parentPassword === effectivePw) {
+          setParentError("");
+          onLogin("parent", s.id, p.id);
+          return;
+        }
       }
     }
-    if (matched.length === 0 && parentPassword === PARENT_PASSWORD) {
-      for (const s of students)
-        matched.push({ student: s, principalId: "default" });
-    }
-    if (matched.length === 0) {
-      setParentError("Incorrect password. Please try again.");
-      return;
-    }
-    setParentError("");
-    setParentStudentOptions(matched);
-    setParentSelectStep(true);
+
+    setParentError("Incorrect password. Please try again.");
   }
 
   function handleParentSelectStudent(student: Student, principalId: string) {

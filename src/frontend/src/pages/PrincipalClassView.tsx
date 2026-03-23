@@ -1,9 +1,23 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import type { Student } from "@/data/mockData";
-import { Edit, LayoutGrid, Plus, Search, Users } from "lucide-react";
+import {
+  Edit,
+  Eye,
+  EyeOff,
+  KeyRound,
+  LayoutGrid,
+  Loader2,
+  Lock,
+  Plus,
+  Save,
+  Search,
+  Users,
+} from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 
 const PREDEFINED_CLASSES = [
   "1-A",
@@ -36,16 +50,47 @@ interface Props {
   students: Student[];
   onEditStudent: (id: number) => void;
   onAddStudentToClass: (className: string) => void;
+  principalId: string;
 }
 
 export default function PrincipalClassView({
   students,
   onEditStudent,
   onAddStudentToClass,
+  principalId,
 }: Props) {
   const [search, setSearch] = useState("");
 
-  // Build class list: predefined + any custom classes from students
+  // Parent password state
+  const storageKey = `lords_parent_password_${principalId}`;
+  const currentSaved = localStorage.getItem(storageKey) ?? "parent123";
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [showCurrent, setShowCurrent] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  function handleSaveParentPassword() {
+    if (!newPassword.trim()) {
+      toast.error("New password cannot be empty.");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast.error("Passwords do not match.");
+      return;
+    }
+    setSaving(true);
+    setTimeout(() => {
+      localStorage.setItem(storageKey, newPassword);
+      setSaving(false);
+      setNewPassword("");
+      setConfirmPassword("");
+      toast.success("Parent login password updated!");
+    }, 600);
+  }
+
+  // Build class list
   const studentClasses = [
     ...new Set(students.map((s) => s.class).filter(Boolean)),
   ];
@@ -66,8 +111,6 @@ export default function PrincipalClassView({
 
   const studentsByClass = (cls: string) =>
     filteredStudents.filter((s) => s.class === cls);
-
-  // When searching, only show classes that have matching students
   const visibleClasses = search.trim()
     ? allClasses.filter((cls) => studentsByClass(cls).length > 0)
     : allClasses;
@@ -82,7 +125,7 @@ export default function PrincipalClassView({
           </div>
           <div>
             <h2 className="text-xl font-bold text-gray-900">
-              Class-wise Students
+              Students Management
             </h2>
             <p className="text-sm text-gray-500">
               {students.length} total students across {allClasses.length}{" "}
@@ -99,6 +142,122 @@ export default function PrincipalClassView({
             onChange={(e) => setSearch(e.target.value)}
             className="pl-9"
           />
+        </div>
+      </div>
+
+      {/* Parent Login Password Section */}
+      <div className="bg-white rounded-xl border border-indigo-200 shadow-sm overflow-hidden">
+        <div className="flex items-center gap-3 px-5 py-3 bg-indigo-50 border-b border-indigo-100">
+          <Lock className="h-4 w-4 text-indigo-600" />
+          <h3 className="font-semibold text-indigo-900">
+            Parent Login Password
+          </h3>
+          <Badge
+            variant="secondary"
+            className="bg-indigo-100 text-indigo-700 border-0 text-xs"
+          >
+            Edit by Principal
+          </Badge>
+        </div>
+        <div className="p-5">
+          <p className="text-sm text-gray-500 mb-4">
+            Parents use this password to log in and view their child's records.
+            Update it here and share with parents.
+          </p>
+          <div className="grid sm:grid-cols-3 gap-4 items-end">
+            {/* Current */}
+            <div className="space-y-1">
+              <Label className="text-xs text-gray-500">Current Password</Label>
+              <div className="relative">
+                <Input
+                  data-ocid="class_view.parent_current_password"
+                  type={showCurrent ? "text" : "password"}
+                  readOnly
+                  value={currentSaved}
+                  className="pr-10 bg-gray-50 cursor-default text-sm"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowCurrent((v) => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  {showCurrent ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
+            </div>
+            {/* New */}
+            <div className="space-y-1">
+              <Label className="text-xs text-gray-500">New Password</Label>
+              <div className="relative">
+                <Input
+                  data-ocid="class_view.parent_new_password"
+                  type={showNew ? "text" : "password"}
+                  placeholder="New password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="pr-10 text-sm"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowNew((v) => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  {showNew ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
+            </div>
+            {/* Confirm */}
+            <div className="space-y-1">
+              <Label className="text-xs text-gray-500">Confirm Password</Label>
+              <div className="relative">
+                <Input
+                  data-ocid="class_view.parent_confirm_password"
+                  type={showConfirm ? "text" : "password"}
+                  placeholder="Re-enter password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="pr-10 text-sm"
+                  onKeyDown={(e) =>
+                    e.key === "Enter" && handleSaveParentPassword()
+                  }
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirm((v) => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  {showConfirm ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+          <div className="mt-4">
+            <Button
+              data-ocid="class_view.parent_password_save"
+              onClick={handleSaveParentPassword}
+              disabled={saving}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white gap-2"
+            >
+              {saving ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="h-4 w-4" />
+              )}
+              {saving ? "Saving…" : "Update Parent Password"}
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -199,6 +358,15 @@ export default function PrincipalClassView({
                             <p className="font-semibold text-gray-700">
                               {student.rank || "—"}
                             </p>
+                          </div>
+                          <div className="text-center">
+                            <p className="text-xs text-gray-400">Password</p>
+                            <div className="flex items-center gap-1">
+                              <KeyRound className="h-3 w-3 text-indigo-400" />
+                              <p className="font-semibold text-gray-500 text-xs">
+                                {student.password ? "Set" : "Default"}
+                              </p>
+                            </div>
                           </div>
                         </div>
                         <Button

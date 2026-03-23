@@ -23,7 +23,6 @@ import PrincipalClassView from "./pages/PrincipalClassView";
 import PrincipalDashboard from "./pages/PrincipalDashboard";
 import PrincipalDoubtChat from "./pages/PrincipalDoubtChat";
 import PrincipalHolidaysPage from "./pages/PrincipalHolidaysPage";
-import PrincipalParentSettings from "./pages/PrincipalParentSettings";
 import PrincipalSchoolInfoEditor from "./pages/PrincipalSchoolInfoEditor";
 import PrincipalSyllabusPage from "./pages/PrincipalSyllabusPage";
 import Profile from "./pages/Profile";
@@ -46,8 +45,7 @@ type PrincipalPage =
   | "school-syllabus"
   | "announcements"
   | "doubt-chat"
-  | "class-view"
-  | "parent-settings";
+  | "class-view";
 
 export type Notification = (typeof mockNotifications)[number];
 export type SyllabusSubject = (typeof mockSyllabus)[number];
@@ -260,7 +258,6 @@ export default function App() {
       announcements: "Announcements",
       "doubt-chat": "Doubt Chat",
       "class-view": "Class View",
-      "parent-settings": "Parent Settings",
       edit: "Edit Student",
     };
 
@@ -287,6 +284,7 @@ export default function App() {
           {principalPage === "edit" && selectedStudent && (
             <StudentEditPage
               student={selectedStudent}
+              principalId={activePrincipalId ?? "default"}
               onUpdateStudent={handleUpdateStudent}
               onDeleteStudent={handleDeleteStudent}
               onBack={() => setPrincipalPage("list")}
@@ -333,12 +331,7 @@ export default function App() {
               students={students}
               onEditStudent={handleEditStudent}
               onAddStudentToClass={handleAddStudentToClass}
-            />
-          )}
-          {principalPage === "parent-settings" && (
-            <PrincipalParentSettings
               principalId={activePrincipalId ?? "default"}
-              students={students}
             />
           )}
         </PrincipalLayout>
