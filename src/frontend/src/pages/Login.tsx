@@ -8,10 +8,12 @@ import {
   EyeOff,
   Globe,
   GraduationCap,
+  LogIn,
   Mail,
   MapPin,
   Phone,
   ShieldCheck,
+  UserPlus,
   Users,
 } from "lucide-react";
 import { useState } from "react";
@@ -68,35 +70,22 @@ const BRANCH_OCIDS: Record<string, string> = {
   sadulpur: "school.item.3",
 };
 
-function GoogleLogo() {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 48 48"
-      width="40"
-      height="40"
-      role="img"
-      aria-label="Google"
-    >
-      <title>Google</title>
-      <path
-        fill="#4285F4"
-        d="M45.12 24.5c0-1.56-.14-3.06-.4-4.5H24v8.51h11.84c-.51 2.75-2.06 5.08-4.39 6.64v5.52h7.11c4.16-3.83 6.56-9.47 6.56-16.17z"
-      />
-      <path
-        fill="#34A853"
-        d="M24 46c5.94 0 10.92-1.97 14.56-5.33l-7.11-5.52c-1.97 1.32-4.49 2.1-7.45 2.1-5.73 0-10.58-3.87-12.31-9.07H4.34v5.7C7.96 41.07 15.4 46 24 46z"
-      />
-      <path
-        fill="#FBBC05"
-        d="M11.69 28.18C11.25 26.86 11 25.45 11 24s.25-2.86.69-4.18v-5.7H4.34C2.85 17.09 2 20.45 2 24c0 3.55.85 6.91 2.34 9.88l7.35-5.7z"
-      />
-      <path
-        fill="#EA4335"
-        d="M24 10.75c3.23 0 6.13 1.11 8.41 3.29l6.31-6.31C34.91 4.18 29.93 2 24 2 15.4 2 7.96 6.93 4.34 14.12l7.35 5.7z"
-      />
-    </svg>
-  );
+interface AccountRecord {
+  name: string;
+  email: string;
+  password: string;
+}
+
+function getAccounts(): AccountRecord[] {
+  try {
+    const raw = localStorage.getItem("lords_accounts");
+    if (raw) return JSON.parse(raw) as AccountRecord[];
+  } catch {}
+  return [];
+}
+
+function saveAccounts(accounts: AccountRecord[]) {
+  localStorage.setItem("lords_accounts", JSON.stringify(accounts));
 }
 
 // Search all principals' student lists to find a student by name
@@ -118,9 +107,18 @@ function findStudentAcrossPrincipals(
 }
 
 export default function Login({ onLogin, students }: Props) {
-  const [step, setStep] = useState<"google" | "portal">("google");
-  const [email, setEmail] = useState("");
-  const [emailError, setEmailError] = useState("");
+  const [step, setStep] = useState<"account" | "portal">("account");
+  const [authMode, setAuthMode] = useState<"signin" | "signup">("signup");
+
+  // Account form state
+  const [acName, setAcName] = useState("");
+  const [acEmail, setAcEmail] = useState("");
+  const [acPassword, setAcPassword] = useState("");
+  const [acConfirm, setAcConfirm] = useState("");
+  const [showAcPass, setShowAcPass] = useState(false);
+  const [showAcConfirm, setShowAcConfirm] = useState(false);
+  const [acError, setAcError] = useState("");
+  const [signedInName, setSignedInName] = useState("");
 
   // Principal login state
   const [showPrincipalLogin, setShowPrincipalLogin] = useState(false);
@@ -139,18 +137,69 @@ export default function Login({ onLogin, students }: Props) {
   const [studentLoginError, setStudentLoginError] = useState("");
 
   // Parent login state
-  const [showParentSelector, setShowParentSelector] = useState(false);
-  const [studentNameInput, setStudentNameInput] = useState("");
+  const [showParentLogin, setShowParentLogin] = useState(false);
   const [parentPassword, setParentPassword] = useState("");
   const [showParentPass, setShowParentPass] = useState(false);
   const [parentError, setParentError] = useState("");
+  const [parentStudentOptions, setParentStudentOptions] = useState<
+    { student: Student; principalId: string }[]
+  >([]);
+  const [parentSelectStep, setParentSelectStep] = useState(false);
 
-  function handleGoogleNext() {
-    if (!email.trim() || !email.includes("@")) {
-      setEmailError("Enter a valid email or phone number.");
+  function handleSignUp() {
+    setAcError("");
+    if (!acName.trim()) {
+      setAcError("Please enter your full name.");
       return;
     }
-    setEmailError("");
+    if (!acEmail.trim() || !acEmail.includes("@")) {
+      setAcError("Please enter a valid email address.");
+      return;
+    }
+    if (acPassword.length < 6) {
+      setAcError("Password must be at least 6 characters.");
+      return;
+    }
+    if (acPassword !== acConfirm) {
+      setAcError("Passwords do not match.");
+      return;
+    }
+    const accounts = getAccounts();
+    if (accounts.find((a) => a.email.toLowerCase() === acEmail.toLowerCase())) {
+      setAcError("An account with this email already exists. Please sign in.");
+      return;
+    }
+    accounts.push({
+      name: acName.trim(),
+      email: acEmail.trim(),
+      password: acPassword,
+    });
+    saveAccounts(accounts);
+    setSignedInName(acName.trim());
+    setStep("portal");
+  }
+
+  function handleSignIn() {
+    setAcError("");
+    if (!acEmail.trim()) {
+      setAcError("Please enter your email.");
+      return;
+    }
+    if (!acPassword) {
+      setAcError("Please enter your password.");
+      return;
+    }
+    const accounts = getAccounts();
+    const found = accounts.find(
+      (a) =>
+        a.email.toLowerCase() === acEmail.toLowerCase() &&
+        a.password === acPassword,
+    );
+    if (!found) {
+      setAcError("Incorrect email or password.");
+      return;
+    }
+    setSignedInName(found.name);
     setStep("portal");
   }
 
@@ -194,139 +243,300 @@ export default function Login({ onLogin, students }: Props) {
     onLogin("student", result.student.id, result.principalId);
   }
 
-  function handleParentLogin() {
-    const result = findStudentAcrossPrincipals(studentNameInput);
-    if (!result) {
-      // Fallback to current students prop
-      const matched = students.find((s) =>
-        s.name.toLowerCase().includes(studentNameInput.trim().toLowerCase()),
-      );
-      if (!matched) {
-        setParentError("No student found with that name.");
-        return;
-      }
-      if (parentPassword !== PARENT_PASSWORD) {
-        setParentError("Incorrect password. Please try again.");
-        return;
-      }
-      onLogin("parent", matched.id);
+  function handleParentPasswordSubmit() {
+    if (!parentPassword.trim()) {
+      setParentError("Please enter your password.");
       return;
     }
-    const effectivePassword =
-      localStorage.getItem(`lords_parent_password_${result.principalId}`) ??
-      PARENT_PASSWORD;
-    if (parentPassword !== effectivePassword) {
+    const matched: { student: Student; principalId: string }[] = [];
+    for (const p of PRINCIPALS) {
+      const effectivePassword =
+        localStorage.getItem(`lords_parent_password_${p.id}`) ??
+        PARENT_PASSWORD;
+      if (parentPassword === effectivePassword) {
+        let list: Student[] = mockStudents;
+        try {
+          const raw = localStorage.getItem(`lords_students_${p.id}`);
+          if (raw) list = JSON.parse(raw) as Student[];
+        } catch {}
+        for (const s of list) matched.push({ student: s, principalId: p.id });
+      }
+    }
+    if (matched.length === 0 && parentPassword === PARENT_PASSWORD) {
+      for (const s of students)
+        matched.push({ student: s, principalId: "default" });
+    }
+    if (matched.length === 0) {
       setParentError("Incorrect password. Please try again.");
       return;
     }
-    onLogin("parent", result.student.id, result.principalId);
+    setParentError("");
+    setParentStudentOptions(matched);
+    setParentSelectStep(true);
   }
 
-  if (step === "google") {
+  function handleParentSelectStudent(student: Student, principalId: string) {
+    onLogin("parent", student.id, principalId);
+  }
+
+  // ---------- Account Sign Up / Sign In Page ----------
+  if (step === "account") {
     return (
-      <div className="min-h-screen bg-white flex flex-col items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex flex-col items-center justify-center p-4">
         <div className="w-full max-w-sm">
-          <div className="border border-gray-300 rounded-lg p-8 shadow-sm">
-            <div className="flex justify-center mb-4">
-              <GoogleLogo />
+          {/* Logo & Title */}
+          <div className="text-center mb-6">
+            <div className="inline-flex items-center justify-center w-14 h-14 bg-blue-600 rounded-2xl mb-3 shadow-md">
+              <GraduationCap size={28} className="text-white" />
             </div>
-            <h1 className="text-2xl font-normal text-gray-800 text-center mb-1">
-              Sign in
+            <h1 className="text-xl font-bold text-gray-900">
+              Lord's International School Group
             </h1>
-            <p className="text-sm text-gray-600 text-center mb-6">
-              to continue to Lord&apos;s School Portal
+            <p className="text-sm text-gray-500 mt-1">
+              Student Management Portal
             </p>
+          </div>
 
-            <div className="space-y-4">
-              <div>
-                <Input
-                  type="email"
-                  placeholder="Email or phone"
-                  value={email}
-                  onChange={(e) => {
-                    setEmail(e.target.value);
-                    setEmailError("");
-                  }}
-                  onKeyDown={(e) => e.key === "Enter" && handleGoogleNext()}
-                  data-ocid="login.input"
-                  className="border-gray-400 focus:border-blue-600 focus:ring-1 focus:ring-blue-600 rounded-sm text-sm h-14 px-3"
-                  autoFocus
-                />
-                {emailError && (
-                  <p
-                    className="text-xs text-red-600 mt-1"
-                    data-ocid="login.error_state"
-                  >
-                    {emailError}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <button
-                  type="button"
-                  className="text-sm text-blue-700 hover:text-blue-900 font-medium"
-                >
-                  Forgot email?
-                </button>
-              </div>
-
-              <p className="text-xs text-gray-600">
-                Not your computer? Use{" "}
-                <button
-                  type="button"
-                  className="text-blue-700 hover:text-blue-900 underline"
-                >
-                  Guest mode
-                </button>{" "}
-                to sign in privately.{" "}
-                <button
-                  type="button"
-                  className="text-blue-700 hover:text-blue-900 underline"
-                >
-                  Learn more
-                </button>
-              </p>
-            </div>
-
-            <div className="flex items-center justify-between mt-8">
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
+            {/* Toggle */}
+            <div className="flex rounded-xl bg-gray-100 p-1 mb-5">
               <button
                 type="button"
-                className="text-sm text-blue-700 hover:text-blue-900 font-medium"
+                onClick={() => {
+                  setAuthMode("signup");
+                  setAcError("");
+                }}
+                className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all flex items-center justify-center gap-1.5 ${
+                  authMode === "signup"
+                    ? "bg-white text-blue-700 shadow-sm"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
               >
-                Create account
+                <UserPlus size={14} /> Create Account
               </button>
-              <Button
-                data-ocid="login.primary_button"
-                onClick={handleGoogleNext}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-6 rounded-sm"
+              <button
+                type="button"
+                onClick={() => {
+                  setAuthMode("signin");
+                  setAcError("");
+                }}
+                className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all flex items-center justify-center gap-1.5 ${
+                  authMode === "signin"
+                    ? "bg-white text-blue-700 shadow-sm"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
               >
-                Next
-              </Button>
+                <LogIn size={14} /> Sign In
+              </button>
             </div>
+
+            {authMode === "signup" ? (
+              <div className="space-y-3">
+                <div>
+                  <p className="text-xs font-medium text-gray-700 mb-1">
+                    Full Name
+                  </p>
+                  <Input
+                    placeholder="Enter your full name"
+                    value={acName}
+                    onChange={(e) => {
+                      setAcName(e.target.value);
+                      setAcError("");
+                    }}
+                    onKeyDown={(e) => e.key === "Enter" && handleSignUp()}
+                    data-ocid="login.name_input"
+                  />
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-gray-700 mb-1">
+                    Email Address
+                  </p>
+                  <Input
+                    type="email"
+                    placeholder="you@example.com"
+                    value={acEmail}
+                    onChange={(e) => {
+                      setAcEmail(e.target.value);
+                      setAcError("");
+                    }}
+                    onKeyDown={(e) => e.key === "Enter" && handleSignUp()}
+                    data-ocid="login.email_input"
+                  />
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-gray-700 mb-1">
+                    Password
+                  </p>
+                  <div className="relative">
+                    <Input
+                      type={showAcPass ? "text" : "password"}
+                      placeholder="Min. 6 characters"
+                      value={acPassword}
+                      onChange={(e) => {
+                        setAcPassword(e.target.value);
+                        setAcError("");
+                      }}
+                      onKeyDown={(e) => e.key === "Enter" && handleSignUp()}
+                      className="pr-10"
+                      data-ocid="login.password_input"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowAcPass(!showAcPass)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
+                    >
+                      {showAcPass ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-gray-700 mb-1">
+                    Confirm Password
+                  </p>
+                  <div className="relative">
+                    <Input
+                      type={showAcConfirm ? "text" : "password"}
+                      placeholder="Re-enter password"
+                      value={acConfirm}
+                      onChange={(e) => {
+                        setAcConfirm(e.target.value);
+                        setAcError("");
+                      }}
+                      onKeyDown={(e) => e.key === "Enter" && handleSignUp()}
+                      className="pr-10"
+                      data-ocid="login.confirm_input"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowAcConfirm(!showAcConfirm)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
+                    >
+                      {showAcConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+                </div>
+                {acError && (
+                  <p
+                    className="text-xs text-red-500"
+                    data-ocid="login.error_state"
+                  >
+                    {acError}
+                  </p>
+                )}
+                <Button
+                  onClick={handleSignUp}
+                  disabled={
+                    !acName.trim() ||
+                    !acEmail.trim() ||
+                    !acPassword ||
+                    !acConfirm
+                  }
+                  className="w-full bg-blue-600 hover:bg-blue-700 font-semibold mt-1"
+                  data-ocid="login.primary_button"
+                >
+                  Create Account & Continue
+                </Button>
+                <p className="text-xs text-center text-gray-500">
+                  Already have an account?{" "}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAuthMode("signin");
+                      setAcError("");
+                    }}
+                    className="text-blue-600 hover:underline font-medium"
+                  >
+                    Sign in
+                  </button>
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div>
+                  <p className="text-xs font-medium text-gray-700 mb-1">
+                    Email Address
+                  </p>
+                  <Input
+                    type="email"
+                    placeholder="you@example.com"
+                    value={acEmail}
+                    onChange={(e) => {
+                      setAcEmail(e.target.value);
+                      setAcError("");
+                    }}
+                    onKeyDown={(e) => e.key === "Enter" && handleSignIn()}
+                    data-ocid="login.email_input"
+                  />
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-gray-700 mb-1">
+                    Password
+                  </p>
+                  <div className="relative">
+                    <Input
+                      type={showAcPass ? "text" : "password"}
+                      placeholder="Your password"
+                      value={acPassword}
+                      onChange={(e) => {
+                        setAcPassword(e.target.value);
+                        setAcError("");
+                      }}
+                      onKeyDown={(e) => e.key === "Enter" && handleSignIn()}
+                      className="pr-10"
+                      data-ocid="login.password_input"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowAcPass(!showAcPass)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
+                    >
+                      {showAcPass ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+                </div>
+                {acError && (
+                  <p
+                    className="text-xs text-red-500"
+                    data-ocid="login.error_state"
+                  >
+                    {acError}
+                  </p>
+                )}
+                <Button
+                  onClick={handleSignIn}
+                  disabled={!acEmail.trim() || !acPassword}
+                  className="w-full bg-blue-600 hover:bg-blue-700 font-semibold mt-1"
+                  data-ocid="login.primary_button"
+                >
+                  Sign In & Continue
+                </Button>
+                <p className="text-xs text-center text-gray-500">
+                  New here?{" "}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAuthMode("signup");
+                      setAcError("");
+                    }}
+                    className="text-blue-600 hover:underline font-medium"
+                  >
+                    Create an account
+                  </button>
+                </p>
+              </div>
+            )}
           </div>
 
-          <div className="flex gap-4 text-xs text-gray-600 mt-6 px-2">
-            <button type="button" className="hover:underline">
-              English (United States)
-            </button>
-          </div>
-          <div className="flex gap-4 text-xs text-gray-600 mt-2 px-2">
-            <button type="button" className="hover:underline">
-              Help
-            </button>
-            <button type="button" className="hover:underline">
-              Privacy
-            </button>
-            <button type="button" className="hover:underline">
-              Terms
-            </button>
-          </div>
+          <p className="text-center text-xs text-gray-400 mt-5">
+            &copy; {new Date().getFullYear()} Lord's International School Group.
+            All rights reserved.
+          </p>
         </div>
       </div>
     );
   }
 
+  // ---------- Portal Role Selection Page ----------
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100 flex flex-col items-center justify-start py-8 px-4">
       <div className="w-full max-w-md">
@@ -335,7 +545,7 @@ export default function Login({ onLogin, students }: Props) {
             <GraduationCap size={28} className="text-white" />
           </div>
           <h1 className="text-xl font-bold text-gray-900">
-            Lord&apos;s International School Group
+            Lord's International School Group
           </h1>
           <p className="text-gray-500 text-sm mt-1">
             Student Management Portal
@@ -343,19 +553,20 @@ export default function Login({ onLogin, students }: Props) {
         </div>
 
         <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
+          {/* Signed-in badge */}
           <div className="flex items-center gap-2 mb-5 p-3 rounded-lg bg-gray-50 border border-gray-200">
-            <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
-              {email.charAt(0).toUpperCase()}
+            <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-sm flex-shrink-0">
+              {signedInName.charAt(0).toUpperCase() || "U"}
             </div>
             <div className="min-w-0">
               <p className="text-xs text-gray-500">Signed in as</p>
               <p className="text-sm font-medium text-gray-800 truncate">
-                {email}
+                {signedInName || "User"}
               </p>
             </div>
             <button
               type="button"
-              onClick={() => setStep("google")}
+              onClick={() => setStep("account")}
               className="ml-auto text-xs text-blue-600 hover:text-blue-800 flex-shrink-0"
             >
               Change
@@ -477,8 +688,6 @@ export default function Login({ onLogin, students }: Props) {
                 <p className="text-xs font-semibold text-indigo-700 flex items-center gap-1">
                   <ShieldCheck size={14} /> Select Principal Account:
                 </p>
-
-                {/* 5 principal cards */}
                 <div className="grid grid-cols-1 gap-1.5">
                   {PRINCIPALS.map((p, idx) => (
                     <button
@@ -490,18 +699,10 @@ export default function Login({ onLogin, students }: Props) {
                         setPrincipalError("");
                         setPrincipalPassword("");
                       }}
-                      className={`flex items-center gap-3 px-3 py-2 rounded-lg border text-left transition-all ${
-                        selectedPrincipalId === p.id
-                          ? "border-indigo-500 bg-indigo-100 text-indigo-900"
-                          : "border-indigo-100 bg-white text-gray-700 hover:border-indigo-300 hover:bg-indigo-50"
-                      }`}
+                      className={`flex items-center gap-3 px-3 py-2 rounded-lg border text-left transition-all ${selectedPrincipalId === p.id ? "border-indigo-500 bg-indigo-100 text-indigo-900" : "border-indigo-100 bg-white text-gray-700 hover:border-indigo-300 hover:bg-indigo-50"}`}
                     >
                       <div
-                        className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${
-                          selectedPrincipalId === p.id
-                            ? "bg-indigo-600 text-white"
-                            : "bg-indigo-100 text-indigo-600"
-                        }`}
+                        className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${selectedPrincipalId === p.id ? "bg-indigo-600 text-white" : "bg-indigo-100 text-indigo-600"}`}
                       >
                         {p.name.slice(-1)}
                       </div>
@@ -514,8 +715,6 @@ export default function Login({ onLogin, students }: Props) {
                     </button>
                   ))}
                 </div>
-
-                {/* Password input — only shown after selecting */}
                 {selectedPrincipalId && (
                   <div className="space-y-2">
                     <p className="text-xs text-indigo-600">
@@ -558,7 +757,6 @@ export default function Login({ onLogin, students }: Props) {
                     </div>
                   </div>
                 )}
-
                 {principalError && (
                   <p
                     className="text-xs text-red-500"
@@ -567,7 +765,6 @@ export default function Login({ onLogin, students }: Props) {
                     {principalError}
                   </p>
                 )}
-
                 <div className="flex gap-2">
                   <Button
                     data-ocid="login.cancel_button"
@@ -597,39 +794,30 @@ export default function Login({ onLogin, students }: Props) {
             )}
 
             {/* Parent Login */}
-            {!showParentSelector ? (
+            {!showParentLogin ? (
               <Button
                 data-ocid="login.open_modal_button"
                 variant="outline"
                 onClick={() => {
-                  setShowParentSelector(true);
+                  setShowParentLogin(true);
                   setParentError("");
                   setParentPassword("");
-                  setStudentNameInput("");
+                  setParentSelectStep(false);
+                  setParentStudentOptions([]);
                 }}
                 className="w-full border-emerald-300 text-emerald-800 hover:bg-emerald-50 bg-emerald-50/50 font-semibold gap-2"
               >
                 <Users size={16} className="text-emerald-600" />
                 Login as Parent
               </Button>
-            ) : (
-              <div className="space-y-2 p-3 rounded-xl border border-emerald-200 bg-emerald-50/40">
-                <p className="text-xs font-medium text-emerald-700 mb-2">
-                  Enter your child&apos;s name to continue:
+            ) : !parentSelectStep ? (
+              <div className="space-y-3 p-3 rounded-xl border border-emerald-200 bg-emerald-50/40">
+                <p className="text-xs font-semibold text-emerald-700 flex items-center gap-1">
+                  <Users size={14} /> Parent Login
                 </p>
-                <Input
-                  type="text"
-                  placeholder="Type student name..."
-                  value={studentNameInput}
-                  onChange={(e) => {
-                    setStudentNameInput(e.target.value);
-                    setParentError("");
-                  }}
-                  onKeyDown={(e) => e.key === "Enter" && handleParentLogin()}
-                  className="bg-white"
-                  data-ocid="login.input"
-                  autoFocus
-                />
+                <p className="text-xs text-gray-600">
+                  Enter your parent password to continue:
+                </p>
                 <div className="relative">
                   <Input
                     type={showParentPass ? "text" : "password"}
@@ -639,8 +827,12 @@ export default function Login({ onLogin, students }: Props) {
                       setParentPassword(e.target.value);
                       setParentError("");
                     }}
-                    onKeyDown={(e) => e.key === "Enter" && handleParentLogin()}
+                    onKeyDown={(e) =>
+                      e.key === "Enter" && handleParentPasswordSubmit()
+                    }
                     className="bg-white pr-10"
+                    data-ocid="login.input"
+                    autoFocus
                   />
                   <button
                     type="button"
@@ -664,8 +856,7 @@ export default function Login({ onLogin, students }: Props) {
                     variant="ghost"
                     size="sm"
                     onClick={() => {
-                      setShowParentSelector(false);
-                      setStudentNameInput("");
+                      setShowParentLogin(false);
                       setParentPassword("");
                       setParentError("");
                     }}
@@ -676,13 +867,57 @@ export default function Login({ onLogin, students }: Props) {
                   <Button
                     data-ocid="login.confirm_button"
                     size="sm"
-                    disabled={!studentNameInput.trim() || !parentPassword}
-                    onClick={handleParentLogin}
+                    disabled={!parentPassword.trim()}
+                    onClick={handleParentPasswordSubmit}
                     className="flex-1 bg-emerald-600 hover:bg-emerald-700"
                   >
                     Continue
                   </Button>
                 </div>
+              </div>
+            ) : (
+              <div className="space-y-3 p-3 rounded-xl border border-emerald-200 bg-emerald-50/40">
+                <p className="text-xs font-semibold text-emerald-700 flex items-center gap-1">
+                  <Users size={14} /> Select Your Child
+                </p>
+                <p className="text-xs text-gray-600">
+                  Tap your child's name to continue:
+                </p>
+                <div className="max-h-56 overflow-y-auto space-y-1.5 pr-1">
+                  {parentStudentOptions.map(({ student, principalId }) => (
+                    <button
+                      key={`${principalId}-${student.id}`}
+                      type="button"
+                      onClick={() =>
+                        handleParentSelectStudent(student, principalId)
+                      }
+                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border border-emerald-100 bg-white hover:bg-emerald-50 hover:border-emerald-300 text-left transition-all"
+                    >
+                      <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold text-sm flex-shrink-0">
+                        {student.name.charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-800">
+                          {student.name}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          Class {student.class}
+                        </p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setParentSelectStep(false);
+                    setParentPassword("");
+                  }}
+                  className="w-full text-gray-500 text-xs"
+                >
+                  Back
+                </Button>
               </div>
             )}
           </div>
@@ -801,8 +1036,8 @@ export default function Login({ onLogin, students }: Props) {
         </div>
 
         <p className="text-center text-xs text-gray-400 mt-6 mb-4">
-          &copy; {new Date().getFullYear()} Lord&apos;s International School
-          Group. All rights reserved.
+          &copy; {new Date().getFullYear()} Lord's International School Group.
+          All rights reserved.
         </p>
       </div>
     </div>
