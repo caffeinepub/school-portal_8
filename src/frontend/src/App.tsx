@@ -154,6 +154,10 @@ export default function App() {
     if (principalId && r === "parent") setParentPrincipalId(principalId);
   };
 
+  const handleRankStudents = (ranked: Student[]) => {
+    setStudents(ranked);
+  };
+
   const activePrincipalName =
     PRINCIPALS.find((p) => p.id === activePrincipalId)?.name ?? "Principal";
 
@@ -243,6 +247,7 @@ export default function App() {
               students={students}
               onEditStudent={handleEditStudent}
               onNavigateToAdd={() => setPrincipalPage("add")}
+              onRankStudents={handleRankStudents}
             />
           )}
           {principalPage === "edit" && selectedStudent && (
