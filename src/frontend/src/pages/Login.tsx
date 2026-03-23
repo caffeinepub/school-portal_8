@@ -20,7 +20,6 @@ import { useState } from "react";
 
 interface Props {
   onLogin: (role: string, studentId?: number, principalId?: string) => void;
-  students: Student[];
 }
 
 const _PARENT_PASSWORD = "parent123";
@@ -88,27 +87,14 @@ function saveAccounts(accounts: AccountRecord[]) {
   localStorage.setItem("lords_accounts", JSON.stringify(accounts));
 }
 
-// Search all principals' student lists to find a student by name
-function findStudentAcrossPrincipals(
-  name: string,
-): { student: Student; principalId: string } | null {
-  for (const p of PRINCIPALS) {
-    let list: Student[] = mockStudents;
-    try {
-      const raw = localStorage.getItem(`lords_students_${p.id}`);
-      if (raw) list = JSON.parse(raw) as Student[];
-    } catch {}
-    const found = list.find((s) =>
-      s.name.toLowerCase().includes(name.trim().toLowerCase()),
-    );
-    if (found) return { student: found, principalId: p.id };
-  }
-  return null;
-}
-
-export default function Login({ onLogin, students }: Props) {
-  const [step, setStep] = useState<"account" | "portal">("account");
-  const [authMode, setAuthMode] = useState<"signin" | "signup">("signup");
+export default function Login({ onLogin }: Props) {
+  const existingAccounts = getAccounts();
+  const [step, setStep] = useState<"account" | "portal">(
+    existingAccounts.length > 0 ? "portal" : "account",
+  );
+  const [authMode, setAuthMode] = useState<"signin" | "signup">(
+    existingAccounts.length > 0 ? "signin" : "signup",
+  );
 
   // Account form state
   const [acName, setAcName] = useState("");
@@ -128,13 +114,6 @@ export default function Login({ onLogin, students }: Props) {
   const [principalPassword, setPrincipalPassword] = useState("");
   const [showPrincipalPass, setShowPrincipalPass] = useState(false);
   const [principalError, setPrincipalError] = useState("");
-
-  // Student login state
-  const [showStudentLogin, setShowStudentLogin] = useState(false);
-  const [studentLoginName, setStudentLoginName] = useState("");
-  const [studentLoginPassword, setStudentLoginPassword] = useState("");
-  const [showStudentLoginPass, setShowStudentLoginPass] = useState(false);
-  const [studentLoginError, setStudentLoginError] = useState("");
 
   // Parent login state
   const [showParentLogin, setShowParentLogin] = useState(false);
@@ -215,32 +194,6 @@ export default function Login({ onLogin, students }: Props) {
     } else {
       setPrincipalError("Incorrect password. Please try again.");
     }
-  }
-
-  function handleStudentLogin() {
-    const result = findStudentAcrossPrincipals(studentLoginName);
-    if (!result) {
-      const matched = students.find((s) =>
-        s.name.toLowerCase().includes(studentLoginName.trim().toLowerCase()),
-      );
-      if (!matched) {
-        setStudentLoginError("No student found with that name.");
-        return;
-      }
-      const pwd = matched.password ?? "student123";
-      if (studentLoginPassword !== pwd) {
-        setStudentLoginError("Incorrect password. Please try again.");
-        return;
-      }
-      onLogin("student", matched.id);
-      return;
-    }
-    const pwd = result.student.password ?? "student123";
-    if (studentLoginPassword !== pwd) {
-      setStudentLoginError("Incorrect password. Please try again.");
-      return;
-    }
-    onLogin("student", result.student.id, result.principalId);
   }
 
   function handleParentPasswordSubmit() {
@@ -573,99 +526,6 @@ export default function Login({ onLogin, students }: Props) {
           </div>
 
           <div className="space-y-3">
-            {/* Student Login */}
-            {!showStudentLogin ? (
-              <Button
-                data-ocid="login.primary_button"
-                variant="outline"
-                onClick={() => {
-                  setShowStudentLogin(true);
-                  setStudentLoginError("");
-                  setStudentLoginPassword("");
-                  setStudentLoginName("");
-                }}
-                className="w-full border-blue-200 text-blue-700 hover:bg-blue-50 font-semibold gap-2"
-              >
-                <GraduationCap size={16} className="text-blue-600" />
-                Login as Student
-              </Button>
-            ) : (
-              <div className="space-y-3 p-3 rounded-xl border border-blue-200 bg-blue-50/40">
-                <p className="text-xs font-semibold text-blue-700 flex items-center gap-1">
-                  <GraduationCap size={14} /> Student Login
-                </p>
-                <Input
-                  placeholder="Enter your full name"
-                  value={studentLoginName}
-                  onChange={(e) => {
-                    setStudentLoginName(e.target.value);
-                    setStudentLoginError("");
-                  }}
-                  onKeyDown={(e) => e.key === "Enter" && handleStudentLogin()}
-                  className="bg-white"
-                  data-ocid="login.student_name_input"
-                />
-                <div className="relative">
-                  <Input
-                    type={showStudentLoginPass ? "text" : "password"}
-                    placeholder="Your password"
-                    value={studentLoginPassword}
-                    onChange={(e) => {
-                      setStudentLoginPassword(e.target.value);
-                      setStudentLoginError("");
-                    }}
-                    onKeyDown={(e) => e.key === "Enter" && handleStudentLogin()}
-                    className="bg-white pr-10"
-                    data-ocid="login.student_password_input"
-                  />
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setShowStudentLoginPass(!showStudentLoginPass)
-                    }
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
-                  >
-                    {showStudentLoginPass ? (
-                      <EyeOff size={16} />
-                    ) : (
-                      <Eye size={16} />
-                    )}
-                  </button>
-                </div>
-                {studentLoginError && (
-                  <p
-                    className="text-xs text-red-500"
-                    data-ocid="login.error_state"
-                  >
-                    {studentLoginError}
-                  </p>
-                )}
-                <div className="flex gap-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      setShowStudentLogin(false);
-                      setStudentLoginName("");
-                      setStudentLoginPassword("");
-                      setStudentLoginError("");
-                    }}
-                    className="flex-1 text-gray-500"
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    size="sm"
-                    disabled={!studentLoginName.trim() || !studentLoginPassword}
-                    onClick={handleStudentLogin}
-                    className="flex-1 bg-blue-600 hover:bg-blue-700"
-                  >
-                    Login
-                  </Button>
-                </div>
-              </div>
-            )}
-
             {/* Principal Login */}
             {!showPrincipalLogin ? (
               <Button

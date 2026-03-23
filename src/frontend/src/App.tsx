@@ -1,6 +1,5 @@
 import { Toaster } from "@/components/ui/sonner";
 import { useEffect, useState } from "react";
-import Layout from "./components/Layout";
 import ParentLayout from "./components/ParentLayout";
 import PrincipalLayout from "./components/PrincipalLayout";
 import {
@@ -10,13 +9,8 @@ import {
 } from "./data/mockData";
 import type { Student } from "./data/mockData";
 import { PRINCIPALS } from "./data/principals";
-import AbsentRecord from "./pages/AbsentRecord";
 import AddStudentPage from "./pages/AddStudentPage";
-import Dashboard from "./pages/Dashboard";
-import ExaminationMarks from "./pages/ExaminationMarks";
 import Login from "./pages/Login";
-import Notifications from "./pages/Notifications";
-import OnlineClasses from "./pages/OnlineClasses";
 import ParentView from "./pages/ParentView";
 import PrincipalAnnouncementsPage from "./pages/PrincipalAnnouncementsPage";
 import PrincipalClassView from "./pages/PrincipalClassView";
@@ -25,17 +19,9 @@ import PrincipalDoubtChat from "./pages/PrincipalDoubtChat";
 import PrincipalHolidaysPage from "./pages/PrincipalHolidaysPage";
 import PrincipalSchoolInfoEditor from "./pages/PrincipalSchoolInfoEditor";
 import PrincipalSyllabusPage from "./pages/PrincipalSyllabusPage";
-import Profile from "./pages/Profile";
-import SchoolFees from "./pages/SchoolFees";
-import SchoolInfo from "./pages/SchoolInfo";
-import SchoolRecords from "./pages/SchoolRecords";
-import StudentDoubts from "./pages/StudentDoubts";
 import StudentEditPage from "./pages/StudentEditPage";
-import StudentMedia from "./pages/StudentMedia";
-import Syllabus from "./pages/Syllabus";
-import TeacherChat from "./pages/TeacherChat";
 
-type Role = "student" | "principal" | "parent" | null;
+type Role = "principal" | "parent" | null;
 type PrincipalPage =
   | "list"
   | "edit"
@@ -66,7 +52,6 @@ function saveStorage<T>(key: string, value: T) {
 
 export default function App() {
   const [role, setRole] = useState<Role>(null);
-  const [page, setPage] = useState("dashboard");
   const [activePrincipalId, setActivePrincipalId] = useState<string | null>(
     null,
   );
@@ -124,13 +109,6 @@ export default function App() {
     null,
   );
   const [parentStudentId, setParentStudentId] = useState<number | null>(null);
-  const [_studentStudentId, setStudentStudentId] = useState<number | null>(
-    null,
-  );
-  const [_studentPrincipalId, setStudentPrincipalId] = useState<string | null>(
-    null,
-  );
-
   const handleUpdateStudent = (updated: Student) => {
     setStudents((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
   };
@@ -174,20 +152,6 @@ export default function App() {
     }
     if (studentId !== undefined) setParentStudentId(studentId);
     if (principalId && r === "parent") setParentPrincipalId(principalId);
-    if (r === "student" && studentId !== undefined) {
-      setStudentStudentId(studentId);
-      // Save student data to localStorage for student pages
-      const principalKey = principalId ?? "default";
-      let studentList: Student[] = mockStudents;
-      try {
-        const raw = localStorage.getItem(`lords_students_${principalKey}`);
-        if (raw) studentList = JSON.parse(raw);
-      } catch {}
-      const found =
-        studentList.find((s) => s.id === studentId) ?? mockStudents[0];
-      localStorage.setItem("lords_current_student", JSON.stringify(found));
-    }
-    if (r === "student" && principalId) setStudentPrincipalId(principalId);
   };
 
   const activePrincipalName =
@@ -196,7 +160,7 @@ export default function App() {
   if (!role) {
     return (
       <>
-        <Login onLogin={handleLogin} students={students} />
+        <Login onLogin={handleLogin} />
         <Toaster />
       </>
     );
@@ -339,35 +303,4 @@ export default function App() {
       </>
     );
   }
-
-  return (
-    <>
-      <Layout
-        currentPage={page}
-        onPageChange={setPage}
-        onLogout={() => {
-          setRole(null);
-          setStudentStudentId(null);
-          setStudentPrincipalId(null);
-        }}
-      >
-        {page === "dashboard" && <Dashboard />}
-        {page === "profile" && <Profile />}
-        {page === "marks" && <ExaminationMarks />}
-        {page === "records" && <SchoolRecords />}
-        {page === "syllabus" && <Syllabus syllabus={syllabus} />}
-        {page === "fees" && <SchoolFees />}
-        {page === "attendance" && <AbsentRecord />}
-        {page === "classes" && <OnlineClasses />}
-        {page === "doubts" && <StudentDoubts />}
-        {page === "chat" && <TeacherChat />}
-        {page === "info" && <SchoolInfo />}
-        {page === "notifications" && (
-          <Notifications notifications={notifications} />
-        )}
-        {page === "media" && <StudentMedia />}
-      </Layout>
-      <Toaster />
-    </>
-  );
 }
