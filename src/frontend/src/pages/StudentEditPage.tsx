@@ -443,6 +443,21 @@ export default function StudentEditPage({
                   onChange={(e) => setField("address", e.target.value)}
                 />
               </div>
+              <div className="sm:col-span-2">
+                <Label className="text-sm font-medium text-gray-700 mb-1 block">
+                  Student Login Password
+                </Label>
+                <Input
+                  data-ocid="student_edit.password_input"
+                  type="text"
+                  placeholder="Set a password for this student"
+                  value={draft.password ?? ""}
+                  onChange={(e) => setField("password", e.target.value)}
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Students use this password to log in to their dashboard.
+                </p>
+              </div>
             </div>
           </TabsContent>
 

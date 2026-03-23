@@ -41,6 +41,7 @@ export interface Student {
   fees: StudentFee[];
   attendance: StudentAttendance[];
   rank: number;
+  password?: string;
 }
 
 export const students: Student[] = [
@@ -1381,6 +1382,14 @@ export const students: Student[] = [
 
 // Convenience export for existing student pages
 export const student = students[0];
+
+export function getCurrentStudent(): Student {
+  try {
+    const raw = localStorage.getItem("lords_current_student");
+    if (raw) return JSON.parse(raw) as Student;
+  } catch {}
+  return students[0];
+}
 
 export const subjects = [
   "Mathematics",

@@ -131,6 +131,13 @@ export default function Login({ onLogin, students }: Props) {
   const [showPrincipalPass, setShowPrincipalPass] = useState(false);
   const [principalError, setPrincipalError] = useState("");
 
+  // Student login state
+  const [showStudentLogin, setShowStudentLogin] = useState(false);
+  const [studentLoginName, setStudentLoginName] = useState("");
+  const [studentLoginPassword, setStudentLoginPassword] = useState("");
+  const [showStudentLoginPass, setShowStudentLoginPass] = useState(false);
+  const [studentLoginError, setStudentLoginError] = useState("");
+
   // Parent login state
   const [showParentSelector, setShowParentSelector] = useState(false);
   const [studentNameInput, setStudentNameInput] = useState("");
@@ -161,6 +168,32 @@ export default function Login({ onLogin, students }: Props) {
     }
   }
 
+  function handleStudentLogin() {
+    const result = findStudentAcrossPrincipals(studentLoginName);
+    if (!result) {
+      const matched = students.find((s) =>
+        s.name.toLowerCase().includes(studentLoginName.trim().toLowerCase()),
+      );
+      if (!matched) {
+        setStudentLoginError("No student found with that name.");
+        return;
+      }
+      const pwd = matched.password ?? "student123";
+      if (studentLoginPassword !== pwd) {
+        setStudentLoginError("Incorrect password. Please try again.");
+        return;
+      }
+      onLogin("student", matched.id);
+      return;
+    }
+    const pwd = result.student.password ?? "student123";
+    if (studentLoginPassword !== pwd) {
+      setStudentLoginError("Incorrect password. Please try again.");
+      return;
+    }
+    onLogin("student", result.student.id, result.principalId);
+  }
+
   function handleParentLogin() {
     const result = findStudentAcrossPrincipals(studentNameInput);
     if (!result) {
@@ -179,7 +212,10 @@ export default function Login({ onLogin, students }: Props) {
       onLogin("parent", matched.id);
       return;
     }
-    if (parentPassword !== PARENT_PASSWORD) {
+    const effectivePassword =
+      localStorage.getItem(`lords_parent_password_${result.principalId}`) ??
+      PARENT_PASSWORD;
+    if (parentPassword !== effectivePassword) {
       setParentError("Incorrect password. Please try again.");
       return;
     }
@@ -327,15 +363,98 @@ export default function Login({ onLogin, students }: Props) {
           </div>
 
           <div className="space-y-3">
-            {/* Demo Student */}
-            <Button
-              data-ocid="login.primary_button"
-              variant="outline"
-              onClick={() => onLogin("student")}
-              className="w-full border-blue-200 text-blue-700 hover:bg-blue-50"
-            >
-              Login as Demo Student
-            </Button>
+            {/* Student Login */}
+            {!showStudentLogin ? (
+              <Button
+                data-ocid="login.primary_button"
+                variant="outline"
+                onClick={() => {
+                  setShowStudentLogin(true);
+                  setStudentLoginError("");
+                  setStudentLoginPassword("");
+                  setStudentLoginName("");
+                }}
+                className="w-full border-blue-200 text-blue-700 hover:bg-blue-50 font-semibold gap-2"
+              >
+                <GraduationCap size={16} className="text-blue-600" />
+                Login as Student
+              </Button>
+            ) : (
+              <div className="space-y-3 p-3 rounded-xl border border-blue-200 bg-blue-50/40">
+                <p className="text-xs font-semibold text-blue-700 flex items-center gap-1">
+                  <GraduationCap size={14} /> Student Login
+                </p>
+                <Input
+                  placeholder="Enter your full name"
+                  value={studentLoginName}
+                  onChange={(e) => {
+                    setStudentLoginName(e.target.value);
+                    setStudentLoginError("");
+                  }}
+                  onKeyDown={(e) => e.key === "Enter" && handleStudentLogin()}
+                  className="bg-white"
+                  data-ocid="login.student_name_input"
+                />
+                <div className="relative">
+                  <Input
+                    type={showStudentLoginPass ? "text" : "password"}
+                    placeholder="Your password"
+                    value={studentLoginPassword}
+                    onChange={(e) => {
+                      setStudentLoginPassword(e.target.value);
+                      setStudentLoginError("");
+                    }}
+                    onKeyDown={(e) => e.key === "Enter" && handleStudentLogin()}
+                    className="bg-white pr-10"
+                    data-ocid="login.student_password_input"
+                  />
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setShowStudentLoginPass(!showStudentLoginPass)
+                    }
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
+                  >
+                    {showStudentLoginPass ? (
+                      <EyeOff size={16} />
+                    ) : (
+                      <Eye size={16} />
+                    )}
+                  </button>
+                </div>
+                {studentLoginError && (
+                  <p
+                    className="text-xs text-red-500"
+                    data-ocid="login.error_state"
+                  >
+                    {studentLoginError}
+                  </p>
+                )}
+                <div className="flex gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setShowStudentLogin(false);
+                      setStudentLoginName("");
+                      setStudentLoginPassword("");
+                      setStudentLoginError("");
+                    }}
+                    className="flex-1 text-gray-500"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    size="sm"
+                    disabled={!studentLoginName.trim() || !studentLoginPassword}
+                    onClick={handleStudentLogin}
+                    className="flex-1 bg-blue-600 hover:bg-blue-700"
+                  >
+                    Login
+                  </Button>
+                </div>
+              </div>
+            )}
 
             {/* Principal Login */}
             {!showPrincipalLogin ? (

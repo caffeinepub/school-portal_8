@@ -1,10 +1,11 @@
 import {
   attendance,
   fees,
+  getCurrentStudent,
   marks,
   notifications,
-  student,
 } from "@/data/mockData";
+const student = getCurrentStudent();
 import { AlertCircle, Bell, BookOpen, TrendingUp } from "lucide-react";
 
 export default function Dashboard() {

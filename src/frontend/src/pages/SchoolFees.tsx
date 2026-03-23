@@ -1,4 +1,5 @@
-import { fees } from "@/data/mockData";
+import { getCurrentStudent } from "@/data/mockData";
+const fees = getCurrentStudent().fees;
 
 const statusColor: Record<string, string> = {
   Paid: "bg-green-100 text-green-700",

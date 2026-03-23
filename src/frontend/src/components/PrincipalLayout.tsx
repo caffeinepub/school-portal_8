@@ -3,6 +3,8 @@ import {
   Calendar,
   GraduationCap,
   Info,
+  KeyRound,
+  LayoutGrid,
   LogOut,
   Megaphone,
   Menu,
@@ -16,6 +18,7 @@ import { useState } from "react";
 
 const studentNavItems = [
   { id: "list", label: "All Students", icon: Users },
+  { id: "class-view", label: "Class View", icon: LayoutGrid },
   { id: "add", label: "Add Student", icon: UserPlus },
   { id: "info", label: "School Info", icon: Info },
 ];
@@ -28,6 +31,10 @@ const schoolNavItems = [
 
 const communicationNavItems = [
   { id: "doubt-chat", label: "Doubt Chat", icon: MessageCircle },
+];
+
+const settingsNavItems = [
+  { id: "parent-settings", label: "Parent Settings", icon: KeyRound },
 ];
 
 interface Props {
@@ -53,11 +60,33 @@ export default function PrincipalLayout({
     ...studentNavItems,
     ...schoolNavItems,
     ...communicationNavItems,
+    ...settingsNavItems,
   ];
   const currentLabel =
     pageLabel ??
     allItems.find((n) => n.id === currentPage)?.label ??
     "Student Management";
+
+  const renderNavSection = (items: typeof studentNavItems) =>
+    items.map(({ id, label, icon: Icon }) => (
+      <button
+        type="button"
+        key={id}
+        data-ocid="principal_nav.link"
+        onClick={() => {
+          onPageChange(id);
+          setSidebarOpen(false);
+        }}
+        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
+          currentPage === id
+            ? "bg-indigo-600 text-white font-medium"
+            : "text-indigo-300 hover:bg-indigo-800 hover:text-white"
+        }`}
+      >
+        <Icon size={17} className="flex-shrink-0" />
+        <span className="truncate">{label}</span>
+      </button>
+    ));
 
   return (
     <div className="flex h-screen bg-gray-50 overflow-hidden">
@@ -104,25 +133,7 @@ export default function PrincipalLayout({
               Students
             </p>
             <div className="space-y-0.5">
-              {studentNavItems.map(({ id, label, icon: Icon }) => (
-                <button
-                  type="button"
-                  key={id}
-                  data-ocid="principal_nav.link"
-                  onClick={() => {
-                    onPageChange(id);
-                    setSidebarOpen(false);
-                  }}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
-                    currentPage === id
-                      ? "bg-indigo-600 text-white font-medium"
-                      : "text-indigo-300 hover:bg-indigo-800 hover:text-white"
-                  }`}
-                >
-                  <Icon size={17} className="flex-shrink-0" />
-                  <span className="truncate">{label}</span>
-                </button>
-              ))}
+              {renderNavSection(studentNavItems)}
             </div>
           </div>
 
@@ -131,25 +142,7 @@ export default function PrincipalLayout({
               School Management
             </p>
             <div className="space-y-0.5">
-              {schoolNavItems.map(({ id, label, icon: Icon }) => (
-                <button
-                  type="button"
-                  key={id}
-                  data-ocid="principal_nav.link"
-                  onClick={() => {
-                    onPageChange(id);
-                    setSidebarOpen(false);
-                  }}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
-                    currentPage === id
-                      ? "bg-indigo-600 text-white font-medium"
-                      : "text-indigo-300 hover:bg-indigo-800 hover:text-white"
-                  }`}
-                >
-                  <Icon size={17} className="flex-shrink-0" />
-                  <span className="truncate">{label}</span>
-                </button>
-              ))}
+              {renderNavSection(schoolNavItems)}
             </div>
           </div>
 
@@ -158,25 +151,16 @@ export default function PrincipalLayout({
               Communication
             </p>
             <div className="space-y-0.5">
-              {communicationNavItems.map(({ id, label, icon: Icon }) => (
-                <button
-                  type="button"
-                  key={id}
-                  data-ocid="principal_nav.link"
-                  onClick={() => {
-                    onPageChange(id);
-                    setSidebarOpen(false);
-                  }}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
-                    currentPage === id
-                      ? "bg-indigo-600 text-white font-medium"
-                      : "text-indigo-300 hover:bg-indigo-800 hover:text-white"
-                  }`}
-                >
-                  <Icon size={17} className="flex-shrink-0" />
-                  <span className="truncate">{label}</span>
-                </button>
-              ))}
+              {renderNavSection(communicationNavItems)}
+            </div>
+          </div>
+
+          <div>
+            <p className="text-indigo-400 text-xs font-semibold uppercase tracking-wider px-3 mb-1">
+              Settings
+            </p>
+            <div className="space-y-0.5">
+              {renderNavSection(settingsNavItems)}
             </div>
           </div>
         </nav>

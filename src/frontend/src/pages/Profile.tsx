@@ -1,4 +1,5 @@
-import { student } from "@/data/mockData";
+import { getCurrentStudent } from "@/data/mockData";
+const student = getCurrentStudent();
 
 export default function Profile() {
   const fields = [

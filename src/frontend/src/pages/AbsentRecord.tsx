@@ -1,4 +1,5 @@
-import { attendance } from "@/data/mockData";
+import { getCurrentStudent } from "@/data/mockData";
+const attendance = getCurrentStudent().attendance;
 
 const statusColor: Record<string, string> = {
   Present: "bg-green-100 text-green-700",

@@ -11,7 +11,14 @@ interface MediaItem {
   uploadedAt: string;
 }
 
-const DEMO_STUDENT_ID = 1;
+function getActiveStudentId(): number {
+  try {
+    const raw = localStorage.getItem("lords_current_student");
+    if (raw) return (JSON.parse(raw) as { id: number }).id;
+  } catch {}
+  return 1;
+}
+const DEMO_STUDENT_ID = getActiveStudentId();
 
 export default function StudentMedia() {
   const [media, setMedia] = useState<MediaItem[]>([]);

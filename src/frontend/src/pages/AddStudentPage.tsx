@@ -27,6 +27,7 @@ interface Props {
   onAddStudent: (student: Omit<Student, "id">) => void;
   onBulkAddStudents: (students: Omit<Student, "id">[]) => void;
   onBack: () => void;
+  defaultClass?: string;
 }
 
 type BulkRow = Omit<Student, "id"> & { _key: number };
@@ -93,8 +94,12 @@ export default function AddStudentPage({
   onAddStudent,
   onBulkAddStudents,
   onBack,
+  defaultClass = "",
 }: Props) {
-  const [form, setForm] = useState<Omit<Student, "id">>(EMPTY_FORM);
+  const [form, setForm] = useState<Omit<Student, "id">>(() => ({
+    ...EMPTY_FORM,
+    class: defaultClass || "",
+  }));
   const [errors, setErrors] = useState<{ name?: string; class?: string }>({});
   const [bulkRows, setBulkRows] = useState<BulkRow[]>([
     newRow(),

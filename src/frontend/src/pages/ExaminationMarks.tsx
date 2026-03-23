@@ -1,4 +1,5 @@
-import { marks } from "@/data/mockData";
+import { getCurrentStudent } from "@/data/mockData";
+const marks = getCurrentStudent().marks;
 
 function grade(pct: number) {
   if (pct >= 90) return { g: "A+", color: "bg-green-100 text-green-700" };

@@ -19,9 +19,11 @@ import Notifications from "./pages/Notifications";
 import OnlineClasses from "./pages/OnlineClasses";
 import ParentView from "./pages/ParentView";
 import PrincipalAnnouncementsPage from "./pages/PrincipalAnnouncementsPage";
+import PrincipalClassView from "./pages/PrincipalClassView";
 import PrincipalDashboard from "./pages/PrincipalDashboard";
 import PrincipalDoubtChat from "./pages/PrincipalDoubtChat";
 import PrincipalHolidaysPage from "./pages/PrincipalHolidaysPage";
+import PrincipalParentSettings from "./pages/PrincipalParentSettings";
 import PrincipalSchoolInfoEditor from "./pages/PrincipalSchoolInfoEditor";
 import PrincipalSyllabusPage from "./pages/PrincipalSyllabusPage";
 import Profile from "./pages/Profile";
@@ -43,7 +45,9 @@ type PrincipalPage =
   | "holidays"
   | "school-syllabus"
   | "announcements"
-  | "doubt-chat";
+  | "doubt-chat"
+  | "class-view"
+  | "parent-settings";
 
 export type Notification = (typeof mockNotifications)[number];
 export type SyllabusSubject = (typeof mockSyllabus)[number];
@@ -117,10 +121,17 @@ export default function App() {
   }, [syllabus, activePrincipalId]);
 
   const [principalPage, setPrincipalPage] = useState<PrincipalPage>("list");
+  const [prefilledClass, setPrefilledClass] = useState<string>("");
   const [selectedStudentId, setSelectedStudentId] = useState<number | null>(
     null,
   );
   const [parentStudentId, setParentStudentId] = useState<number | null>(null);
+  const [_studentStudentId, setStudentStudentId] = useState<number | null>(
+    null,
+  );
+  const [_studentPrincipalId, setStudentPrincipalId] = useState<string | null>(
+    null,
+  );
 
   const handleUpdateStudent = (updated: Student) => {
     setStudents((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
@@ -148,6 +159,11 @@ export default function App() {
     setPrincipalPage("edit");
   };
 
+  const handleAddStudentToClass = (className: string) => {
+    setPrefilledClass(className);
+    setPrincipalPage("add");
+  };
+
   const handlePrincipalPageChange = (p: string) => {
     setPrincipalPage(p as PrincipalPage);
     if (p !== "edit") setSelectedStudentId(null);
@@ -160,6 +176,20 @@ export default function App() {
     }
     if (studentId !== undefined) setParentStudentId(studentId);
     if (principalId && r === "parent") setParentPrincipalId(principalId);
+    if (r === "student" && studentId !== undefined) {
+      setStudentStudentId(studentId);
+      // Save student data to localStorage for student pages
+      const principalKey = principalId ?? "default";
+      let studentList: Student[] = mockStudents;
+      try {
+        const raw = localStorage.getItem(`lords_students_${principalKey}`);
+        if (raw) studentList = JSON.parse(raw);
+      } catch {}
+      const found =
+        studentList.find((s) => s.id === studentId) ?? mockStudents[0];
+      localStorage.setItem("lords_current_student", JSON.stringify(found));
+    }
+    if (r === "student" && principalId) setStudentPrincipalId(principalId);
   };
 
   const activePrincipalName =
@@ -229,6 +259,8 @@ export default function App() {
       "school-syllabus": "Manage Syllabus",
       announcements: "Announcements",
       "doubt-chat": "Doubt Chat",
+      "class-view": "Class View",
+      "parent-settings": "Parent Settings",
       edit: "Edit Student",
     };
 
@@ -264,7 +296,11 @@ export default function App() {
             <AddStudentPage
               onAddStudent={handleAddStudent}
               onBulkAddStudents={handleBulkAddStudents}
-              onBack={() => setPrincipalPage("list")}
+              defaultClass={prefilledClass}
+              onBack={() => {
+                setPrincipalPage("list");
+                setPrefilledClass("");
+              }}
             />
           )}
           {principalPage === "info" && <PrincipalSchoolInfoEditor />}
@@ -292,6 +328,19 @@ export default function App() {
               principalId={activePrincipalId ?? "default"}
             />
           )}
+          {principalPage === "class-view" && (
+            <PrincipalClassView
+              students={students}
+              onEditStudent={handleEditStudent}
+              onAddStudentToClass={handleAddStudentToClass}
+            />
+          )}
+          {principalPage === "parent-settings" && (
+            <PrincipalParentSettings
+              principalId={activePrincipalId ?? "default"}
+              students={students}
+            />
+          )}
         </PrincipalLayout>
         <Toaster />
       </>
@@ -303,7 +352,11 @@ export default function App() {
       <Layout
         currentPage={page}
         onPageChange={setPage}
-        onLogout={() => setRole(null)}
+        onLogout={() => {
+          setRole(null);
+          setStudentStudentId(null);
+          setStudentPrincipalId(null);
+        }}
       >
         {page === "dashboard" && <Dashboard />}
         {page === "profile" && <Profile />}
