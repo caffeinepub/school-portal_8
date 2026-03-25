@@ -10,10 +10,8 @@ import {
   BookOpen,
   Calendar,
   CheckCircle2,
-  ClipboardList,
   Clock,
   Download,
-  FileText,
   GraduationCap,
   Image,
   Info,
@@ -29,8 +27,6 @@ import {
 import { useEffect, useState } from "react";
 import ParentDiaryView from "./ParentDiaryView";
 import ParentDoubtChat from "./ParentDoubtChat";
-import ParentExamTimetableView from "./ParentExamTimetableView";
-import ParentTestMarksView from "./ParentTestMarksView";
 
 interface Props {
   student: Student;
@@ -248,20 +244,6 @@ export default function ParentView({
             className="flex items-center gap-1.5"
           >
             <NotebookPen size={13} /> Diary
-          </TabsTrigger>
-          <TabsTrigger
-            value="exam-timetable"
-            data-ocid="parent.tab"
-            className="flex items-center gap-1.5"
-          >
-            <ClipboardList size={13} /> Exam Timetable
-          </TabsTrigger>
-          <TabsTrigger
-            value="test-marks"
-            data-ocid="parent.tab"
-            className="flex items-center gap-1.5"
-          >
-            <FileText size={13} /> Test Marks
           </TabsTrigger>
         </TabsList>
 
@@ -751,7 +733,6 @@ export default function ParentView({
             </div>
           )}
         </TabsContent>
-
         {/* Doubt Chat */}
         <TabsContent value="doubt-chat" className="mt-4">
           <Card className="border-0 shadow-sm">
@@ -764,37 +745,12 @@ export default function ParentView({
             </CardContent>
           </Card>
         </TabsContent>
-
         {/* Diary */}
         <TabsContent value="diary" className="mt-4">
           <Card className="border-0 shadow-sm">
             <CardContent className="p-4">
               <ParentDiaryView
                 studentClass={student.class}
-                principalId={principalId}
-              />
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Exam Timetable */}
-        <TabsContent value="exam-timetable" className="mt-4">
-          <Card className="border-0 shadow-sm">
-            <CardContent className="p-4">
-              <ParentExamTimetableView
-                studentClass={student.class}
-                principalId={principalId}
-              />
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Test Marks */}
-        <TabsContent value="test-marks" className="mt-4">
-          <Card className="border-0 shadow-sm">
-            <CardContent className="p-4">
-              <ParentTestMarksView
-                student={student}
                 principalId={principalId}
               />
             </CardContent>

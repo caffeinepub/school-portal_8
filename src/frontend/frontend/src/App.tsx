@@ -17,11 +17,9 @@ import PrincipalClassView from "./pages/PrincipalClassView";
 import PrincipalDashboard from "./pages/PrincipalDashboard";
 import PrincipalDiaryPage from "./pages/PrincipalDiaryPage";
 import PrincipalDoubtChat from "./pages/PrincipalDoubtChat";
-import PrincipalExamTimetablePage from "./pages/PrincipalExamTimetablePage";
 import PrincipalHolidaysPage from "./pages/PrincipalHolidaysPage";
 import PrincipalSchoolInfoEditor from "./pages/PrincipalSchoolInfoEditor";
 import PrincipalSyllabusPage from "./pages/PrincipalSyllabusPage";
-import PrincipalTestMarksPage from "./pages/PrincipalTestMarksPage";
 import StudentEditPage from "./pages/StudentEditPage";
 
 type Role = "principal" | "parent" | null;
@@ -35,9 +33,7 @@ type PrincipalPage =
   | "announcements"
   | "doubt-chat"
   | "class-view"
-  | "diary"
-  | "exam-timetable"
-  | "test-marks";
+  | "diary";
 
 export type Notification = (typeof mockNotifications)[number];
 export type SyllabusSubject = (typeof mockSyllabus)[number];
@@ -233,8 +229,6 @@ export default function App() {
       "doubt-chat": "Doubt Chat",
       "class-view": "Class View",
       diary: "Diary",
-      "exam-timetable": "Exam Timetable",
-      "test-marks": "Test Marks",
       edit: "Edit Student",
     };
 
@@ -314,18 +308,6 @@ export default function App() {
           )}
           {principalPage === "diary" && (
             <PrincipalDiaryPage
-              principalId={activePrincipalId ?? "default"}
-              students={students}
-            />
-          )}
-          {principalPage === "exam-timetable" && (
-            <PrincipalExamTimetablePage
-              principalId={activePrincipalId ?? "default"}
-              students={students}
-            />
-          )}
-          {principalPage === "test-marks" && (
-            <PrincipalTestMarksPage
               principalId={activePrincipalId ?? "default"}
               students={students}
             />

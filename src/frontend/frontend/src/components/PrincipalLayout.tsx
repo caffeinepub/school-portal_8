@@ -1,8 +1,6 @@
 import {
   BookOpen,
   Calendar,
-  ClipboardList,
-  FileText,
   GraduationCap,
   Info,
   LayoutGrid,
@@ -30,8 +28,6 @@ const schoolNavItems = [
   { id: "school-syllabus", label: "Syllabus", icon: BookOpen },
   { id: "announcements", label: "Announcements", icon: Megaphone },
   { id: "diary", label: "Diary", icon: NotebookPen },
-  { id: "exam-timetable", label: "Exam Timetable", icon: ClipboardList },
-  { id: "test-marks", label: "Test Marks", icon: FileText },
 ];
 
 const communicationNavItems = [
