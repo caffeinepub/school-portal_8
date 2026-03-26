@@ -13,6 +13,9 @@ import AddStudentPage from "./pages/AddStudentPage";
 import Login from "./pages/Login";
 import ParentView from "./pages/ParentView";
 import PrincipalAnnouncementsPage from "./pages/PrincipalAnnouncementsPage";
+import PrincipalClassRecordsPage from "./pages/PrincipalClassRecordsPage";
+import PrincipalErrorFixPage from "./pages/PrincipalErrorFixPage";
+import PrincipalStorageBackupPage from "./pages/PrincipalStorageBackupPage";
 import PrincipalClassView from "./pages/PrincipalClassView";
 import PrincipalDashboard from "./pages/PrincipalDashboard";
 import PrincipalDiaryPage from "./pages/PrincipalDiaryPage";
@@ -39,7 +42,10 @@ type PrincipalPage =
   | "diary"
   | "exam-timetable"
   | "test-marks"
-  | "send-message";
+  | "send-message"
+  | "class-records"
+  | "error-fix"
+  | "storage-backup";
 
 export type Notification = (typeof mockNotifications)[number];
 export type SyllabusSubject = {
@@ -89,25 +95,15 @@ function saveStorage<T>(key: string, value: T) {
   } catch {}
 }
 
-/**
- * Load syllabus with migration support.
- * Before v42, syllabus was stored as SyllabusSubject[] (flat array).
- * After v42, it became Record<string, SyllabusSubject[]> (class-wise).
- * If old array format is found, migrate it to class-wise format.
- * Also pre-populates DEFAULT_CLASSES so all class names are pre-listed.
- */
 function loadSyllabus(principalId: string): ClassSyllabus {
   let result: ClassSyllabus = {};
   try {
     const raw = localStorage.getItem(`lords_syllabus_${principalId}`);
     if (raw) {
       const parsed = JSON.parse(raw);
-      // Old format was a flat array of SyllabusSubject
       if (Array.isArray(parsed)) {
         if (parsed.length > 0) {
-          // Migrate: put old subjects under a "General" class key
           result = { General: parsed as SyllabusSubject[] };
-          // Save migrated data back so it's not lost
           saveStorage(`lords_syllabus_${principalId}`, result);
         }
       } else if (typeof parsed === "object" && parsed !== null) {
@@ -120,7 +116,6 @@ function loadSyllabus(principalId: string): ClassSyllabus {
     result = mockSyllabus;
   }
 
-  // Merge in default class keys (empty arrays) if they don't exist
   for (const cls of DEFAULT_CLASSES) {
     if (!(cls in result)) {
       result[cls] = [];
@@ -140,7 +135,6 @@ export default function App() {
   );
   const [parentStudentId, setParentStudentId] = useState<number | null>(null);
 
-  // Derive namespace keys
   const ns = activePrincipalId ?? "default";
 
   const [students, setStudents] = useState<Student[]>(() =>
@@ -153,7 +147,6 @@ export default function App() {
     loadSyllabus(ns),
   );
 
-  // Live data for parent panel — refreshes every 5 seconds
   const [liveParentStudent, setLiveParentStudent] = useState<Student | null>(
     null,
   );
@@ -186,7 +179,7 @@ export default function App() {
       setLiveParentSyllabus(loadSyllabus(parentPrincipalId));
     };
 
-    refresh(); // initial load
+    refresh();
     const interval = setInterval(refresh, 5000);
 
     const onStorage = (e: StorageEvent) => {
@@ -200,15 +193,12 @@ export default function App() {
     };
   }, [role, parentPrincipalId, parentStudentId]);
 
-  // Track whether a load is in progress to avoid premature saves
   const loadingRef = useRef(false);
-  // Track the principal ID for save effects (avoids stale closures)
   const savedPrincipalIdRef = useRef<string | null>(activePrincipalId);
   useEffect(() => {
     savedPrincipalIdRef.current = activePrincipalId;
   }, [activePrincipalId]);
 
-  // When principal changes, reload their data
   useEffect(() => {
     if (activePrincipalId) {
       loadingRef.current = true;
@@ -222,7 +212,6 @@ export default function App() {
         ),
       );
       setSyllabus(loadSyllabus(activePrincipalId));
-      // Allow save effects to run after load settles
       setTimeout(() => {
         loadingRef.current = false;
       }, 0);
@@ -312,7 +301,6 @@ export default function App() {
   }
 
   if (role === "parent") {
-    // Use live data if available, otherwise fallback
     let parentStudent: Student | undefined = liveParentStudent ?? undefined;
     if (!parentStudent && parentStudentId !== null) {
       if (parentPrincipalId) {
@@ -388,6 +376,9 @@ export default function App() {
       "exam-timetable": "Exam Timetable",
       "test-marks": "Test Marks",
       "send-message": "Send Message to Parents",
+      "class-records": "Class Records",
+      "error-fix": "Error Fix",
+      "storage-backup": "Storage & Backup",
       edit: "Edit Student",
     };
 
@@ -491,6 +482,22 @@ export default function App() {
               onSendNotification={(n) =>
                 setNotifications((prev) => [n, ...prev])
               }
+            />
+          )}
+          {principalPage === "class-records" && (
+            <PrincipalClassRecordsPage
+              principalId={activePrincipalId ?? "default"}
+              students={students}
+            />
+          )}
+          {principalPage === "error-fix" && (
+            <PrincipalErrorFixPage
+              principalId={activePrincipalId ?? "default"}
+            />
+          )}
+          {principalPage === "storage-backup" && (
+            <PrincipalStorageBackupPage
+              principalId={activePrincipalId ?? "default"}
             />
           )}
         </PrincipalLayout>

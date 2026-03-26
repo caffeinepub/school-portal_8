@@ -86,8 +86,6 @@ function getTypeIcon(type: StorageItem["type"]) {
   if (type === "media") return <Image size={15} className="text-purple-500" />;
   if (type === "students")
     return <Database size={15} className="text-indigo-500" />;
-  if (type === "syllabus")
-    return <HardDrive size={15} className="text-blue-500" />;
   return <HardDrive size={15} className="text-gray-400" />;
 }
 
@@ -95,7 +93,7 @@ interface Props {
   principalId: string;
 }
 
-export default function PrincipalStoragePage({ principalId }: Props) {
+export default function PrincipalStorageBackupPage({ principalId }: Props) {
   const [items, setItems] = useState<StorageItem[]>(() => scanStorage());
   const [backupStatus, setBackupStatus] = useState<
     "idle" | "success" | "error"
@@ -111,7 +109,6 @@ export default function PrincipalStoragePage({ principalId }: Props) {
 
   const refresh = () => setItems(scanStorage());
 
-  // Filter items relevant to current principal
   const myItems = items.filter(
     (i) =>
       i.key.includes(`_${principalId}`) ||
@@ -160,7 +157,6 @@ export default function PrincipalStoragePage({ principalId }: Props) {
           string,
           unknown
         >;
-
         for (const [key, value] of Object.entries(data)) {
           if (key === "_meta") continue;
           if (key.startsWith("lords_")) {

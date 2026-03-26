@@ -1,21 +1,23 @@
 import {
+  Archive,
   BookOpen,
   Calendar,
   ClipboardList,
   FileText,
   GraduationCap,
+  HardDrive,
   Info,
   LayoutGrid,
   LogOut,
   Megaphone,
   Menu,
   MessageCircle,
-  MessageSquarePlus,
   NotebookPen,
   Send,
   ShieldCheck,
   UserPlus,
   Users,
+  Wrench,
   X,
 } from "lucide-react";
 import { useState } from "react";
@@ -41,6 +43,15 @@ const communicationNavItems = [
   { id: "send-message", label: "Send Message", icon: Send },
 ];
 
+const recordsNavItems = [
+  { id: "class-records", label: "Class Records", icon: Archive },
+];
+
+const toolsNavItems = [
+  { id: "error-fix", label: "Error Fix", icon: Wrench },
+  { id: "storage-backup", label: "Storage & Backup", icon: HardDrive },
+];
+
 interface Props {
   currentPage: string;
   onPageChange: (page: string) => void;
@@ -64,6 +75,8 @@ export default function PrincipalLayout({
     ...studentNavItems,
     ...schoolNavItems,
     ...communicationNavItems,
+    ...recordsNavItems,
+    ...toolsNavItems,
   ];
   const currentLabel =
     pageLabel ??
@@ -155,6 +168,24 @@ export default function PrincipalLayout({
             </p>
             <div className="space-y-0.5">
               {renderNavSection(communicationNavItems)}
+            </div>
+          </div>
+
+          <div>
+            <p className="text-indigo-400 text-xs font-semibold uppercase tracking-wider px-3 mb-1">
+              Records
+            </p>
+            <div className="space-y-0.5">
+              {renderNavSection(recordsNavItems)}
+            </div>
+          </div>
+
+          <div>
+            <p className="text-indigo-400 text-xs font-semibold uppercase tracking-wider px-3 mb-1">
+              Tools
+            </p>
+            <div className="space-y-0.5">
+              {renderNavSection(toolsNavItems)}
             </div>
           </div>
         </nav>
