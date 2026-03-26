@@ -1,4 +1,4 @@
-import type { Notification, SyllabusSubject } from "@/App";
+import type { ClassSyllabus, Notification, SyllabusSubject } from "@/App";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -35,7 +35,7 @@ import ParentTestMarksView from "./ParentTestMarksView";
 interface Props {
   student: Student;
   notifications: Notification[];
-  syllabus: SyllabusSubject[];
+  syllabus: ClassSyllabus;
   principalId?: string;
 }
 
@@ -152,13 +152,26 @@ export default function ParentView({
   return (
     <div className="space-y-6">
       {/* Welcome header */}
-      <div className="flex items-center gap-3">
-        <div className="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-lg flex-shrink-0">
-          {student.name.charAt(0)}
+      <div className="flex items-center gap-4">
+        <div className="w-20 h-20 rounded-full overflow-hidden border-4 border-indigo-100 bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-2xl flex-shrink-0">
+          {student.profilePicture ? (
+            <img
+              src={student.profilePicture}
+              alt={student.name}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            student.name
+              .split(" ")
+              .map((w: string) => w[0])
+              .join("")
+              .slice(0, 2)
+              .toUpperCase()
+          )}
         </div>
         <div>
-          <div className="flex items-center gap-2">
-            <h2 className="text-lg font-bold text-gray-800">{student.name}</h2>
+          <div className="flex items-center gap-2 flex-wrap">
+            <h2 className="text-xl font-bold text-gray-800">{student.name}</h2>
             <Badge className="bg-indigo-100 text-indigo-700 border-0 gap-1">
               <Star size={11} /> My Child
             </Badge>
@@ -588,7 +601,7 @@ export default function ParentView({
         {/* Syllabus */}
         <TabsContent value="syllabus" className="mt-4">
           <div className="space-y-3">
-            {syllabus.map((s) => (
+            {(syllabus[student.class] ?? []).map((s) => (
               <Card key={s.subject} className="border-0 shadow-sm">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-semibold text-gray-800">

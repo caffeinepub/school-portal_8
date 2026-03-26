@@ -1,5 +1,5 @@
 import { Toaster } from "@/components/ui/sonner";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import ParentLayout from "./components/ParentLayout";
 import PrincipalLayout from "./components/PrincipalLayout";
 import {
@@ -40,7 +40,11 @@ type PrincipalPage =
   | "test-marks";
 
 export type Notification = (typeof mockNotifications)[number];
-export type SyllabusSubject = (typeof mockSyllabus)[number];
+export type SyllabusSubject = {
+  subject: string;
+  chapters: { name: string; status: string }[];
+};
+export type ClassSyllabus = Record<string, SyllabusSubject[]>;
 
 function loadStorage<T>(key: string, fallback: T): T {
   try {
@@ -54,6 +58,39 @@ function saveStorage<T>(key: string, value: T) {
   try {
     localStorage.setItem(key, JSON.stringify(value));
   } catch {}
+}
+
+/**
+ * Load syllabus with migration support.
+ * Before v42, syllabus was stored as SyllabusSubject[] (flat array).
+ * After v42, it became Record<string, SyllabusSubject[]> (class-wise).
+ * If old array format is found, migrate it to class-wise format.
+ */
+function loadSyllabus(principalId: string): ClassSyllabus {
+  try {
+    const raw = localStorage.getItem(`lords_syllabus_${principalId}`);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      // Old format was a flat array of SyllabusSubject
+      if (Array.isArray(parsed)) {
+        if (parsed.length > 0) {
+          // Migrate: put old subjects under a "General" class key
+          const migrated: ClassSyllabus = {
+            General: parsed as SyllabusSubject[],
+          };
+          // Save migrated data back so it's not lost
+          saveStorage(`lords_syllabus_${principalId}`, migrated);
+          return migrated;
+        }
+        return {};
+      }
+      // New format: Record<string, SyllabusSubject[]>
+      if (typeof parsed === "object" && parsed !== null) {
+        return parsed as ClassSyllabus;
+      }
+    }
+  } catch {}
+  return mockSyllabus;
 }
 
 export default function App() {
@@ -74,13 +111,22 @@ export default function App() {
   const [notifications, setNotifications] = useState<Notification[]>(() =>
     loadStorage(`lords_notifications_${ns}`, mockNotifications),
   );
-  const [syllabus, setSyllabus] = useState<SyllabusSubject[]>(() =>
-    loadStorage(`lords_syllabus_${ns}`, mockSyllabus),
+  const [syllabus, setSyllabus] = useState<ClassSyllabus>(() =>
+    loadSyllabus(ns),
   );
+
+  // Track whether a load is in progress to avoid premature saves
+  const loadingRef = useRef(false);
+  // Track the principal ID for save effects (avoids stale closures)
+  const savedPrincipalIdRef = useRef<string | null>(activePrincipalId);
+  useEffect(() => {
+    savedPrincipalIdRef.current = activePrincipalId;
+  }, [activePrincipalId]);
 
   // When principal changes, reload their data
   useEffect(() => {
     if (activePrincipalId) {
+      loadingRef.current = true;
       setStudents(
         loadStorage(`lords_students_${activePrincipalId}`, mockStudents),
       );
@@ -90,24 +136,29 @@ export default function App() {
           mockNotifications,
         ),
       );
-      setSyllabus(
-        loadStorage(`lords_syllabus_${activePrincipalId}`, mockSyllabus),
-      );
+      setSyllabus(loadSyllabus(activePrincipalId));
+      // Allow save effects to run after load settles
+      setTimeout(() => {
+        loadingRef.current = false;
+      }, 0);
     }
   }, [activePrincipalId]);
 
   useEffect(() => {
-    if (activePrincipalId)
-      saveStorage(`lords_students_${activePrincipalId}`, students);
-  }, [students, activePrincipalId]);
+    if (savedPrincipalIdRef.current && !loadingRef.current)
+      saveStorage(`lords_students_${savedPrincipalIdRef.current}`, students);
+  }, [students]);
   useEffect(() => {
-    if (activePrincipalId)
-      saveStorage(`lords_notifications_${activePrincipalId}`, notifications);
-  }, [notifications, activePrincipalId]);
+    if (savedPrincipalIdRef.current && !loadingRef.current)
+      saveStorage(
+        `lords_notifications_${savedPrincipalIdRef.current}`,
+        notifications,
+      );
+  }, [notifications]);
   useEffect(() => {
-    if (activePrincipalId)
-      saveStorage(`lords_syllabus_${activePrincipalId}`, syllabus);
-  }, [syllabus, activePrincipalId]);
+    if (savedPrincipalIdRef.current && !loadingRef.current)
+      saveStorage(`lords_syllabus_${savedPrincipalIdRef.current}`, syllabus);
+  }, [syllabus]);
 
   const [principalPage, setPrincipalPage] = useState<PrincipalPage>("list");
   const [prefilledClass, setPrefilledClass] = useState<string>("");
@@ -195,7 +246,7 @@ export default function App() {
         )
       : notifications;
     const parentSyllabus = parentPrincipalId
-      ? loadStorage(`lords_syllabus_${parentPrincipalId}`, mockSyllabus)
+      ? loadSyllabus(parentPrincipalId)
       : syllabus;
 
     return (
@@ -288,6 +339,7 @@ export default function App() {
           )}
           {principalPage === "school-syllabus" && (
             <PrincipalSyllabusPage
+              key={activePrincipalId ?? "default"}
               syllabus={syllabus}
               setSyllabus={setSyllabus}
             />

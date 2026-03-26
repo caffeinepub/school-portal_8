@@ -324,8 +324,16 @@ export default function PrincipalClassView({
                       className="flex items-center justify-between px-5 py-3 hover:bg-gray-50 transition-colors"
                     >
                       <div className="flex items-center gap-4">
-                        <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-semibold text-sm">
-                          {student.name.charAt(0).toUpperCase()}
+                        <div className="w-8 h-8 rounded-full overflow-hidden bg-indigo-100 flex items-center justify-center text-indigo-700 font-semibold text-sm">
+                          {student.profilePicture ? (
+                            <img
+                              src={student.profilePicture}
+                              alt={student.name}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            student.name.charAt(0).toUpperCase()
+                          )}
                         </div>
                         <div>
                           <p className="font-medium text-gray-900 text-sm">

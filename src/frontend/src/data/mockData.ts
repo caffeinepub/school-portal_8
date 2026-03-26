@@ -43,6 +43,7 @@ export interface Student {
   rank: number;
   password?: string;
   parentPassword?: string;
+  profilePicture?: string;
 }
 
 export const students: Student[] = [
@@ -1663,49 +1664,74 @@ export const notifications = [
   },
 ];
 
-export const syllabus = [
-  {
-    subject: "Mathematics",
-    chapters: [
-      { name: "Real Numbers", status: "Completed" },
-      { name: "Polynomials", status: "Completed" },
-      { name: "Pair of Linear Equations", status: "Completed" },
-      { name: "Quadratic Equations", status: "In Progress" },
-      { name: "Arithmetic Progressions", status: "Pending" },
-      { name: "Triangles", status: "Pending" },
-    ],
-  },
-  {
-    subject: "Science",
-    chapters: [
-      { name: "Chemical Reactions", status: "Completed" },
-      { name: "Acids, Bases and Salts", status: "Completed" },
-      { name: "Metals and Non-metals", status: "Completed" },
-      { name: "Carbon and its Compounds", status: "In Progress" },
-      { name: "Periodic Classification", status: "Pending" },
-    ],
-  },
-  {
-    subject: "English",
-    chapters: [
-      { name: "First Flight - Prose", status: "Completed" },
-      { name: "First Flight - Poetry", status: "In Progress" },
-      { name: "Footprints Without Feet", status: "Pending" },
-      { name: "Writing Skills", status: "In Progress" },
-      { name: "Grammar", status: "Completed" },
-    ],
-  },
-  {
-    subject: "Computer Science",
-    chapters: [
-      { name: "Introduction to Python", status: "Completed" },
-      { name: "Data Types & Variables", status: "Completed" },
-      { name: "Control Flow", status: "Completed" },
-      { name: "Functions", status: "In Progress" },
-      { name: "Lists & Dictionaries", status: "Pending" },
-    ],
-  },
-];
+export const syllabus: Record<
+  string,
+  { subject: string; chapters: { name: string; status: string }[] }[]
+> = {
+  "10-A": [
+    {
+      subject: "Mathematics",
+      chapters: [
+        { name: "Real Numbers", status: "Completed" },
+        { name: "Polynomials", status: "Completed" },
+        { name: "Pair of Linear Equations", status: "Completed" },
+        { name: "Quadratic Equations", status: "In Progress" },
+        { name: "Arithmetic Progressions", status: "Pending" },
+        { name: "Triangles", status: "Pending" },
+      ],
+    },
+    {
+      subject: "Science",
+      chapters: [
+        { name: "Chemical Reactions", status: "Completed" },
+        { name: "Acids, Bases and Salts", status: "Completed" },
+        { name: "Metals and Non-metals", status: "Completed" },
+        { name: "Carbon and its Compounds", status: "In Progress" },
+        { name: "Periodic Classification", status: "Pending" },
+      ],
+    },
+    {
+      subject: "English",
+      chapters: [
+        { name: "First Flight - Prose", status: "Completed" },
+        { name: "First Flight - Poetry", status: "In Progress" },
+        { name: "Footprints Without Feet", status: "Pending" },
+        { name: "Writing Skills", status: "In Progress" },
+        { name: "Grammar", status: "Completed" },
+      ],
+    },
+    {
+      subject: "Computer Science",
+      chapters: [
+        { name: "Introduction to Python", status: "Completed" },
+        { name: "Data Types & Variables", status: "Completed" },
+        { name: "Control Flow", status: "Completed" },
+        { name: "Functions", status: "In Progress" },
+        { name: "Lists & Dictionaries", status: "Pending" },
+      ],
+    },
+  ],
+  "9-A": [
+    {
+      subject: "Mathematics",
+      chapters: [
+        { name: "Number Systems", status: "Completed" },
+        { name: "Polynomials", status: "Completed" },
+        { name: "Coordinate Geometry", status: "In Progress" },
+        { name: "Linear Equations", status: "Pending" },
+      ],
+    },
+    {
+      subject: "Science",
+      chapters: [
+        { name: "Matter in Our Surroundings", status: "Completed" },
+        { name: "Is Matter Around Us Pure?", status: "Completed" },
+        { name: "Atoms and Molecules", status: "In Progress" },
+        { name: "Structure of Atom", status: "Pending" },
+      ],
+    },
+  ],
+};
 
 export const schoolRecords = [
   {

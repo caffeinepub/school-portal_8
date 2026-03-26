@@ -31,6 +31,7 @@ import {
 } from "@/utils/mediaStorage";
 import {
   ArrowLeft,
+  Camera,
   Edit2,
   Film,
   Image as ImageIcon,
@@ -335,13 +336,21 @@ export default function StudentEditPage({
             Back to Students
           </Button>
           <div className="flex items-center gap-3 ml-1">
-            <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold">
-              {draft.name
-                .split(" ")
-                .map((w) => w[0])
-                .join("")
-                .slice(0, 2)
-                .toUpperCase()}
+            <div className="w-10 h-10 rounded-full overflow-hidden bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold">
+              {draft.profilePicture ? (
+                <img
+                  src={draft.profilePicture}
+                  alt={draft.name}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                draft.name
+                  .split(" ")
+                  .map((w) => w[0])
+                  .join("")
+                  .slice(0, 2)
+                  .toUpperCase()
+              )}
             </div>
             <div>
               <h2 className="text-lg font-bold text-gray-900">{draft.name}</h2>
@@ -407,6 +416,63 @@ export default function StudentEditPage({
 
           {/* Profile Tab */}
           <TabsContent value="profile" className="p-6">
+            {/* Profile Picture Upload */}
+            <div className="flex flex-col items-center mb-6">
+              <div className="relative">
+                <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-indigo-100 bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-2xl select-none">
+                  {draft.profilePicture ? (
+                    <img
+                      src={draft.profilePicture}
+                      alt={draft.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    draft.name
+                      .split(" ")
+                      .map((w: string) => w[0])
+                      .join("")
+                      .slice(0, 2)
+                      .toUpperCase()
+                  )}
+                </div>
+                <button
+                  type="button"
+                  data-ocid="student_edit.upload_button"
+                  onClick={() => {
+                    const input = document.getElementById(
+                      `profile-pic-input-${draft.id}`,
+                    );
+                    if (input) (input as HTMLInputElement).click();
+                  }}
+                  className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-indigo-600 hover:bg-indigo-700 flex items-center justify-center shadow-md transition-colors"
+                  title="Upload profile picture"
+                >
+                  <Camera size={14} className="text-white" />
+                </button>
+                <input
+                  id={`profile-pic-input-${draft.id}`}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = (ev) => {
+                      setDraft((prev) => ({
+                        ...prev,
+                        profilePicture: ev.target?.result as string,
+                      }));
+                    };
+                    reader.readAsDataURL(file);
+                    e.target.value = "";
+                  }}
+                />
+              </div>
+              <p className="text-xs text-gray-500 mt-2">
+                Click the camera icon to upload a profile photo
+              </p>
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               {(
                 [

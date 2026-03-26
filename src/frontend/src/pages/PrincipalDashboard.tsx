@@ -364,8 +364,16 @@ export default function PrincipalDashboard({
                     >
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-semibold text-sm flex-shrink-0">
-                            {initials}
+                          <div className="w-9 h-9 rounded-full overflow-hidden bg-indigo-100 flex items-center justify-center text-indigo-700 font-semibold text-sm flex-shrink-0">
+                            {student.profilePicture ? (
+                              <img
+                                src={student.profilePicture}
+                                alt={student.name}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              initials
+                            )}
                           </div>
                           <span className="font-medium text-gray-900 text-sm">
                             {student.name}

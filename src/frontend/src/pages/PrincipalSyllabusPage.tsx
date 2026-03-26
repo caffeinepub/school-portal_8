@@ -1,4 +1,4 @@
-import type { SyllabusSubject } from "@/App";
+import type { ClassSyllabus, SyllabusSubject } from "@/App";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -25,12 +25,12 @@ import {
   Plus,
   Trash2,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 interface Props {
-  syllabus: SyllabusSubject[];
-  setSyllabus: React.Dispatch<React.SetStateAction<SyllabusSubject[]>>;
+  syllabus: ClassSyllabus;
+  setSyllabus: React.Dispatch<React.SetStateAction<ClassSyllabus>>;
 }
 
 type ChapterStatus = "Completed" | "In Progress" | "Pending";
@@ -45,7 +45,25 @@ export default function PrincipalSyllabusPage({
   syllabus,
   setSyllabus,
 }: Props) {
+  const allClasses = Object.keys(syllabus);
+  const [selectedClass, setSelectedClass] = useState<string>(
+    allClasses[0] ?? "",
+  );
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+
+  // Keep selectedClass in sync when syllabus changes (e.g. on principal switch)
+  useEffect(() => {
+    const keys = Object.keys(syllabus);
+    if (keys.length > 0 && !syllabus[selectedClass]) {
+      setSelectedClass(keys[0]);
+    } else if (keys.length === 0) {
+      setSelectedClass("");
+    }
+  }, [syllabus, selectedClass]);
+
+  // Add class dialog
+  const [addClassOpen, setAddClassOpen] = useState(false);
+  const [newClassName, setNewClassName] = useState("");
 
   // Add subject dialog
   const [addSubjectOpen, setAddSubjectOpen] = useState(false);
@@ -66,19 +84,43 @@ export default function PrincipalSyllabusPage({
     status: "Pending" as ChapterStatus,
   });
 
+  const currentSyllabus: SyllabusSubject[] = syllabus[selectedClass] ?? [];
+
+  const addClass = () => {
+    const name = newClassName.trim();
+    if (!name) return;
+    if (syllabus[name]) {
+      toast.error("Class already exists");
+      return;
+    }
+    setSyllabus((prev) => ({ ...prev, [name]: [] }));
+    setSelectedClass(name);
+    setNewClassName("");
+    setAddClassOpen(false);
+    toast.success(`Class "${name}" added`);
+  };
+
   const addSubject = () => {
-    if (!newSubject.trim()) return;
-    setSyllabus((prev) => [
+    if (!newSubject.trim() || !selectedClass) return;
+    setSyllabus((prev) => ({
       ...prev,
-      { subject: newSubject.trim(), chapters: [] },
-    ]);
+      [selectedClass]: [
+        ...(prev[selectedClass] ?? []),
+        { subject: newSubject.trim(), chapters: [] },
+      ],
+    }));
     toast.success("Subject added");
     setNewSubject("");
     setAddSubjectOpen(false);
   };
 
   const deleteSubject = (subjectName: string) => {
-    setSyllabus((prev) => prev.filter((s) => s.subject !== subjectName));
+    setSyllabus((prev) => ({
+      ...prev,
+      [selectedClass]: (prev[selectedClass] ?? []).filter(
+        (s) => s.subject !== subjectName,
+      ),
+    }));
     toast.success("Subject removed");
   };
 
@@ -90,9 +132,10 @@ export default function PrincipalSyllabusPage({
   };
 
   const addChapter = () => {
-    if (!newChapter.trim()) return;
-    setSyllabus((prev) =>
-      prev.map((s) =>
+    if (!newChapter.trim() || !selectedClass) return;
+    setSyllabus((prev) => ({
+      ...prev,
+      [selectedClass]: (prev[selectedClass] ?? []).map((s) =>
         s.subject === chapterTarget
           ? {
               ...s,
@@ -103,7 +146,7 @@ export default function PrincipalSyllabusPage({
             }
           : s,
       ),
-    );
+    }));
     toast.success("Chapter added");
     setAddChapterOpen(false);
   };
@@ -118,8 +161,9 @@ export default function PrincipalSyllabusPage({
   };
 
   const saveEditChapter = () => {
-    setSyllabus((prev) =>
-      prev.map((s) =>
+    setSyllabus((prev) => ({
+      ...prev,
+      [selectedClass]: (prev[selectedClass] ?? []).map((s) =>
         s.subject === editTarget.subject
           ? {
               ...s,
@@ -131,71 +175,169 @@ export default function PrincipalSyllabusPage({
             }
           : s,
       ),
-    );
+    }));
     toast.success("Chapter status updated");
     setEditOpen(false);
   };
 
   const deleteChapter = (subjectName: string, chapterName: string) => {
-    setSyllabus((prev) =>
-      prev.map((s) =>
+    setSyllabus((prev) => ({
+      ...prev,
+      [selectedClass]: (prev[selectedClass] ?? []).map((s) =>
         s.subject === subjectName
           ? { ...s, chapters: s.chapters.filter((c) => c.name !== chapterName) }
           : s,
       ),
-    );
+    }));
     toast.success("Chapter removed");
   };
 
+  const currentAllClasses = Object.keys(syllabus);
+
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
+      {/* Header */}
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h2 className="text-lg font-bold text-gray-800">Manage Syllabus</h2>
-          <p className="text-sm text-gray-500">{syllabus.length} subjects</p>
+          <p className="text-sm text-gray-500">
+            Class-wise syllabus management
+          </p>
         </div>
-        <Dialog open={addSubjectOpen} onOpenChange={setAddSubjectOpen}>
-          <DialogTrigger asChild>
-            <Button
-              data-ocid="syllabus.open_modal_button"
-              className="gap-2 bg-indigo-600 hover:bg-indigo-700"
-            >
-              <Plus size={16} /> Add Subject
-            </Button>
-          </DialogTrigger>
-          <DialogContent data-ocid="syllabus.dialog">
-            <DialogHeader>
-              <DialogTitle>Add New Subject</DialogTitle>
-            </DialogHeader>
-            <div className="py-2">
-              <Label>Subject Name</Label>
-              <Input
-                data-ocid="syllabus.input"
-                className="mt-1"
-                placeholder="e.g. Geography"
-                value={newSubject}
-                onChange={(e) => setNewSubject(e.target.value)}
-              />
-            </div>
-            <DialogFooter>
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Add Class */}
+          <Dialog open={addClassOpen} onOpenChange={setAddClassOpen}>
+            <DialogTrigger asChild>
               <Button
-                data-ocid="syllabus.cancel_button"
+                data-ocid="syllabus.open_modal_button"
                 variant="outline"
-                onClick={() => setAddSubjectOpen(false)}
+                className="gap-2 border-indigo-300 text-indigo-700 hover:bg-indigo-50"
               >
-                Cancel
+                <Plus size={15} /> Add Class
               </Button>
-              <Button
-                data-ocid="syllabus.save_button"
-                onClick={addSubject}
-                className="bg-indigo-600 hover:bg-indigo-700"
-              >
-                Add Subject
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+            </DialogTrigger>
+            <DialogContent data-ocid="syllabus.dialog">
+              <DialogHeader>
+                <DialogTitle>Add New Class</DialogTitle>
+              </DialogHeader>
+              <div className="py-2">
+                <Label>Class Name</Label>
+                <Input
+                  data-ocid="syllabus.input"
+                  className="mt-1"
+                  placeholder="e.g. 8-B"
+                  value={newClassName}
+                  onChange={(e) => setNewClassName(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && addClass()}
+                />
+              </div>
+              <DialogFooter>
+                <Button
+                  data-ocid="syllabus.cancel_button"
+                  variant="outline"
+                  onClick={() => setAddClassOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  data-ocid="syllabus.save_button"
+                  onClick={addClass}
+                  className="bg-indigo-600 hover:bg-indigo-700"
+                >
+                  Add Class
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* Add Subject (only when a class is selected) */}
+          {selectedClass && (
+            <Dialog open={addSubjectOpen} onOpenChange={setAddSubjectOpen}>
+              <DialogTrigger asChild>
+                <Button className="gap-2 bg-indigo-600 hover:bg-indigo-700">
+                  <Plus size={16} /> Add Subject
+                </Button>
+              </DialogTrigger>
+              <DialogContent data-ocid="syllabus.dialog">
+                <DialogHeader>
+                  <DialogTitle>
+                    Add Subject to Class {selectedClass}
+                  </DialogTitle>
+                </DialogHeader>
+                <div className="py-2">
+                  <Label>Subject Name</Label>
+                  <Input
+                    data-ocid="syllabus.input"
+                    className="mt-1"
+                    placeholder="e.g. Geography"
+                    value={newSubject}
+                    onChange={(e) => setNewSubject(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && addSubject()}
+                  />
+                </div>
+                <DialogFooter>
+                  <Button
+                    data-ocid="syllabus.cancel_button"
+                    variant="outline"
+                    onClick={() => setAddSubjectOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    data-ocid="syllabus.save_button"
+                    onClick={addSubject}
+                    className="bg-indigo-600 hover:bg-indigo-700"
+                  >
+                    Add Subject
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          )}
+        </div>
       </div>
+
+      {/* Class selector */}
+      {currentAllClasses.length === 0 ? (
+        <div
+          data-ocid="syllabus.empty_state"
+          className="text-center py-16 text-gray-400"
+        >
+          <BookOpen size={40} className="mx-auto mb-3 opacity-40" />
+          <p className="font-medium mb-1">No classes added yet.</p>
+          <p className="text-sm">Click "Add Class" to get started.</p>
+        </div>
+      ) : (
+        <div className="flex items-center gap-3">
+          <Label className="text-sm font-medium text-gray-600 whitespace-nowrap">
+            Select Class:
+          </Label>
+          <Select
+            value={selectedClass}
+            onValueChange={(v) => {
+              setSelectedClass(v);
+              setExpanded({});
+            }}
+          >
+            <SelectTrigger data-ocid="syllabus.select" className="w-44">
+              <SelectValue placeholder="Select class" />
+            </SelectTrigger>
+            <SelectContent>
+              {currentAllClasses.map((cls) => (
+                <SelectItem key={cls} value={cls}>
+                  Class {cls}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {selectedClass && (
+            <span className="text-sm text-gray-500">
+              {currentSyllabus.length} subject
+              {currentSyllabus.length !== 1 ? "s" : ""}
+            </span>
+          )}
+        </div>
+      )}
 
       {/* Add chapter dialog */}
       <Dialog open={addChapterOpen} onOpenChange={setAddChapterOpen}>
@@ -296,18 +438,22 @@ export default function PrincipalSyllabusPage({
         </DialogContent>
       </Dialog>
 
-      {syllabus.length === 0 && (
-        <div
-          data-ocid="syllabus.empty_state"
-          className="text-center py-16 text-gray-400"
-        >
-          <BookOpen size={40} className="mx-auto mb-3 opacity-40" />
-          <p>No subjects added yet.</p>
-        </div>
-      )}
+      {/* Subjects list for selected class */}
+      {selectedClass &&
+        currentSyllabus.length === 0 &&
+        currentAllClasses.length > 0 && (
+          <div
+            data-ocid="syllabus.empty_state"
+            className="text-center py-12 text-gray-400"
+          >
+            <BookOpen size={36} className="mx-auto mb-3 opacity-40" />
+            <p>No subjects for Class {selectedClass} yet.</p>
+            <p className="text-sm mt-1">Click "Add Subject" to add one.</p>
+          </div>
+        )}
 
       <div className="space-y-3">
-        {syllabus.map((s, sIdx) => (
+        {currentSyllabus.map((s, sIdx) => (
           <div
             key={s.subject}
             data-ocid={`syllabus.item.${sIdx + 1}`}
