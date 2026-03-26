@@ -17,10 +17,12 @@ import PrincipalClassView from "./pages/PrincipalClassView";
 import PrincipalDashboard from "./pages/PrincipalDashboard";
 import PrincipalDiaryPage from "./pages/PrincipalDiaryPage";
 import PrincipalDoubtChat from "./pages/PrincipalDoubtChat";
+import PrincipalErrorFixPage from "./pages/PrincipalErrorFixPage";
 import PrincipalExamTimetablePage from "./pages/PrincipalExamTimetablePage";
 import PrincipalHolidaysPage from "./pages/PrincipalHolidaysPage";
 import PrincipalSchoolInfoEditor from "./pages/PrincipalSchoolInfoEditor";
 import PrincipalSendMessagePage from "./pages/PrincipalSendMessagePage";
+import PrincipalStoragePage from "./pages/PrincipalStoragePage";
 import PrincipalSyllabusPage from "./pages/PrincipalSyllabusPage";
 import PrincipalTestMarksPage from "./pages/PrincipalTestMarksPage";
 import StudentEditPage from "./pages/StudentEditPage";
@@ -39,7 +41,9 @@ type PrincipalPage =
   | "diary"
   | "exam-timetable"
   | "test-marks"
-  | "send-message";
+  | "send-message"
+  | "error-fix"
+  | "storage";
 
 export type Notification = (typeof mockNotifications)[number];
 export type SyllabusSubject = {
@@ -388,6 +392,8 @@ export default function App() {
       "exam-timetable": "Exam Timetable",
       "test-marks": "Test Marks",
       "send-message": "Send Message to Parents",
+      "error-fix": "Error Fix & Diagnostics",
+      storage: "Storage & Backup",
       edit: "Edit Student",
     };
 
@@ -482,6 +488,16 @@ export default function App() {
             <PrincipalTestMarksPage
               principalId={activePrincipalId ?? "default"}
               students={students}
+            />
+          )}
+          {principalPage === "error-fix" && (
+            <PrincipalErrorFixPage
+              principalId={activePrincipalId ?? "default"}
+            />
+          )}
+          {principalPage === "storage" && (
+            <PrincipalStoragePage
+              principalId={activePrincipalId ?? "default"}
             />
           )}
           {principalPage === "send-message" && (

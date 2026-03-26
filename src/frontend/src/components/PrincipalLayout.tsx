@@ -4,6 +4,7 @@ import {
   ClipboardList,
   FileText,
   GraduationCap,
+  HardDrive,
   Info,
   LayoutGrid,
   LogOut,
@@ -16,6 +17,7 @@ import {
   ShieldCheck,
   UserPlus,
   Users,
+  Wrench,
   X,
 } from "lucide-react";
 import { useState } from "react";
@@ -34,6 +36,11 @@ const schoolNavItems = [
   { id: "diary", label: "Diary", icon: NotebookPen },
   { id: "exam-timetable", label: "Exam Timetable", icon: ClipboardList },
   { id: "test-marks", label: "Test Marks", icon: FileText },
+];
+
+const toolsNavItems = [
+  { id: "error-fix", label: "Error Fix", icon: Wrench },
+  { id: "storage", label: "Storage & Backup", icon: HardDrive },
 ];
 
 const communicationNavItems = [
@@ -64,6 +71,7 @@ export default function PrincipalLayout({
     ...studentNavItems,
     ...schoolNavItems,
     ...communicationNavItems,
+    ...toolsNavItems,
   ];
   const currentLabel =
     pageLabel ??
@@ -156,6 +164,13 @@ export default function PrincipalLayout({
             <div className="space-y-0.5">
               {renderNavSection(communicationNavItems)}
             </div>
+          </div>
+
+          <div>
+            <p className="text-indigo-400 text-xs font-semibold uppercase tracking-wider px-3 mb-1">
+              Tools
+            </p>
+            <div className="space-y-0.5">{renderNavSection(toolsNavItems)}</div>
           </div>
         </nav>
 
