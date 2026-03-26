@@ -96,14 +96,6 @@ export default function StudentEditPage({
   const replaceInputRef = useRef<HTMLInputElement>(null);
   const [replacingId, setReplacingId] = useState<string | null>(null);
   const [blobUrls, setBlobUrls] = useState<Record<string, string>>({});
-  const MAX_PARENT_PW_EDITS = 10;
-  const parentPwEditKey = `lords_parent_pw_edit_count_${student.id}_${principalId}`;
-  const [parentPwEditCount, setParentPwEditCount] = useState<number>(() => {
-    const stored = localStorage.getItem(
-      `lords_parent_pw_edit_count_${student.id}_${principalId}`,
-    );
-    return stored ? Number.parseInt(stored, 10) : 0;
-  });
 
   useEffect(() => {
     let cancelled = false;
@@ -231,31 +223,12 @@ export default function StudentEditPage({
   }
 
   function handleSave() {
-    // Track parent password edits - limit to 10 times
-    const prevParentPw =
-      localStorage.getItem(
-        `lords_parent_password_student_${student.id}_${principalId}`,
-      ) ?? "";
-    const parentPwChanged =
-      draft.parentPassword !== undefined &&
-      draft.parentPassword !== prevParentPw;
-    if (parentPwChanged && parentPwEditCount >= MAX_PARENT_PW_EDITS) {
-      toast.error(
-        `Parent password can only be changed ${MAX_PARENT_PW_EDITS} times. Limit reached.`,
-      );
-      return;
-    }
     onUpdateStudent(draft);
     if (draft.parentPassword) {
       localStorage.setItem(
         `lords_parent_password_student_${draft.id}_${principalId}`,
         draft.parentPassword,
       );
-      if (parentPwChanged) {
-        const newCount = parentPwEditCount + 1;
-        setParentPwEditCount(newCount);
-        localStorage.setItem(parentPwEditKey, String(newCount));
-      }
     }
     toast.success(`${draft.name}'s record saved permanently!`);
   }
@@ -562,38 +535,17 @@ export default function StudentEditPage({
               <div className="sm:col-span-2">
                 <Label className="text-sm font-medium text-gray-700 mb-1 block">
                   Parent Login Password
-                  {parentPwEditCount >= MAX_PARENT_PW_EDITS ? (
-                    <span className="ml-2 text-xs text-red-600 font-semibold">
-                      (Edit limit reached: {parentPwEditCount}/
-                      {MAX_PARENT_PW_EDITS})
-                    </span>
-                  ) : (
-                    <span className="ml-2 text-xs text-gray-500">
-                      ({parentPwEditCount}/{MAX_PARENT_PW_EDITS} edits used)
-                    </span>
-                  )}
                 </Label>
                 <Input
                   data-ocid="student_edit.parent_password_input"
                   type="text"
-                  placeholder={
-                    parentPwEditCount >= MAX_PARENT_PW_EDITS
-                      ? "Password locked — edit limit reached"
-                      : "Set a password for this student's parent"
-                  }
+                  placeholder="Set a password for this student's parent"
                   value={draft.parentPassword ?? ""}
                   onChange={(e) => setField("parentPassword", e.target.value)}
-                  disabled={parentPwEditCount >= MAX_PARENT_PW_EDITS}
-                  className={
-                    parentPwEditCount >= MAX_PARENT_PW_EDITS
-                      ? "bg-gray-100 cursor-not-allowed"
-                      : ""
-                  }
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  {parentPwEditCount >= MAX_PARENT_PW_EDITS
-                    ? "Parent password is locked. Maximum edits reached."
-                    : `Parent uses this password to log in and view only this student's account. Can be changed ${MAX_PARENT_PW_EDITS - parentPwEditCount} more time(s).`}
+                  Parent uses this password to log in and view only this
+                  student's account.
                 </p>
               </div>
             </div>
