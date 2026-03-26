@@ -20,6 +20,7 @@ import PrincipalDoubtChat from "./pages/PrincipalDoubtChat";
 import PrincipalExamTimetablePage from "./pages/PrincipalExamTimetablePage";
 import PrincipalHolidaysPage from "./pages/PrincipalHolidaysPage";
 import PrincipalSchoolInfoEditor from "./pages/PrincipalSchoolInfoEditor";
+import PrincipalSendMessagePage from "./pages/PrincipalSendMessagePage";
 import PrincipalSyllabusPage from "./pages/PrincipalSyllabusPage";
 import PrincipalTestMarksPage from "./pages/PrincipalTestMarksPage";
 import StudentEditPage from "./pages/StudentEditPage";
@@ -37,7 +38,8 @@ type PrincipalPage =
   | "class-view"
   | "diary"
   | "exam-timetable"
-  | "test-marks";
+  | "test-marks"
+  | "send-message";
 
 export type Notification = (typeof mockNotifications)[number];
 export type SyllabusSubject = {
@@ -45,6 +47,33 @@ export type SyllabusSubject = {
   chapters: { name: string; status: string }[];
 };
 export type ClassSyllabus = Record<string, SyllabusSubject[]>;
+
+const DEFAULT_CLASSES = [
+  "Class 1",
+  "Class 2",
+  "Class 3",
+  "Class 4",
+  "Class 5",
+  "Class 6",
+  "Class 7",
+  "Class 8",
+  "Class 9",
+  "Class 10",
+  "Class 11",
+  "Class 12",
+  "9-A",
+  "9-B",
+  "10-A",
+  "10-B",
+  "11-A",
+  "11-B",
+  "12-A",
+  "12-B",
+  "11-Science",
+  "11-Commerce",
+  "12-Science",
+  "12-Commerce",
+];
 
 function loadStorage<T>(key: string, fallback: T): T {
   try {
@@ -65,8 +94,10 @@ function saveStorage<T>(key: string, value: T) {
  * Before v42, syllabus was stored as SyllabusSubject[] (flat array).
  * After v42, it became Record<string, SyllabusSubject[]> (class-wise).
  * If old array format is found, migrate it to class-wise format.
+ * Also pre-populates DEFAULT_CLASSES so all class names are pre-listed.
  */
 function loadSyllabus(principalId: string): ClassSyllabus {
+  let result: ClassSyllabus = {};
   try {
     const raw = localStorage.getItem(`lords_syllabus_${principalId}`);
     if (raw) {
@@ -75,22 +106,28 @@ function loadSyllabus(principalId: string): ClassSyllabus {
       if (Array.isArray(parsed)) {
         if (parsed.length > 0) {
           // Migrate: put old subjects under a "General" class key
-          const migrated: ClassSyllabus = {
-            General: parsed as SyllabusSubject[],
-          };
+          result = { General: parsed as SyllabusSubject[] };
           // Save migrated data back so it's not lost
-          saveStorage(`lords_syllabus_${principalId}`, migrated);
-          return migrated;
+          saveStorage(`lords_syllabus_${principalId}`, result);
         }
-        return {};
+      } else if (typeof parsed === "object" && parsed !== null) {
+        result = parsed as ClassSyllabus;
       }
-      // New format: Record<string, SyllabusSubject[]>
-      if (typeof parsed === "object" && parsed !== null) {
-        return parsed as ClassSyllabus;
-      }
+    } else {
+      result = mockSyllabus;
     }
-  } catch {}
-  return mockSyllabus;
+  } catch {
+    result = mockSyllabus;
+  }
+
+  // Merge in default class keys (empty arrays) if they don't exist
+  for (const cls of DEFAULT_CLASSES) {
+    if (!(cls in result)) {
+      result[cls] = [];
+    }
+  }
+
+  return result;
 }
 
 export default function App() {
@@ -101,6 +138,7 @@ export default function App() {
   const [parentPrincipalId, setParentPrincipalId] = useState<string | null>(
     null,
   );
+  const [parentStudentId, setParentStudentId] = useState<number | null>(null);
 
   // Derive namespace keys
   const ns = activePrincipalId ?? "default";
@@ -114,6 +152,53 @@ export default function App() {
   const [syllabus, setSyllabus] = useState<ClassSyllabus>(() =>
     loadSyllabus(ns),
   );
+
+  // Live data for parent panel — refreshes every 5 seconds
+  const [liveParentStudent, setLiveParentStudent] = useState<Student | null>(
+    null,
+  );
+  const [liveParentNotifications, setLiveParentNotifications] = useState<
+    Notification[]
+  >([]);
+  const [liveParentSyllabus, setLiveParentSyllabus] = useState<ClassSyllabus>(
+    {},
+  );
+
+  useEffect(() => {
+    if (role !== "parent" || !parentPrincipalId || parentStudentId === null)
+      return;
+
+    const refresh = () => {
+      const principalStudents = loadStorage(
+        `lords_students_${parentPrincipalId}`,
+        mockStudents,
+      );
+      const found = principalStudents.find(
+        (s: Student) => s.id === parentStudentId,
+      );
+      if (found) setLiveParentStudent(found);
+      setLiveParentNotifications(
+        loadStorage(
+          `lords_notifications_${parentPrincipalId}`,
+          mockNotifications,
+        ),
+      );
+      setLiveParentSyllabus(loadSyllabus(parentPrincipalId));
+    };
+
+    refresh(); // initial load
+    const interval = setInterval(refresh, 5000);
+
+    const onStorage = (e: StorageEvent) => {
+      if (e.key?.startsWith("lords_")) refresh();
+    };
+    window.addEventListener("storage", onStorage);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("storage", onStorage);
+    };
+  }, [role, parentPrincipalId, parentStudentId]);
 
   // Track whether a load is in progress to avoid premature saves
   const loadingRef = useRef(false);
@@ -165,7 +250,6 @@ export default function App() {
   const [selectedStudentId, setSelectedStudentId] = useState<number | null>(
     null,
   );
-  const [parentStudentId, setParentStudentId] = useState<number | null>(null);
   const handleUpdateStudent = (updated: Student) => {
     setStudents((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
   };
@@ -228,26 +312,40 @@ export default function App() {
   }
 
   if (role === "parent") {
-    // Find student across parent's principal data (or fallback)
-    let parentStudent = students.find((s) => s.id === parentStudentId);
-    if (!parentStudent && parentPrincipalId) {
-      const principalStudents = loadStorage(
-        `lords_students_${parentPrincipalId}`,
-        mockStudents,
-      );
-      parentStudent = principalStudents.find((s) => s.id === parentStudentId);
+    // Use live data if available, otherwise fallback
+    let parentStudent: Student | undefined = liveParentStudent ?? undefined;
+    if (!parentStudent && parentStudentId !== null) {
+      if (parentPrincipalId) {
+        const principalStudents = loadStorage(
+          `lords_students_${parentPrincipalId}`,
+          mockStudents,
+        );
+        parentStudent = principalStudents.find(
+          (s: Student) => s.id === parentStudentId,
+        );
+      }
+      if (!parentStudent) {
+        parentStudent = students.find((s) => s.id === parentStudentId);
+      }
     }
     if (!parentStudent) parentStudent = mockStudents[0];
 
-    const parentNotifications = parentPrincipalId
-      ? loadStorage(
-          `lords_notifications_${parentPrincipalId}`,
-          mockNotifications,
-        )
-      : notifications;
-    const parentSyllabus = parentPrincipalId
-      ? loadSyllabus(parentPrincipalId)
-      : syllabus;
+    const parentNotifications =
+      liveParentNotifications.length > 0
+        ? liveParentNotifications
+        : parentPrincipalId
+          ? loadStorage(
+              `lords_notifications_${parentPrincipalId}`,
+              mockNotifications,
+            )
+          : notifications;
+
+    const parentSyllabus =
+      Object.keys(liveParentSyllabus).length > 0
+        ? liveParentSyllabus
+        : parentPrincipalId
+          ? loadSyllabus(parentPrincipalId)
+          : syllabus;
 
     return (
       <>
@@ -257,6 +355,9 @@ export default function App() {
             setRole(null);
             setParentStudentId(null);
             setParentPrincipalId(null);
+            setLiveParentStudent(null);
+            setLiveParentNotifications([]);
+            setLiveParentSyllabus({});
           }}
         >
           <ParentView
@@ -286,6 +387,7 @@ export default function App() {
       diary: "Diary",
       "exam-timetable": "Exam Timetable",
       "test-marks": "Test Marks",
+      "send-message": "Send Message to Parents",
       edit: "Edit Student",
     };
 
@@ -380,6 +482,15 @@ export default function App() {
             <PrincipalTestMarksPage
               principalId={activePrincipalId ?? "default"}
               students={students}
+            />
+          )}
+          {principalPage === "send-message" && (
+            <PrincipalSendMessagePage
+              principalId={activePrincipalId ?? "default"}
+              notifications={notifications}
+              onSendNotification={(n) =>
+                setNotifications((prev) => [n, ...prev])
+              }
             />
           )}
         </PrincipalLayout>

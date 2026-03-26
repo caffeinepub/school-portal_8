@@ -10,7 +10,9 @@ import {
   Megaphone,
   Menu,
   MessageCircle,
+  MessageSquarePlus,
   NotebookPen,
+  Send,
   ShieldCheck,
   UserPlus,
   Users,
@@ -36,6 +38,7 @@ const schoolNavItems = [
 
 const communicationNavItems = [
   { id: "doubt-chat", label: "Doubt Chat", icon: MessageCircle },
+  { id: "send-message", label: "Send Message", icon: Send },
 ];
 
 interface Props {
