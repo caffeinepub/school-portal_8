@@ -1,32 +1,28 @@
 # Lord's International School Group
 
 ## Current State
-- Principal can edit student info and it saves to localStorage under `lords_students_${principalId}`
-- Parent panel reads student data at login time via `loadStorage` in App.tsx render, but once logged in there is no live refresh — changes made by principal are NOT reflected in parent panel without a page refresh
-- Notifications exist but there is no quick "Send Message to Parents" UI in principal panel for common topics (fees, marks, syllabus, announcements, holidays)
-- Syllabus page is class-wise but requires manually adding each class via a dialog — no pre-populated class list
+The app has a Principal panel with multiple sections: Diary, Exam Timetable, Test Marks, Send Message to Parents. Each has a "Send to Parents" or "Save" button that saves data to localStorage. No automatic file download occurs when the principal sends data.
 
 ## Requested Changes (Diff)
 
 ### Add
-- **Live parent data refresh**: parent panel auto-refreshes student data from localStorage every 5 seconds using `setInterval`, so changes by principal appear in parent panel without manual page reload
-- **Storage event listener**: also listen for `window.storage` events to catch cross-tab updates instantly
-- **Quick Message / Send to Parents panel** in Principal sidebar (new page `send-message`): principal can compose a message with a category (Fees, Marks, Syllabus, Announcement, Holiday, General) and send it — it stores as a notification in `lords_notifications_${principalId}` and parents see it in the Notices tab instantly
-- **Pre-populated class list in Syllabus**: classes 1 through 12 (Class 1, Class 2 ... Class 12) plus standard secondary classes (9-A, 9-B, 10-A, 10-B, 11-A, 11-B, 11-Science, 11-Commerce, 12-A, 12-B, 12-Science, 12-Commerce) are pre-listed so principal just selects a class and writes the syllabus — no need to "Add Class" first (Add Class button can still exist to add custom classes)
+- A `downloadCSV(filename, rows)` utility function that triggers a browser CSV file download
+- Auto-download CSV when principal clicks "Save & Send to Class" in Diary page
+- Auto-download CSV when principal clicks "Save Timetable" in Exam Timetable page
+- Auto-download CSV when principal clicks "Save & Send to Parents" in Test Marks page
+- Auto-download CSV when principal clicks "Send to All Parents" in Send Message page
 
 ### Modify
-- `App.tsx`: in the parent role section, replace the one-time `loadStorage` student lookup with reactive state that auto-refreshes every 5 seconds from localStorage, so when principal edits a student the parent sees updates live
-- `PrincipalLayout`: add "Send Message" to the sidebar navigation under a "Communication" section
-- `PrincipalSyllabusPage`: pre-populate `syllabus` state with all standard class keys (Class 1 through 12 + 9-A, 10-A etc.) if they don't already exist, so they appear immediately in the dropdown without manually adding
-- `App.tsx` `loadSyllabus`: initialize with standard class keys if no data exists (instead of falling back to mockSyllabus which may not have class-wise structure)
+- `PrincipalDiaryPage.tsx`: After saving diary entry, trigger a CSV download containing date, class, and subject-wise homework rows. Filename: `Diary_Class{class}_{date}.csv`
+- `PrincipalExamTimetablePage.tsx`: After saving timetable, trigger a CSV download containing all rows (examName, subject, date, day, time, venue). Filename: `ExamTimetable_{class}_{date}.csv`
+- `PrincipalTestMarksPage.tsx`: After saving marks, trigger a CSV download with student names and their marks per subject. Filename: `TestMarks_{class}_{examName}_{date}.csv`
+- `PrincipalSendMessagePage.tsx`: After sending message, trigger a CSV download containing category, title, message, and date. Filename: `Notice_{category}_{date}.csv`
 
 ### Remove
 - Nothing removed
 
 ## Implementation Plan
-1. In `App.tsx`, add a `useEffect` inside the parent role branch that sets up a `setInterval` (5s) and `storage` event listener to reload the student from `lords_students_${parentPrincipalId}` and update local state
-2. Create `src/frontend/src/pages/PrincipalSendMessagePage.tsx` — a form with: message title, message body (textarea), category selector (Fees/Marks/Syllabus/Announcement/Holiday/General), send button. On send: prepend to `lords_notifications_${principalId}` in localStorage and call the parent setState
-3. Add `send-message` to the `PrincipalPage` type and sidebar nav in `PrincipalLayout.tsx`
-4. Wire `send-message` page in `App.tsx` principal routing
-5. In `App.tsx` `loadSyllabus`, after loading, merge in default class keys for classes that don't exist yet
-6. In `PrincipalSyllabusPage`, ensure all standard classes are shown in the dropdown by pre-seeding via `setSyllabus` on mount if missing
+1. Create `src/utils/downloadCSV.ts` with a reusable `downloadCSV(filename: string, headers: string[], rows: string[][])` function
+2. Import and call `downloadCSV` in each of the 4 principal pages after the existing save/send logic
+3. Each download triggers automatically (no extra button needed) -- browser shows the standard "Save file" prompt / saves to Downloads
+4. Filenames include class name and current date for easy identification on Windows and mobile

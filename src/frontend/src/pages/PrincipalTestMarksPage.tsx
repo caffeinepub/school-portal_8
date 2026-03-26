@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/table";
 import type { Student } from "@/data/mockData";
 import { useClasses } from "@/hooks/useClasses";
+import { downloadCSV } from "@/utils/downloadCSV";
 import { Check, FileText, Plus, Save, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -169,6 +170,17 @@ export default function PrincipalTestMarksPage({
     saveTestMarks(principalId, allData);
     toast.success(
       `Test marks for "${effectiveExamName}" (${selectedClass}) saved!`,
+    );
+    const csvDate = new Date().toISOString().split("T")[0];
+    const headers = ["Student Name", ...subjects];
+    const rows = classStudents.map((student) => [
+      student.name,
+      ...subjects.map((sub) => getMarkValue(student.id, sub)),
+    ]);
+    downloadCSV(
+      `TestMarks_${selectedClass}_${effectiveExamName}_${csvDate}.csv`,
+      headers,
+      rows,
     );
   };
 

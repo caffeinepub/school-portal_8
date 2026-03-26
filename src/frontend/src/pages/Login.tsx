@@ -201,6 +201,10 @@ export default function Login({ onLogin }: Props) {
       setParentError("Please enter your password.");
       return;
     }
+    if (parentPassword.length !== 10 || !/^\d{10}$/.test(parentPassword)) {
+      setParentError("Parent password must be exactly 10 digits.");
+      return;
+    }
 
     // Search all principals' students for a matching parentPassword
     for (const p of PRINCIPALS) {
@@ -680,10 +684,12 @@ export default function Login({ onLogin }: Props) {
                 <div className="relative">
                   <Input
                     type={showParentPass ? "text" : "password"}
-                    placeholder="Parent password"
+                    placeholder="Enter 10-digit password"
                     value={parentPassword}
                     onChange={(e) => {
-                      setParentPassword(e.target.value);
+                      setParentPassword(
+                        e.target.value.replace(/\D/g, "").slice(0, 10),
+                      );
                       setParentError("");
                     }}
                     onKeyDown={(e) =>
@@ -691,6 +697,9 @@ export default function Login({ onLogin }: Props) {
                     }
                     className="bg-white pr-10"
                     data-ocid="login.input"
+                    maxLength={10}
+                    inputMode="numeric"
+                    pattern="[0-9]*"
                     autoFocus
                   />
                   <button

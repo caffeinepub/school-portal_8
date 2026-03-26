@@ -3,6 +3,7 @@ import {
   Calendar,
   ClipboardList,
   FileText,
+  FolderArchive,
   GraduationCap,
   HardDrive,
   Info,
@@ -11,9 +12,9 @@ import {
   Megaphone,
   Menu,
   MessageCircle,
-  MessageSquarePlus,
   NotebookPen,
   Send,
+  Server,
   ShieldCheck,
   UserPlus,
   Users,
@@ -41,6 +42,8 @@ const schoolNavItems = [
 const toolsNavItems = [
   { id: "error-fix", label: "Error Fix", icon: Wrench },
   { id: "storage", label: "Storage & Backup", icon: HardDrive },
+  { id: "data-backup", label: "Data Backup", icon: FolderArchive },
+  { id: "data-server", label: "Data Server", icon: Server },
 ];
 
 const communicationNavItems = [

@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { downloadCSV } from "@/utils/downloadCSV";
 import {
   Bell,
   BookOpen,
@@ -121,6 +122,11 @@ export default function PrincipalSendMessagePage({
 
     onSendNotification(newNotif);
     toast.success("Message sent to all parents!");
+    downloadCSV(
+      `Notice_${category}_${new Date().toISOString().split("T")[0]}.csv`,
+      ["Category", "Title", "Message", "Date"],
+      [[category, title.trim(), message.trim(), newNotif.date]],
+    );
     setTitle("");
     setMessage("");
     setCategory("General");

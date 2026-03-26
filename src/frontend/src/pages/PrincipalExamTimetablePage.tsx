@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/table";
 import type { Student } from "@/data/mockData";
 import { useClasses } from "@/hooks/useClasses";
+import { downloadCSV } from "@/utils/downloadCSV";
 import { Check, ClipboardList, Plus, Save, Trash2, X } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -140,6 +141,19 @@ export default function PrincipalExamTimetablePage({
     saveTimetable(principalId, allData);
     toast.success(
       `Exam timetable for ${selectedClass} saved and sent to parents!`,
+    );
+    const csvDate = new Date().toISOString().split("T")[0];
+    downloadCSV(
+      `ExamTimetable_${selectedClass}_${csvDate}.csv`,
+      ["Exam Name", "Subject", "Date", "Day", "Time", "Venue"],
+      entries.map((e) => [
+        e.examName,
+        e.subject,
+        e.date,
+        e.day,
+        e.time,
+        e.venue,
+      ]),
     );
   };
 

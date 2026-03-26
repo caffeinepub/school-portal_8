@@ -15,6 +15,8 @@ import ParentView from "./pages/ParentView";
 import PrincipalAnnouncementsPage from "./pages/PrincipalAnnouncementsPage";
 import PrincipalClassView from "./pages/PrincipalClassView";
 import PrincipalDashboard from "./pages/PrincipalDashboard";
+import PrincipalDataBackupPage from "./pages/PrincipalDataBackupPage";
+import PrincipalDataServerPage from "./pages/PrincipalDataServerPage";
 import PrincipalDiaryPage from "./pages/PrincipalDiaryPage";
 import PrincipalDoubtChat from "./pages/PrincipalDoubtChat";
 import PrincipalErrorFixPage from "./pages/PrincipalErrorFixPage";
@@ -43,7 +45,9 @@ type PrincipalPage =
   | "test-marks"
   | "send-message"
   | "error-fix"
-  | "storage";
+  | "storage"
+  | "data-backup"
+  | "data-server";
 
 export type Notification = (typeof mockNotifications)[number];
 export type SyllabusSubject = {
@@ -394,6 +398,8 @@ export default function App() {
       "send-message": "Send Message to Parents",
       "error-fix": "Error Fix & Diagnostics",
       storage: "Storage & Backup",
+      "data-backup": "Data Backup",
+      "data-server": "Data Server",
       edit: "Edit Student",
     };
 
@@ -498,6 +504,17 @@ export default function App() {
           {principalPage === "storage" && (
             <PrincipalStoragePage
               principalId={activePrincipalId ?? "default"}
+            />
+          )}
+          {principalPage === "data-backup" && (
+            <PrincipalDataBackupPage
+              principalId={activePrincipalId ?? "default"}
+            />
+          )}
+          {principalPage === "data-server" && (
+            <PrincipalDataServerPage
+              principalId={activePrincipalId ?? "default"}
+              students={students}
             />
           )}
           {principalPage === "send-message" && (

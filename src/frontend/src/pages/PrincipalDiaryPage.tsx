@@ -13,6 +13,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { useClasses } from "@/hooks/useClasses";
+import { downloadCSV } from "@/utils/downloadCSV";
 import {
   BookOpen,
   Check,
@@ -201,6 +202,12 @@ export default function PrincipalDiaryPage({ principalId, students }: Props) {
         ),
       );
       toast.success("Diary entry updated.");
+      const csvDate2 = new Date().toISOString().split("T")[0];
+      downloadCSV(
+        `Diary_Class${formClass}_${csvDate2}.csv`,
+        ["Date", "Class", "Subject", "Homework"],
+        validSubjects.map((s) => [formDate, formClass, s.subject, s.homework]),
+      );
     } else {
       const newEntry: DiaryEntry = {
         id: Date.now().toString(),
@@ -212,6 +219,12 @@ export default function PrincipalDiaryPage({ principalId, students }: Props) {
       };
       setEntries((prev) => [newEntry, ...prev]);
       toast.success(`Diary sent to Class ${formClass}!`);
+      const csvDate = new Date().toISOString().split("T")[0];
+      downloadCSV(
+        `Diary_Class${formClass}_${csvDate}.csv`,
+        ["Date", "Class", "Subject", "Homework"],
+        validSubjects.map((s) => [formDate, formClass, s.subject, s.homework]),
+      );
     }
 
     setShowForm(false);
