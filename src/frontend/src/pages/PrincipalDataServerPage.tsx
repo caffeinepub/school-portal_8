@@ -174,14 +174,24 @@ export default function PrincipalDataServerPage({
   const [record, setRecord] = useState<ServerRecord | null>(null);
   const [syncing, setSyncing] = useState(false);
 
-  // Auto-save on mount
+  // Auto-save on mount and auto-download CSV
   useEffect(() => {
     const fresh = loadStudents(principalId);
-    const savedRecord = saveServerRecord(
-      principalId,
-      fresh.length > 0 ? fresh : students,
-    );
+    const allStudents = fresh.length > 0 ? fresh : students;
+    const savedRecord = saveServerRecord(principalId, allStudents);
     setRecord(savedRecord);
+
+    const totalStudents = Object.values(savedRecord.classSummary).reduce(
+      (sum, arr) => sum + arr.length,
+      0,
+    );
+    if (totalStudents > 0) {
+      const allFlat = Object.values(savedRecord.classSummary).flat();
+      const csv = studentsToCSV(allFlat);
+      const date = savedRecord.timestamp.slice(0, 10);
+      downloadCSV(csv, `lords-all-students-${principalId}-${date}.csv`);
+      toast.success("Data auto-saved and downloaded to your device.");
+    }
   }, [principalId, students]);
 
   const handleSync = () => {

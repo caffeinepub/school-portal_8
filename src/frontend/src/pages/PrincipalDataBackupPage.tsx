@@ -93,6 +93,13 @@ export default function PrincipalDataBackupPage({ principalId }: Props) {
   useEffect(() => {
     const updated = autoSaveSnapshot(principalId);
     setSnapshots(updated);
+    // Auto-download the latest snapshot
+    if (updated.length > 0) {
+      const latest = updated[0];
+      const date = latest.timestamp.slice(0, 10);
+      downloadJSON(latest, `lords-backup-${principalId}-${date}.json`);
+      toast.success("Backup auto-saved and downloaded to your device.");
+    }
   }, [principalId]);
 
   const handleSaveNow = () => {

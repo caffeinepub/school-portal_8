@@ -1,7 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { Student } from "@/data/mockData";
-import { students as mockStudents } from "@/data/mockData";
 import { PRINCIPALS } from "@/data/principals";
 import {
   Eye,
@@ -208,7 +207,7 @@ export default function Login({ onLogin }: Props) {
 
     // Search all principals' students for a matching parentPassword
     for (const p of PRINCIPALS) {
-      let list: Student[] = mockStudents;
+      let list: Student[] = [];
       try {
         const raw = localStorage.getItem(`lords_students_${p.id}`);
         if (raw) list = JSON.parse(raw) as Student[];

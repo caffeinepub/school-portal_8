@@ -4,7 +4,6 @@ import ParentLayout from "./components/ParentLayout";
 import PrincipalLayout from "./components/PrincipalLayout";
 import {
   notifications as mockNotifications,
-  students as mockStudents,
   syllabus as mockSyllabus,
 } from "./data/mockData";
 import type { Student } from "./data/mockData";
@@ -15,16 +14,13 @@ import ParentView from "./pages/ParentView";
 import PrincipalAnnouncementsPage from "./pages/PrincipalAnnouncementsPage";
 import PrincipalClassView from "./pages/PrincipalClassView";
 import PrincipalDashboard from "./pages/PrincipalDashboard";
-import PrincipalDataBackupPage from "./pages/PrincipalDataBackupPage";
-import PrincipalDataServerPage from "./pages/PrincipalDataServerPage";
 import PrincipalDiaryPage from "./pages/PrincipalDiaryPage";
 import PrincipalDoubtChat from "./pages/PrincipalDoubtChat";
-import PrincipalErrorFixPage from "./pages/PrincipalErrorFixPage";
 import PrincipalExamTimetablePage from "./pages/PrincipalExamTimetablePage";
 import PrincipalHolidaysPage from "./pages/PrincipalHolidaysPage";
 import PrincipalSchoolInfoEditor from "./pages/PrincipalSchoolInfoEditor";
 import PrincipalSendMessagePage from "./pages/PrincipalSendMessagePage";
-import PrincipalStoragePage from "./pages/PrincipalStoragePage";
+import PrincipalServerPage from "./pages/PrincipalServerPage";
 import PrincipalSyllabusPage from "./pages/PrincipalSyllabusPage";
 import PrincipalTestMarksPage from "./pages/PrincipalTestMarksPage";
 import StudentEditPage from "./pages/StudentEditPage";
@@ -44,10 +40,7 @@ type PrincipalPage =
   | "exam-timetable"
   | "test-marks"
   | "send-message"
-  | "error-fix"
-  | "storage"
-  | "data-backup"
-  | "data-server";
+  | "server";
 
 export type Notification = (typeof mockNotifications)[number];
 export type SyllabusSubject = {
@@ -152,7 +145,7 @@ export default function App() {
   const ns = activePrincipalId ?? "default";
 
   const [students, setStudents] = useState<Student[]>(() =>
-    loadStorage(`lords_students_${ns}`, mockStudents),
+    loadStorage(`lords_students_${ns}`, [] as Student[]),
   );
   const [notifications, setNotifications] = useState<Notification[]>(() =>
     loadStorage(`lords_notifications_${ns}`, mockNotifications),
@@ -179,7 +172,7 @@ export default function App() {
     const refresh = () => {
       const principalStudents = loadStorage(
         `lords_students_${parentPrincipalId}`,
-        mockStudents,
+        [] as Student[],
       );
       const found = principalStudents.find(
         (s: Student) => s.id === parentStudentId,
@@ -221,7 +214,7 @@ export default function App() {
     if (activePrincipalId) {
       loadingRef.current = true;
       setStudents(
-        loadStorage(`lords_students_${activePrincipalId}`, mockStudents),
+        loadStorage(`lords_students_${activePrincipalId}`, [] as Student[]),
       );
       setNotifications(
         loadStorage(
@@ -326,7 +319,7 @@ export default function App() {
       if (parentPrincipalId) {
         const principalStudents = loadStorage(
           `lords_students_${parentPrincipalId}`,
-          mockStudents,
+          [] as Student[],
         );
         parentStudent = principalStudents.find(
           (s: Student) => s.id === parentStudentId,
@@ -336,7 +329,28 @@ export default function App() {
         parentStudent = students.find((s) => s.id === parentStudentId);
       }
     }
-    if (!parentStudent) parentStudent = mockStudents[0];
+    if (!parentStudent) {
+      return (
+        <>
+          <ParentLayout
+            studentName="Unknown"
+            onLogout={() => {
+              setRole(null);
+              setParentStudentId(null);
+              setParentPrincipalId(null);
+              setLiveParentStudent(null);
+              setLiveParentNotifications([]);
+              setLiveParentSyllabus({});
+            }}
+          >
+            <div className="p-8 text-center text-gray-500">
+              Student not found. Please log in again.
+            </div>
+          </ParentLayout>
+          <Toaster />
+        </>
+      );
+    }
 
     const parentNotifications =
       liveParentNotifications.length > 0
@@ -396,10 +410,7 @@ export default function App() {
       "exam-timetable": "Exam Timetable",
       "test-marks": "Test Marks",
       "send-message": "Send Message to Parents",
-      "error-fix": "Error Fix & Diagnostics",
-      storage: "Storage & Backup",
-      "data-backup": "Data Backup",
-      "data-server": "Data Server",
+      server: "Server",
       edit: "Edit Student",
     };
 
@@ -496,23 +507,8 @@ export default function App() {
               students={students}
             />
           )}
-          {principalPage === "error-fix" && (
-            <PrincipalErrorFixPage
-              principalId={activePrincipalId ?? "default"}
-            />
-          )}
-          {principalPage === "storage" && (
-            <PrincipalStoragePage
-              principalId={activePrincipalId ?? "default"}
-            />
-          )}
-          {principalPage === "data-backup" && (
-            <PrincipalDataBackupPage
-              principalId={activePrincipalId ?? "default"}
-            />
-          )}
-          {principalPage === "data-server" && (
-            <PrincipalDataServerPage
+          {principalPage === "server" && (
+            <PrincipalServerPage
               principalId={activePrincipalId ?? "default"}
               students={students}
             />

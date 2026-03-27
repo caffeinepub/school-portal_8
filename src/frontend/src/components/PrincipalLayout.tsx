@@ -39,12 +39,7 @@ const schoolNavItems = [
   { id: "test-marks", label: "Test Marks", icon: FileText },
 ];
 
-const toolsNavItems = [
-  { id: "error-fix", label: "Error Fix", icon: Wrench },
-  { id: "storage", label: "Storage & Backup", icon: HardDrive },
-  { id: "data-backup", label: "Data Backup", icon: FolderArchive },
-  { id: "data-server", label: "Data Server", icon: Server },
-];
+const serverNavItem = [{ id: "server", label: "Server", icon: Server }];
 
 const communicationNavItems = [
   { id: "doubt-chat", label: "Doubt Chat", icon: MessageCircle },
@@ -74,7 +69,7 @@ export default function PrincipalLayout({
     ...studentNavItems,
     ...schoolNavItems,
     ...communicationNavItems,
-    ...toolsNavItems,
+    ...serverNavItem,
   ];
   const currentLabel =
     pageLabel ??
@@ -171,9 +166,9 @@ export default function PrincipalLayout({
 
           <div>
             <p className="text-indigo-400 text-xs font-semibold uppercase tracking-wider px-3 mb-1">
-              Tools
+              Server
             </p>
-            <div className="space-y-0.5">{renderNavSection(toolsNavItems)}</div>
+            <div className="space-y-0.5">{renderNavSection(serverNavItem)}</div>
           </div>
         </nav>
 
