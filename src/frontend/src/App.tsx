@@ -92,10 +92,6 @@ function saveStorage<T>(key: string, value: T) {
 
 /**
  * Load syllabus with migration support.
- * Before v42, syllabus was stored as SyllabusSubject[] (flat array).
- * After v42, it became Record<string, SyllabusSubject[]> (class-wise).
- * If old array format is found, migrate it to class-wise format.
- * Also pre-populates DEFAULT_CLASSES so all class names are pre-listed.
  */
 function loadSyllabus(principalId: string): ClassSyllabus {
   let result: ClassSyllabus = {};
@@ -103,12 +99,9 @@ function loadSyllabus(principalId: string): ClassSyllabus {
     const raw = localStorage.getItem(`lords_syllabus_${principalId}`);
     if (raw) {
       const parsed = JSON.parse(raw);
-      // Old format was a flat array of SyllabusSubject
       if (Array.isArray(parsed)) {
         if (parsed.length > 0) {
-          // Migrate: put old subjects under a "General" class key
           result = { General: parsed as SyllabusSubject[] };
-          // Save migrated data back so it's not lost
           saveStorage(`lords_syllabus_${principalId}`, result);
         }
       } else if (typeof parsed === "object" && parsed !== null) {
@@ -121,7 +114,6 @@ function loadSyllabus(principalId: string): ClassSyllabus {
     result = mockSyllabus;
   }
 
-  // Merge in default class keys (empty arrays) if they don't exist
   for (const cls of DEFAULT_CLASSES) {
     if (!(cls in result)) {
       result[cls] = [];
@@ -131,15 +123,50 @@ function loadSyllabus(principalId: string): ClassSyllabus {
   return result;
 }
 
+interface SessionData {
+  role: Role;
+  activePrincipalId: string | null;
+  parentStudentId: number | null;
+  parentPrincipalId: string | null;
+}
+
+function loadSession(): SessionData {
+  try {
+    const raw = localStorage.getItem("lords_session");
+    if (raw) return JSON.parse(raw) as SessionData;
+  } catch {}
+  return {
+    role: null,
+    activePrincipalId: null,
+    parentStudentId: null,
+    parentPrincipalId: null,
+  };
+}
+
 export default function App() {
-  const [role, setRole] = useState<Role>(null);
+  const savedSession = loadSession();
+
+  const [role, setRole] = useState<Role>(savedSession.role);
   const [activePrincipalId, setActivePrincipalId] = useState<string | null>(
-    null,
+    savedSession.activePrincipalId,
   );
   const [parentPrincipalId, setParentPrincipalId] = useState<string | null>(
-    null,
+    savedSession.parentPrincipalId,
   );
-  const [parentStudentId, setParentStudentId] = useState<number | null>(null);
+  const [parentStudentId, setParentStudentId] = useState<number | null>(
+    savedSession.parentStudentId,
+  );
+
+  // Persist session whenever role/ids change
+  useEffect(() => {
+    const session: SessionData = {
+      role,
+      activePrincipalId,
+      parentStudentId,
+      parentPrincipalId,
+    };
+    saveStorage("lords_session", session);
+  }, [role, activePrincipalId, parentStudentId, parentPrincipalId]);
 
   // Derive namespace keys
   const ns = activePrincipalId ?? "default";
@@ -187,7 +214,7 @@ export default function App() {
       setLiveParentSyllabus(loadSyllabus(parentPrincipalId));
     };
 
-    refresh(); // initial load
+    refresh();
     const interval = setInterval(refresh, 5000);
 
     const onStorage = (e: StorageEvent) => {
@@ -201,15 +228,12 @@ export default function App() {
     };
   }, [role, parentPrincipalId, parentStudentId]);
 
-  // Track whether a load is in progress to avoid premature saves
   const loadingRef = useRef(false);
-  // Track the principal ID for save effects (avoids stale closures)
   const savedPrincipalIdRef = useRef<string | null>(activePrincipalId);
   useEffect(() => {
     savedPrincipalIdRef.current = activePrincipalId;
   }, [activePrincipalId]);
 
-  // When principal changes, reload their data
   useEffect(() => {
     if (activePrincipalId) {
       loadingRef.current = true;
@@ -223,7 +247,6 @@ export default function App() {
         ),
       );
       setSyllabus(loadSyllabus(activePrincipalId));
-      // Allow save effects to run after load settles
       setTimeout(() => {
         loadingRef.current = false;
       }, 0);
@@ -313,7 +336,6 @@ export default function App() {
   }
 
   if (role === "parent") {
-    // Use live data if available, otherwise fallback
     let parentStudent: Student | undefined = liveParentStudent ?? undefined;
     if (!parentStudent && parentStudentId !== null) {
       if (parentPrincipalId) {
@@ -341,6 +363,12 @@ export default function App() {
               setLiveParentStudent(null);
               setLiveParentNotifications([]);
               setLiveParentSyllabus({});
+              saveStorage("lords_session", {
+                role: null,
+                activePrincipalId: null,
+                parentStudentId: null,
+                parentPrincipalId: null,
+              });
             }}
           >
             <div className="p-8 text-center text-gray-500">
@@ -380,6 +408,12 @@ export default function App() {
             setLiveParentStudent(null);
             setLiveParentNotifications([]);
             setLiveParentSyllabus({});
+            saveStorage("lords_session", {
+              role: null,
+              activePrincipalId: null,
+              parentStudentId: null,
+              parentPrincipalId: null,
+            });
           }}
         >
           <ParentView
@@ -423,6 +457,12 @@ export default function App() {
             setRole(null);
             setActivePrincipalId(null);
             setPrincipalPage("list");
+            saveStorage("lords_session", {
+              role: null,
+              activePrincipalId: null,
+              parentStudentId: null,
+              parentPrincipalId: null,
+            });
           }}
           pageLabel={allNavLabels[principalPage] ?? "Student Management"}
           principalName={activePrincipalName}

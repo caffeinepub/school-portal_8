@@ -7,14 +7,18 @@ import {
   ChevronDown,
   ChevronUp,
   ClipboardList,
+  Copy,
   Database,
+  ExternalLink,
   FileText,
   FolderOpen,
+  Globe,
   HardDrive,
   Server,
   Wrench,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { loadConfig } from "../config";
 import PrincipalDataBackupPage from "./PrincipalDataBackupPage";
 import PrincipalDataServerPage from "./PrincipalDataServerPage";
 import PrincipalErrorFixPage from "./PrincipalErrorFixPage";
@@ -325,9 +329,75 @@ function ClassRecordsTab({ principalId }: { principalId: string }) {
 
 export default function PrincipalServerPage({ principalId, students }: Props) {
   const [activeTab, setActiveTab] = useState<Tab>("data-server");
+  const [canisterId, setCanisterId] = useState<string>("");
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    loadConfig()
+      .then((cfg) => setCanisterId(cfg.backend_canister_id))
+      .catch(() => {});
+  }, []);
+
+  const handleCopy = () => {
+    if (!canisterId) return;
+    navigator.clipboard.writeText(canisterId).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
 
   return (
     <div className="space-y-6">
+      {canisterId && (
+        <Card className="border-indigo-100 bg-gradient-to-r from-indigo-50 to-white">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-base text-indigo-800">
+              <Server size={18} className="text-indigo-500" />
+              ICP Canister ID
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-xs text-gray-500 mb-2">
+              Your school data is stored on this Internet Computer canister:
+            </p>
+            <div className="flex items-center gap-2 bg-white border border-indigo-200 rounded-lg px-3 py-2">
+              <code className="flex-1 text-sm font-mono text-indigo-900 break-all">
+                {canisterId}
+              </code>
+              <button
+                type="button"
+                data-ocid="server.canister_id.button"
+                onClick={handleCopy}
+                className="flex items-center gap-1 text-xs text-indigo-500 hover:text-indigo-700 shrink-0 transition-colors"
+              >
+                <Copy size={14} />
+                {copied ? "Copied!" : "Copy"}
+              </button>
+            </div>
+            <div className="mt-3 flex flex-col gap-2">
+              <a
+                href={`https://${canisterId}.icp0.io`}
+                target="_blank"
+                rel="noopener noreferrer"
+                data-ocid="server.icp_website.link"
+                className="flex items-center gap-2 text-sm text-indigo-600 hover:text-indigo-800 hover:underline font-medium"
+              >
+                <Globe size={14} />
+                View ICP Backend Data Website
+              </a>
+              <a
+                href={`https://dashboard.internetcomputer.org/canister/${canisterId}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 text-xs text-gray-500 hover:text-gray-700 hover:underline"
+              >
+                <ExternalLink size={12} />
+                View on ICP Dashboard
+              </a>
+            </div>
+          </CardContent>
+        </Card>
+      )}
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-xl">

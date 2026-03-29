@@ -3,9 +3,7 @@ import {
   Calendar,
   ClipboardList,
   FileText,
-  FolderArchive,
   GraduationCap,
-  HardDrive,
   Info,
   LayoutGrid,
   LogOut,
@@ -18,7 +16,6 @@ import {
   ShieldCheck,
   UserPlus,
   Users,
-  Wrench,
   X,
 } from "lucide-react";
 import { useState } from "react";
@@ -121,7 +118,7 @@ export default function PrincipalLayout({
           </div>
           <div className="min-w-0">
             <div className="font-bold text-sm leading-tight truncate">
-              Lord's International School Group
+              Lord&apos;s International School Group
             </div>
             <div className="text-indigo-300 text-xs font-medium mt-0.5">
               {principalName}
@@ -176,8 +173,11 @@ export default function PrincipalLayout({
           <button
             type="button"
             data-ocid="principal.logout_button"
-            onClick={onLogout}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-indigo-300 hover:bg-indigo-800 hover:text-white transition-colors"
+            onClick={() => {
+              onLogout();
+              setSidebarOpen(false);
+            }}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-indigo-300 hover:bg-red-900/40 hover:text-red-300 transition-colors"
           >
             <LogOut size={17} />
             <span>Logout</span>
@@ -204,6 +204,15 @@ export default function PrincipalLayout({
             <span className="hidden sm:block text-sm text-gray-700 font-medium">
               {principalName}
             </span>
+            <button
+              type="button"
+              data-ocid="principal.header_logout_button"
+              onClick={onLogout}
+              className="flex items-center gap-1.5 text-red-400 hover:text-red-600 text-sm transition-colors px-2 py-1 rounded border border-red-200 hover:bg-red-50"
+            >
+              <LogOut size={14} />
+              <span className="hidden sm:inline">Logout</span>
+            </button>
           </div>
         </header>
 

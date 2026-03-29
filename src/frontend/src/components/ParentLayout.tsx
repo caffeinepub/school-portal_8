@@ -19,7 +19,7 @@ export default function ParentLayout({
         </div>
         <div>
           <div className="font-bold text-sm leading-tight">
-            Lord's International School Group
+            Lord&apos;s International School Group
           </div>
           <div className="text-indigo-300 text-xs">Parent Portal</div>
         </div>
@@ -32,9 +32,9 @@ export default function ParentLayout({
             type="button"
             data-ocid="parent.logout_button"
             onClick={onLogout}
-            className="flex items-center gap-1.5 text-indigo-300 hover:text-white text-sm transition-colors px-2 py-1 rounded"
+            className="flex items-center gap-1.5 text-red-300 hover:text-white bg-red-800/30 hover:bg-red-700/50 text-sm transition-colors px-3 py-1.5 rounded-lg border border-red-700/30"
           >
-            <LogOut size={15} />
+            <LogOut size={14} />
             <span className="hidden sm:inline">Logout</span>
           </button>
         </div>
