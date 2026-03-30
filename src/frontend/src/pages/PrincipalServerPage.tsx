@@ -155,22 +155,17 @@ function loadClassRecords(principalId: string): Record<string, ClassRecord[]> {
   return grouped;
 }
 
-interface IcpMediaItem {
-  studentId: string;
-  fileType: string;
-  timestamp: string;
-  caption: string;
-  blobReferenceId: string;
-}
-
 function IcpBackendTab() {
   const { actor, isFetching } = useActor();
   const [canisterId, setCanisterId] = useState("");
   const [copied, setCopied] = useState(false);
-  const [mediaItems, setMediaItems] = useState<IcpMediaItem[]>([]);
-  const [loadingMedia, setLoadingMedia] = useState(false);
-  const [mediaError, setMediaError] = useState("");
   const [canisterOnline, setCanisterOnline] = useState<boolean | null>(null);
+  const [allKeys, setAllKeys] = useState<string[]>([]);
+  const [loadingKeys, setLoadingKeys] = useState(false);
+  const [keysError, setKeysError] = useState("");
+  const [viewingKey, setViewingKey] = useState<string | null>(null);
+  const [viewingData, setViewingData] = useState<string>("");
+  const [loadingData, setLoadingData] = useState(false);
 
   useEffect(() => {
     loadConfig()
@@ -178,30 +173,58 @@ function IcpBackendTab() {
       .catch(() => {});
   }, []);
 
-  useEffect(() => {
-    if (!actor || isFetching) return;
-    setLoadingMedia(true);
-    setMediaError("");
+  const fetchAllKeys = () => {
+    if (!actor) return;
+    setLoadingKeys(true);
+    setKeysError("");
     actor
-      .getAllMedia()
-      .then((items) => {
-        setMediaItems(
-          items.map((item) => ({
-            studentId: String(item.studentId),
-            fileType: item.fileType,
-            timestamp: item.timestamp,
-            caption: item.caption,
-            blobReferenceId: item.blobReferenceId,
-          })),
-        );
+      .getAllKeys()
+      .then((keys) => {
+        setAllKeys(keys);
         setCanisterOnline(true);
       })
       .catch((err: unknown) => {
-        setMediaError(String(err));
+        setKeysError(String(err));
         setCanisterOnline(false);
       })
-      .finally(() => setLoadingMedia(false));
+      .finally(() => setLoadingKeys(false));
+  };
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: fetchAllKeys is stable
+  useEffect(() => {
+    if (!actor || isFetching) return;
+    fetchAllKeys();
   }, [actor, isFetching]);
+
+  const handleViewKey = (key: string) => {
+    if (viewingKey === key) {
+      setViewingKey(null);
+      setViewingData("");
+      return;
+    }
+    if (!actor) return;
+    setViewingKey(key);
+    setViewingData("");
+    setLoadingData(true);
+    actor
+      .getData(key)
+      .then((data) => {
+        if (data === null || data === undefined) {
+          setViewingData("(no data)");
+        } else {
+          try {
+            const parsed = JSON.parse(data);
+            setViewingData(JSON.stringify(parsed, null, 2));
+          } catch {
+            setViewingData(data);
+          }
+        }
+      })
+      .catch((err: unknown) => {
+        setViewingData(`Error: ${String(err)}`);
+      })
+      .finally(() => setLoadingData(false));
+  };
 
   const handleCopy = () => {
     if (!canisterId) return;
@@ -211,29 +234,52 @@ function IcpBackendTab() {
     });
   };
 
-  const handleRefresh = () => {
-    if (!actor) return;
-    setLoadingMedia(true);
-    setMediaError("");
-    actor
-      .getAllMedia()
-      .then((items) => {
-        setMediaItems(
-          items.map((item) => ({
-            studentId: String(item.studentId),
-            fileType: item.fileType,
-            timestamp: item.timestamp,
-            caption: item.caption,
-            blobReferenceId: item.blobReferenceId,
-          })),
-        );
-        setCanisterOnline(true);
-      })
-      .catch((err: unknown) => {
-        setMediaError(String(err));
-        setCanisterOnline(false);
-      })
-      .finally(() => setLoadingMedia(false));
+  const keyLabel = (key: string) => {
+    if (key.startsWith("lords_students_"))
+      return {
+        icon: "👨‍🎓",
+        label: "Students",
+        sub: key.replace("lords_students_", ""),
+      };
+    if (key.startsWith("lords_notifications_"))
+      return {
+        icon: "📢",
+        label: "Notifications",
+        sub: key.replace("lords_notifications_", ""),
+      };
+    if (key.startsWith("lords_syllabus_"))
+      return {
+        icon: "📚",
+        label: "Syllabus",
+        sub: key.replace("lords_syllabus_", ""),
+      };
+    if (key.startsWith("diary_"))
+      return { icon: "📓", label: "Diary", sub: key.replace("diary_", "") };
+    if (key.startsWith("lords_exam_timetable_"))
+      return {
+        icon: "📅",
+        label: "Exam Timetable",
+        sub: key.replace("lords_exam_timetable_", ""),
+      };
+    if (key.startsWith("lords_test_marks_"))
+      return {
+        icon: "✏️",
+        label: "Test Marks",
+        sub: key.replace("lords_test_marks_", ""),
+      };
+    if (key.startsWith("lords_doubts_"))
+      return {
+        icon: "💬",
+        label: "Doubts",
+        sub: key.replace("lords_doubts_", ""),
+      };
+    if (key.startsWith("lords_replies_"))
+      return {
+        icon: "↩️",
+        label: "Replies",
+        sub: key.replace("lords_replies_", ""),
+      };
+    return { icon: "🗄️", label: key, sub: "" };
   };
 
   return (
@@ -253,7 +299,7 @@ function IcpBackendTab() {
             {canisterOnline === false && (
               <span className="flex items-center gap-1 text-xs font-normal text-red-600 bg-red-100 px-2 py-0.5 rounded-full ml-auto">
                 <XCircle size={11} />
-                Check Dashboard
+                Offline
               </span>
             )}
           </CardTitle>
@@ -279,209 +325,136 @@ function IcpBackendTab() {
               Loading canister ID...
             </p>
           )}
-
-          {/* FIX: Replaced broken .icp0.io link with proper links */}
-          <div className="p-3 rounded-lg bg-amber-50 border border-amber-200 flex gap-2">
-            <AlertCircle size={14} className="text-amber-600 shrink-0 mt-0.5" />
-            <div className="text-xs text-amber-800 leading-relaxed">
-              <strong>About the ICP canister:</strong> This Motoko canister
-              stores media files (student photos/videos) securely on the
-              Internet Computer. It does <strong>not</strong> serve raw HTTP
-              data — accessing the canister URL directly returns a 503 error by
-              design. Use the ICP Dashboard link below to check canister status
-              and cycles.
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-2">
-            {canisterId && (
-              <a
-                href={`https://dashboard.internetcomputer.org/canister/${canisterId}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                data-ocid="server.icp_dashboard.link"
-                className="flex items-center gap-2 text-sm font-medium hover:underline"
-                style={{ color: "oklch(0.52 0.18 255)" }}
-              >
-                <ExternalLink size={14} />
-                View Canister on ICP Dashboard
-              </a>
-            )}
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Info size={12} />
-              <span>
-                Student data (marks, fees, attendance) is stored locally for
-                instant access. Media files are stored on the ICP canister.
-              </span>
-            </div>
-          </div>
+          {canisterId && (
+            <a
+              href={`https://dashboard.internetcomputer.org/canister/${canisterId}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              data-ocid="server.icp_dashboard.link"
+              className="flex items-center gap-2 text-sm font-medium hover:underline"
+              style={{ color: "oklch(0.52 0.18 255)" }}
+            >
+              <ExternalLink size={14} />
+              View Canister on ICP Dashboard
+            </a>
+          )}
         </CardContent>
       </Card>
 
-      {/* ICP Media Data */}
+      {/* Saved Data on ICP */}
       <Card>
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2 text-base">
-              <Image size={16} className="text-blue-600" />
-              Media Files on ICP
-              {mediaItems.length > 0 && (
+              <Database size={16} className="text-blue-600" />
+              Saved Data on ICP
+              {allKeys.length > 0 && (
                 <span className="text-xs font-normal bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
-                  {mediaItems.length} files
+                  {allKeys.length} keys
                 </span>
               )}
             </CardTitle>
             <button
               type="button"
-              data-ocid="server.refresh_media.button"
-              onClick={handleRefresh}
-              disabled={loadingMedia || isFetching}
+              data-ocid="server.refresh_keys.button"
+              onClick={fetchAllKeys}
+              disabled={loadingKeys || isFetching}
               className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded-lg hover:bg-muted"
             >
               <RefreshCw
                 size={13}
-                className={loadingMedia ? "animate-spin" : ""}
+                className={loadingKeys ? "animate-spin" : ""}
               />
               Refresh
             </button>
           </div>
         </CardHeader>
-        <CardContent>
-          {(loadingMedia || isFetching) && (
+        <CardContent className="space-y-2">
+          {(loadingKeys || isFetching) && (
             <div
-              data-ocid="server.media.loading_state"
+              data-ocid="server.keys.loading_state"
               className="flex items-center gap-2 py-4 text-sm text-muted-foreground"
             >
               <RefreshCw size={14} className="animate-spin" />
-              Loading ICP media data...
+              Loading saved data from ICP...
             </div>
           )}
-
-          {!loadingMedia && !isFetching && mediaError && (
+          {!loadingKeys && !isFetching && keysError && (
             <div
-              data-ocid="server.media.error_state"
+              data-ocid="server.keys.error_state"
               className="flex items-center gap-2 py-3 text-sm"
             >
               <AlertCircle size={14} className="text-amber-600" />
               <span className="text-amber-700">
-                Could not load media: {mediaError}
+                Could not connect to ICP: {keysError}
               </span>
             </div>
           )}
-
-          {!loadingMedia &&
+          {!loadingKeys &&
             !isFetching &&
-            !mediaError &&
-            mediaItems.length === 0 && (
+            !keysError &&
+            allKeys.length === 0 && (
               <div
-                data-ocid="server.media.empty_state"
+                data-ocid="server.keys.empty_state"
                 className="py-6 text-center text-sm text-muted-foreground"
               >
-                No media files stored on ICP yet. Upload student photos or
-                videos to see them here.
+                No data saved to ICP yet. Data will appear here as you use the
+                app.
               </div>
             )}
-
-          {!loadingMedia && mediaItems.length > 0 && (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border">
-                    <th className="text-left py-2 pr-3 font-medium text-muted-foreground">
-                      Student ID
-                    </th>
-                    <th className="text-left py-2 pr-3 font-medium text-muted-foreground">
-                      Type
-                    </th>
-                    <th className="text-left py-2 pr-3 font-medium text-muted-foreground">
-                      Caption
-                    </th>
-                    <th className="text-left py-2 font-medium text-muted-foreground">
-                      Timestamp
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {mediaItems.map((item, i) => (
-                    <tr
-                      key={item.blobReferenceId}
-                      data-ocid={`server.media.item.${i + 1}`}
-                      className="border-b border-border/50 hover:bg-muted/30"
-                    >
-                      <td className="py-1.5 pr-3 text-muted-foreground font-mono text-xs">
-                        {item.studentId}
-                      </td>
-                      <td className="py-1.5 pr-3">
-                        <span
-                          className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full ${
-                            item.fileType === "photo"
-                              ? "bg-blue-100 text-blue-700"
-                              : "bg-purple-100 text-purple-700"
-                          }`}
-                        >
-                          {item.fileType === "photo" ? "📷" : "🎥"}{" "}
-                          {String(item.fileType)}
-                        </span>
-                      </td>
-                      <td className="py-1.5 pr-3 max-w-[160px] truncate text-foreground">
-                        {item.caption || "—"}
-                      </td>
-                      <td className="py-1.5 text-xs text-muted-foreground">
-                        {item.timestamp}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Architecture info */}
-      <Card className="border-slate-200 bg-slate-50">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm text-slate-700">
-            Data Storage Architecture
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          {[
-            {
-              label: "Student data (marks, fees, attendance, syllabus)",
-              location: "Device (localStorage)",
-              icon: "💾",
-              note: "Fast, instant access — synced via 5-second refresh",
-            },
-            {
-              label: "Messages & Notices to Parents",
-              location: "Device (localStorage)",
-              icon: "📢",
-              note: "Broadcast instantly — parents see within 5 seconds",
-            },
-            {
-              label: "Media files (photos, videos)",
-              location: "ICP Canister",
-              icon: "☁️",
-              note: "Secure, permanent — stored on the Internet Computer",
-            },
-          ].map((item) => (
-            <div
-              key={item.label}
-              className="flex items-start gap-3 py-2 border-b border-slate-200 last:border-0"
-            >
-              <span className="text-lg shrink-0">{item.icon}</span>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium text-slate-800">
-                  {item.label}
-                </p>
-                <p className="text-xs text-slate-500">{item.note}</p>
+          {allKeys.map((key, i) => {
+            const meta = keyLabel(key);
+            const isViewing = viewingKey === key;
+            return (
+              <div
+                key={key}
+                data-ocid={`server.keys.item.${i + 1}`}
+                className="border border-border rounded-lg overflow-hidden"
+              >
+                <div className="flex items-center gap-3 px-3 py-2 bg-muted/20">
+                  <span className="text-base">{meta.icon}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground truncate">
+                      {meta.label}
+                    </p>
+                    {meta.sub && (
+                      <p className="text-xs text-muted-foreground truncate">
+                        {key}
+                      </p>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleViewKey(key)}
+                    className="text-xs px-2.5 py-1 rounded border border-border bg-background hover:bg-muted transition-colors shrink-0 font-medium"
+                    style={{
+                      color: isViewing ? "oklch(0.52 0.18 255)" : undefined,
+                    }}
+                  >
+                    {isViewing ? "Hide" : "View"}
+                  </button>
+                </div>
+                {isViewing && (
+                  <div className="border-t border-border bg-slate-950 px-3 py-2 max-h-64 overflow-auto">
+                    {loadingData ? (
+                      <p className="text-xs text-slate-400 py-2">Loading...</p>
+                    ) : (
+                      <pre className="text-xs text-green-400 whitespace-pre-wrap break-all font-mono leading-relaxed">
+                        {viewingData}
+                      </pre>
+                    )}
+                  </div>
+                )}
               </div>
-              <span className="text-xs bg-white border border-slate-200 px-2 py-0.5 rounded-full text-slate-600 shrink-0">
-                {item.location}
-              </span>
-            </div>
-          ))}
+            );
+          })}
+          {!loadingKeys && !isFetching && allKeys.length > 0 && (
+            <p className="text-xs text-muted-foreground pt-1">
+              <Info size={11} className="inline mr-1" />
+              All student data (marks, fees, attendance, syllabus, diary,
+              notices) is now saved on the ICP canister.
+            </p>
+          )}
         </CardContent>
       </Card>
     </div>

@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import type { Student } from "@/data/mockData";
+import { useBackendSync } from "@/hooks/useBackendSync";
 import { ChevronDown, ChevronUp, MessageCircle, Send } from "lucide-react";
 import { useState } from "react";
 
@@ -66,6 +67,7 @@ interface Props {
 }
 
 export default function PrincipalDoubtChat({ students, principalId }: Props) {
+  const { syncToBackend } = useBackendSync();
   const [expanded, setExpanded] = useState<number | null>(null);
   const [replies, setReplies] = useState<Record<number, PrincipalReply[]>>(
     () => {
@@ -93,6 +95,9 @@ export default function PrincipalDoubtChat({ students, principalId }: Props) {
     const next = { ...replies, [studentId]: updated };
     setReplies(next);
     saveReplies(principalId, studentId, updated);
+    syncToBackend(`lords_replies_${principalId}_${studentId}`, updated).catch(
+      () => {},
+    );
     setReplyText((prev) => ({ ...prev, [messageId]: "" }));
   };
 

@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { useBackendSync } from "@/hooks/useBackendSync";
 import type { PrincipalReply } from "@/pages/PrincipalDoubtChat";
 import { loadReplies } from "@/pages/PrincipalDoubtChat";
 import { Check, MessageCircle, Pencil, Send, X } from "lucide-react";
@@ -51,6 +52,7 @@ export default function ParentDoubtChat({
   studentName,
   principalId = "default",
 }: Props) {
+  const { syncToBackend } = useBackendSync();
   const [messages, setMessages] = useState<DoubtMessage[]>(() =>
     loadMessages(principalId, studentId),
   );
@@ -73,6 +75,9 @@ export default function ParentDoubtChat({
     const updated = [...messages, newMsg];
     setMessages(updated);
     saveMessages(principalId, studentId, updated);
+    syncToBackend(`lords_doubts_${principalId}_${studentId}`, updated).catch(
+      () => {},
+    );
     setInputText("");
   };
 
@@ -89,6 +94,9 @@ export default function ParentDoubtChat({
     );
     setMessages(updated);
     saveMessages(principalId, studentId, updated);
+    syncToBackend(`lords_doubts_${principalId}_${studentId}`, updated).catch(
+      () => {},
+    );
     setEditingId(null);
     setEditText("");
   };

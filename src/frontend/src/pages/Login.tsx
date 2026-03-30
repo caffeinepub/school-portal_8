@@ -118,7 +118,9 @@ export default function Login({ onLogin }: Props) {
         [],
       );
       const found = students.find(
-        (s) => s.parentPassword && s.parentPassword === parentPwd,
+        (s) =>
+          s.parentPassword &&
+          String(s.parentPassword).trim() === String(parentPwd).trim(),
       );
       if (found) {
         saveStorage("lords_session", {

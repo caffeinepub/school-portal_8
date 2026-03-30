@@ -8,6 +8,7 @@ import {
 } from "./data/mockData";
 import type { Student } from "./data/mockData";
 import { PRINCIPALS } from "./data/principals";
+import { useActor } from "./hooks/useActor";
 import AddStudentPage from "./pages/AddStudentPage";
 import Login from "./pages/Login";
 import ParentView from "./pages/ParentView";
@@ -145,6 +146,7 @@ function loadSession(): SessionData {
 
 export default function App() {
   const savedSession = loadSession();
+  const { actor } = useActor();
 
   const [role, setRole] = useState<Role>(savedSession.role);
   const [activePrincipalId, setActivePrincipalId] = useState<string | null>(
@@ -215,7 +217,7 @@ export default function App() {
     };
 
     refresh();
-    const interval = setInterval(refresh, 5000);
+    const interval = setInterval(refresh, 3000);
 
     const onStorage = (e: StorageEvent) => {
       if (e.key?.startsWith("lords_")) refresh();
@@ -230,6 +232,9 @@ export default function App() {
 
   const loadingRef = useRef(false);
   const savedPrincipalIdRef = useRef<string | null>(activePrincipalId);
+  // Track which principals we've attempted to load from ICP (to avoid re-loading)
+  const icpLoadedRef = useRef<Set<string>>(new Set());
+
   useEffect(() => {
     savedPrincipalIdRef.current = activePrincipalId;
   }, [activePrincipalId]);
@@ -253,21 +258,88 @@ export default function App() {
     }
   }, [activePrincipalId]);
 
+  // ICP backend load: when actor becomes ready and principal is logged in,
+  // try to load data from ICP and use it if found (runs once per principal session).
   useEffect(() => {
-    if (savedPrincipalIdRef.current && !loadingRef.current)
-      saveStorage(`lords_students_${savedPrincipalIdRef.current}`, students);
-  }, [students]);
+    if (!actor || !activePrincipalId) return;
+    const pid = activePrincipalId;
+    if (icpLoadedRef.current.has(pid)) return;
+    icpLoadedRef.current.add(pid);
+
+    const loadFromICP = async () => {
+      try {
+        const [icpStudents, icpNotifications, icpSyllabus] = await Promise.all([
+          actor.getData(`lords_students_${pid}`).catch(() => null),
+          actor.getData(`lords_notifications_${pid}`).catch(() => null),
+          actor.getData(`lords_syllabus_${pid}`).catch(() => null),
+        ]);
+
+        if (icpStudents) {
+          const parsed = JSON.parse(icpStudents) as Student[];
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            saveStorage(`lords_students_${pid}`, parsed);
+            setStudents(parsed);
+          }
+        }
+        if (icpNotifications) {
+          const parsed = JSON.parse(icpNotifications) as Notification[];
+          if (Array.isArray(parsed)) {
+            saveStorage(`lords_notifications_${pid}`, parsed);
+            setNotifications(parsed);
+          }
+        }
+        if (icpSyllabus) {
+          const parsed = JSON.parse(icpSyllabus) as ClassSyllabus;
+          if (typeof parsed === "object" && parsed !== null) {
+            // Ensure all default classes are present
+            for (const cls of DEFAULT_CLASSES) {
+              if (!(cls in parsed)) parsed[cls] = [];
+            }
+            saveStorage(`lords_syllabus_${pid}`, parsed);
+            setSyllabus(parsed);
+          }
+        }
+      } catch {
+        // silently ignore — localStorage remains the source
+      }
+    };
+
+    loadFromICP();
+  }, [actor, activePrincipalId]);
+
+  // Save effects: write to localStorage AND sync to ICP backend (fire-and-forget)
   useEffect(() => {
-    if (savedPrincipalIdRef.current && !loadingRef.current)
-      saveStorage(
-        `lords_notifications_${savedPrincipalIdRef.current}`,
-        notifications,
-      );
-  }, [notifications]);
+    if (!savedPrincipalIdRef.current || loadingRef.current) return;
+    const pid = savedPrincipalIdRef.current;
+    saveStorage(`lords_students_${pid}`, students);
+    if (actor) {
+      actor
+        .setData(`lords_students_${pid}`, JSON.stringify(students))
+        .catch(() => {});
+    }
+  }, [students, actor]);
+
   useEffect(() => {
-    if (savedPrincipalIdRef.current && !loadingRef.current)
-      saveStorage(`lords_syllabus_${savedPrincipalIdRef.current}`, syllabus);
-  }, [syllabus]);
+    if (!savedPrincipalIdRef.current || loadingRef.current) return;
+    const pid = savedPrincipalIdRef.current;
+    saveStorage(`lords_notifications_${pid}`, notifications);
+    if (actor) {
+      actor
+        .setData(`lords_notifications_${pid}`, JSON.stringify(notifications))
+        .catch(() => {});
+    }
+  }, [notifications, actor]);
+
+  useEffect(() => {
+    if (!savedPrincipalIdRef.current || loadingRef.current) return;
+    const pid = savedPrincipalIdRef.current;
+    saveStorage(`lords_syllabus_${pid}`, syllabus);
+    if (actor) {
+      actor
+        .setData(`lords_syllabus_${pid}`, JSON.stringify(syllabus))
+        .catch(() => {});
+    }
+  }, [syllabus, actor]);
 
   const [principalPage, setPrincipalPage] = useState<PrincipalPage>("list");
   const [prefilledClass, setPrefilledClass] = useState<string>("");

@@ -19,10 +19,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import type { Student } from "@/data/mockData";
+import { useBackendSync } from "@/hooks/useBackendSync";
 import { useClasses } from "@/hooks/useClasses";
 import { downloadCSV } from "@/utils/downloadCSV";
 import { Check, ClipboardList, Plus, Save, Trash2, X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 export interface TimetableEntry {
@@ -71,9 +72,25 @@ export default function PrincipalExamTimetablePage({
   students,
 }: Props) {
   const { classes, addClass } = useClasses(principalId, students);
+  const { syncToBackend, loadFromBackend } = useBackendSync();
   const [allData, setAllData] = useState<TimetableData>(() =>
     loadTimetable(principalId),
   );
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: loadFromBackend is stable
+  useEffect(() => {
+    loadFromBackend(`lords_exam_timetable_${principalId}`)
+      .then((data) => {
+        if (data && typeof data === "object" && !Array.isArray(data)) {
+          localStorage.setItem(
+            `lords_exam_timetable_${principalId}`,
+            JSON.stringify(data),
+          );
+          setAllData(data as TimetableData);
+        }
+      })
+      .catch(() => {});
+  }, [principalId]);
   const [selectedClass, setSelectedClass] = useState(classes[0] ?? "");
   const [showAddClass, setShowAddClass] = useState(false);
   const [newClassName, setNewClassName] = useState("");
@@ -139,6 +156,15 @@ export default function PrincipalExamTimetablePage({
       return;
     }
     saveTimetable(principalId, allData);
+    syncToBackend(`lords_exam_timetable_${principalId}`, allData).catch(
+      () => {},
+    );
+    window.dispatchEvent(
+      new StorageEvent("storage", {
+        key: `lords_exam_timetable_${principalId}`,
+        newValue: JSON.stringify(allData),
+      }),
+    );
     toast.success(
       `Exam timetable for ${selectedClass} saved and sent to parents!`,
     );

@@ -121,6 +121,31 @@ export default function PrincipalLayout({
         )}
       </div>
 
+      {/* Logout — top of sidebar */}
+      <div className="px-3 pt-3 pb-2">
+        <button
+          type="button"
+          data-ocid="principal.logout_button"
+          onClick={onLogout}
+          className="flex items-center gap-2.5 w-full px-3 py-2 text-sm font-medium rounded-lg transition-all duration-150"
+          style={{
+            background: "oklch(0.55 0.22 25 / 0.12)",
+            color: "oklch(0.72 0.18 25)",
+          }}
+          onMouseEnter={(e) => {
+            (e.currentTarget as HTMLButtonElement).style.background =
+              "oklch(0.55 0.22 25 / 0.22)";
+          }}
+          onMouseLeave={(e) => {
+            (e.currentTarget as HTMLButtonElement).style.background =
+              "oklch(0.55 0.22 25 / 0.12)";
+          }}
+        >
+          <LogOut size={15} />
+          <span>Logout</span>
+        </button>
+      </div>
+
       {/* Nav */}
       <div className="flex-1 overflow-y-auto px-3 py-4 space-y-5">
         <div>
@@ -149,28 +174,6 @@ export default function PrincipalLayout({
           </p>
           <div className="space-y-0.5">{renderNavSection(serverNavItem)}</div>
         </div>
-      </div>
-
-      {/* Logout */}
-      <div className="px-3 py-3 border-t border-sidebar-border">
-        <button
-          type="button"
-          data-ocid="principal.logout_button"
-          onClick={onLogout}
-          className="flex items-center gap-2.5 w-full px-3 py-2 text-sm rounded-lg transition-all duration-150"
-          style={{ color: "oklch(0.72 0.18 25)" }}
-          onMouseEnter={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.background =
-              "oklch(0.55 0.22 25 / 0.15)";
-          }}
-          onMouseLeave={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.background =
-              "transparent";
-          }}
-        >
-          <LogOut size={15} />
-          <span>Logout</span>
-        </button>
       </div>
     </div>
   );

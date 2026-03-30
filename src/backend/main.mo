@@ -9,6 +9,9 @@ import MixinStorage "blob-storage/Mixin";
 import MixinAuthorization "authorization/MixinAuthorization";
 import AccessControl "authorization/access-control";
 
+import Set "mo:core/Set";
+
+
 actor {
   type MediaItem = {
     studentId : Nat;
@@ -34,6 +37,23 @@ actor {
 
   let mediaStore = Map.empty<Text, MediaItem>();
   let userProfiles = Map.empty<Principal, UserProfile>();
+  let storedData = Map.empty<Text, Text>();
+
+  // Dynamic data manager functions (admin or user)
+  public shared ({ caller }) func setData(key : Text, value : Text) : async () {
+    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
+      Runtime.trap("Unauthorized: Only authenticated users can set data");
+    };
+    storedData.add(key, value);
+  };
+
+  public query func getData(key : Text) : async ?Text {
+    storedData.get(key);
+  };
+
+  public query func getAllKeys() : async [Text] {
+    storedData.keys().toArray();
+  };
 
   // User profile management functions
   public query ({ caller }) func getCallerUserProfile() : async ?UserProfile {

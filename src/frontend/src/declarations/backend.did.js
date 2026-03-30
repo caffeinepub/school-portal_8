@@ -68,9 +68,11 @@ export const idlService = IDL.Service({
   'addMedia' : IDL.Func([MediaItem], [], []),
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
   'deleteMedia' : IDL.Func([IDL.Text], [], []),
+  'getAllKeys' : IDL.Func([], [IDL.Vec(IDL.Text)], ['query']),
   'getAllMedia' : IDL.Func([], [IDL.Vec(MediaItem)], ['query']),
   'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
   'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
+  'getData' : IDL.Func([IDL.Text], [IDL.Opt(IDL.Text)], ['query']),
   'getMedia' : IDL.Func([IDL.Text], [IDL.Opt(MediaItem)], ['query']),
   'getMediaByStudentId' : IDL.Func([IDL.Nat], [IDL.Vec(MediaItem)], ['query']),
   'getMediaByType' : IDL.Func(
@@ -86,6 +88,7 @@ export const idlService = IDL.Service({
     ),
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
   'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
+  'setData' : IDL.Func([IDL.Text, IDL.Text], [], []),
   'updateCaption' : IDL.Func([IDL.Text, IDL.Text], [], []),
 });
 
@@ -152,9 +155,11 @@ export const idlFactory = ({ IDL }) => {
     'addMedia' : IDL.Func([MediaItem], [], []),
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
     'deleteMedia' : IDL.Func([IDL.Text], [], []),
+    'getAllKeys' : IDL.Func([], [IDL.Vec(IDL.Text)], ['query']),
     'getAllMedia' : IDL.Func([], [IDL.Vec(MediaItem)], ['query']),
     'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
     'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
+    'getData' : IDL.Func([IDL.Text], [IDL.Opt(IDL.Text)], ['query']),
     'getMedia' : IDL.Func([IDL.Text], [IDL.Opt(MediaItem)], ['query']),
     'getMediaByStudentId' : IDL.Func(
         [IDL.Nat],
@@ -174,6 +179,7 @@ export const idlFactory = ({ IDL }) => {
       ),
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
     'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
+    'setData' : IDL.Func([IDL.Text, IDL.Text], [], []),
     'updateCaption' : IDL.Func([IDL.Text, IDL.Text], [], []),
   });
 };

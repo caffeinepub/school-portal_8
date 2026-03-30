@@ -54,9 +54,11 @@ export interface _SERVICE {
   'addMedia' : ActorMethod<[MediaItem], undefined>,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
   'deleteMedia' : ActorMethod<[string], undefined>,
+  'getAllKeys' : ActorMethod<[], Array<string>>,
   'getAllMedia' : ActorMethod<[], Array<MediaItem>>,
   'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
   'getCallerUserRole' : ActorMethod<[], UserRole>,
+  'getData' : ActorMethod<[string], [] | [string]>,
   'getMedia' : ActorMethod<[string], [] | [MediaItem]>,
   'getMediaByStudentId' : ActorMethod<[bigint], Array<MediaItem>>,
   'getMediaByType' : ActorMethod<[bigint, FileType], Array<MediaItem>>,
@@ -64,6 +66,7 @@ export interface _SERVICE {
   'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
+  'setData' : ActorMethod<[string, string], undefined>,
   'updateCaption' : ActorMethod<[string, string], undefined>,
 }
 export declare const idlService: IDL.ServiceClass;

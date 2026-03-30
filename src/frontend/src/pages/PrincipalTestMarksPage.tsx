@@ -19,10 +19,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import type { Student } from "@/data/mockData";
+import { useBackendSync } from "@/hooks/useBackendSync";
 import { useClasses } from "@/hooks/useClasses";
 import { downloadCSV } from "@/utils/downloadCSV";
 import { Check, FileText, Plus, Save, X } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 // Storage: lords_test_marks_{principalId}
@@ -63,9 +64,25 @@ export default function PrincipalTestMarksPage({
   students,
 }: Props) {
   const { classes, addClass } = useClasses(principalId, students);
+  const { syncToBackend, loadFromBackend } = useBackendSync();
   const [allData, setAllData] = useState<TestMarksData>(() =>
     loadTestMarks(principalId),
   );
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: loadFromBackend is stable
+  useEffect(() => {
+    loadFromBackend(`lords_test_marks_${principalId}`)
+      .then((data) => {
+        if (data && typeof data === "object" && !Array.isArray(data)) {
+          localStorage.setItem(
+            `lords_test_marks_${principalId}`,
+            JSON.stringify(data),
+          );
+          setAllData(data as TestMarksData);
+        }
+      })
+      .catch(() => {});
+  }, [principalId]);
   const [selectedClass, setSelectedClass] = useState(classes[0] ?? "");
   const [examName, setExamName] = useState("");
   const [customExamName, setCustomExamName] = useState("");
@@ -168,6 +185,13 @@ export default function PrincipalTestMarksPage({
       return;
     }
     saveTestMarks(principalId, allData);
+    syncToBackend(`lords_test_marks_${principalId}`, allData).catch(() => {});
+    window.dispatchEvent(
+      new StorageEvent("storage", {
+        key: `lords_test_marks_${principalId}`,
+        newValue: JSON.stringify(allData),
+      }),
+    );
     toast.success(
       `Test marks for "${effectiveExamName}" (${selectedClass}) saved!`,
     );

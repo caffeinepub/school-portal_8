@@ -231,6 +231,16 @@ export default function StudentEditPage({
         draft.parentPassword,
       );
     }
+    // Instant broadcast so parent tabs refresh immediately
+    const allStudents = JSON.parse(
+      localStorage.getItem(`lords_students_${principalId}`) ?? "[]",
+    );
+    window.dispatchEvent(
+      new StorageEvent("storage", {
+        key: `lords_students_${principalId}`,
+        newValue: JSON.stringify(allStudents),
+      }),
+    );
     toast.success(`${draft.name}'s record saved permanently!`);
   }
 

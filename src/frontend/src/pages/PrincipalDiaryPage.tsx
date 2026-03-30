@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
+import { useBackendSync } from "@/hooks/useBackendSync";
 import { useClasses } from "@/hooks/useClasses";
 import { downloadCSV } from "@/utils/downloadCSV";
 import {
@@ -66,9 +67,23 @@ function saveDiary(principalId: string, entries: DiaryEntry[]) {
 
 export default function PrincipalDiaryPage({ principalId, students }: Props) {
   const { classes, addClass } = useClasses(principalId, students);
+  const { syncToBackend, loadFromBackend } = useBackendSync();
   const [entries, setEntries] = useState<DiaryEntry[]>(() =>
     loadDiary(principalId),
   );
+
+  // Load from ICP on mount (fire-and-forget)
+  // biome-ignore lint/correctness/useExhaustiveDependencies: loadFromBackend is stable
+  useEffect(() => {
+    loadFromBackend(`diary_${principalId}`)
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          localStorage.setItem(`diary_${principalId}`, JSON.stringify(data));
+          setEntries(data as DiaryEntry[]);
+        }
+      })
+      .catch(() => {});
+  }, [principalId]);
   const [filterClass, setFilterClass] = useState<string>("all");
   const [editingEntry, setEditingEntry] = useState<DiaryEntry | null>(null);
   const [showForm, setShowForm] = useState(false);
@@ -92,8 +107,17 @@ export default function PrincipalDiaryPage({ principalId, students }: Props) {
   const [formPhoto, setFormPhoto] = useState<string | undefined>(undefined);
   const photoInputRef = useRef<HTMLInputElement>(null);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: syncToBackend is stable
   useEffect(() => {
     saveDiary(principalId, entries);
+    syncToBackend(`diary_${principalId}`, entries).catch(() => {});
+    // Instant broadcast to parent tabs
+    window.dispatchEvent(
+      new StorageEvent("storage", {
+        key: `diary_${principalId}`,
+        newValue: JSON.stringify(entries),
+      }),
+    );
   }, [entries, principalId]);
 
   const resetForm = () => {
