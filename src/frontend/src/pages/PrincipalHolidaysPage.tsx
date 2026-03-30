@@ -59,6 +59,11 @@ export default function PrincipalHolidaysPage({
         read: false,
         title: form.title,
         message: form.message,
+        time: new Date().toLocaleTimeString("en-IN", {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+        priority: "medium",
         date:
           form.date ||
           new Date().toLocaleDateString("en-IN", {

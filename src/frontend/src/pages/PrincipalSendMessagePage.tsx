@@ -16,11 +16,15 @@ import {
   Bell,
   BookOpen,
   CalendarDays,
+  CheckCircle2,
   IndianRupee,
+  Loader2,
   Megaphone,
   MessageSquarePlus,
   Send,
   Star,
+  Users,
+  Zap,
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -48,19 +52,19 @@ const CATEGORIES = [
     value: "Syllabus",
     label: "Syllabus",
     icon: BookOpen,
-    color: "bg-purple-100 text-purple-700",
+    color: "bg-violet-100 text-violet-700",
   },
   {
     value: "Announcement",
     label: "Announcement",
     icon: Megaphone,
-    color: "bg-orange-100 text-orange-700",
+    color: "bg-amber-100 text-amber-700",
   },
   {
     value: "Holiday",
     label: "Holiday",
     icon: CalendarDays,
-    color: "bg-pink-100 text-pink-700",
+    color: "bg-rose-100 text-rose-700",
   },
   {
     value: "General",
@@ -70,181 +74,314 @@ const CATEGORIES = [
   },
 ];
 
+function countStudents(principalId: string): number {
+  try {
+    const raw = localStorage.getItem(`lords_students_${principalId}`);
+    if (raw) {
+      const arr = JSON.parse(raw);
+      return Array.isArray(arr) ? arr.length : 0;
+    }
+  } catch {}
+  return 0;
+}
+
+function getAllPrincipalStudentCount(): number {
+  let total = 0;
+  try {
+    const keys = Object.keys(localStorage).filter((k) =>
+      k.startsWith("lords_students_"),
+    );
+    for (const key of keys) {
+      const raw = localStorage.getItem(key);
+      if (raw) {
+        const arr = JSON.parse(raw);
+        if (Array.isArray(arr)) total += arr.length;
+      }
+    }
+  } catch {}
+  return total;
+}
+
 export default function PrincipalSendMessagePage({
   principalId,
   notifications,
   onSendNotification,
 }: Props) {
-  const [category, setCategory] = useState("General");
+  const [category, setCategory] = useState("");
   const [title, setTitle] = useState("");
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
+  const [lastSent, setLastSent] = useState<Notification | null>(null);
 
-  // Recent sent messages (last 5)
-  const recent = [...notifications]
-    .filter((n) => CATEGORIES.map((c) => c.value).includes(n.type))
-    .slice(0, 5);
-
-  const getCatMeta = (type: string) =>
-    CATEGORIES.find((c) => c.value === type) ??
-    CATEGORIES[CATEGORIES.length - 1];
+  const studentCount = countStudents(principalId);
+  const totalStudents = getAllPrincipalStudentCount();
 
   const handleSend = () => {
-    if (!title.trim() || !message.trim()) {
-      toast.error("Please fill in both title and message.");
+    if (!category) {
+      toast.error("Please select a category");
       return;
     }
+    if (!title.trim()) {
+      toast.error("Please enter a title");
+      return;
+    }
+    if (!message.trim()) {
+      toast.error("Please enter a message");
+      return;
+    }
+
     setSending(true);
 
-    const newNotif: Notification = {
-      id: Date.now(),
-      title: title.trim(),
-      message: message.trim(),
-      type: category,
-      date: new Date().toLocaleDateString("en-IN", {
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-      }),
-      read: false,
-    };
+    // Simulate a brief delay for UX (message is actually instant via localStorage)
+    setTimeout(() => {
+      const newNotification: Notification = {
+        id: Date.now(),
+        type: category,
+        title: title.trim(),
+        message: message.trim(),
+        date: new Date().toISOString().split("T")[0],
+        time: new Date().toLocaleTimeString("en-IN", {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+        priority: "high",
+        read: false,
+      };
 
-    // Persist directly so the parent panel picks it up on next refresh
-    try {
-      const existing = JSON.parse(
-        localStorage.getItem(`lords_notifications_${principalId}`) ?? "[]",
-      ) as Notification[];
-      localStorage.setItem(
-        `lords_notifications_${principalId}`,
-        JSON.stringify([newNotif, ...existing]),
+      onSendNotification(newNotification);
+      setLastSent(newNotification);
+
+      // Auto-download CSV
+      downloadCSV(
+        `Message_${category}_${newNotification.date}.csv`,
+        ["Category", "Title", "Message", "Date", "Time"],
+        [
+          [
+            category,
+            title,
+            message,
+            newNotification.date,
+            newNotification.time,
+          ],
+        ],
       );
-    } catch {}
 
-    onSendNotification(newNotif);
-    toast.success("Message sent to all parents!");
-    downloadCSV(
-      `Notice_${category}_${new Date().toISOString().split("T")[0]}.csv`,
-      ["Category", "Title", "Message", "Date"],
-      [[category, title.trim(), message.trim(), newNotif.date]],
-    );
-    setTitle("");
-    setMessage("");
-    setCategory("General");
-    setSending(false);
+      // Trigger storage event for other tabs (instant cross-tab delivery)
+      try {
+        const existing = JSON.parse(
+          localStorage.getItem(`lords_notifications_${principalId}`) || "[]",
+        );
+        localStorage.setItem(
+          `lords_notifications_${principalId}`,
+          JSON.stringify([newNotification, ...existing]),
+        );
+        // Force storage event on same tab for any polling
+        window.dispatchEvent(
+          new StorageEvent("storage", {
+            key: `lords_notifications_${principalId}`,
+            newValue: JSON.stringify([newNotification, ...existing]),
+          }),
+        );
+      } catch {}
+
+      toast.success("Message sent to all parents!");
+      setTitle("");
+      setMessage("");
+      setSending(false);
+    }, 300);
   };
 
   return (
     <div className="max-w-2xl space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 bg-indigo-100 rounded-xl flex items-center justify-center">
-          <MessageSquarePlus size={20} className="text-indigo-600" />
-        </div>
+      {/* Fast delivery info */}
+      <div
+        className="rounded-xl p-4 flex items-start gap-3"
+        style={{
+          background: "oklch(0.58 0.16 150 / 0.08)",
+          border: "1px solid oklch(0.58 0.16 150 / 0.2)",
+        }}
+      >
+        <Zap
+          size={18}
+          style={{ color: "oklch(0.42 0.16 150)", flexShrink: 0, marginTop: 2 }}
+        />
         <div>
-          <h2 className="text-lg font-bold text-gray-800">
-            Send Message to Parents
-          </h2>
-          <p className="text-sm text-gray-500">
-            Messages are instantly visible in all parent dashboards.
+          <p
+            className="font-semibold text-sm"
+            style={{ color: "oklch(0.30 0.12 150)" }}
+          >
+            Fast Broadcast Messaging
+          </p>
+          <p
+            className="text-xs mt-0.5"
+            style={{ color: "oklch(0.42 0.12 150)" }}
+          >
+            Messages are stored instantly. All{" "}
+            <strong>
+              {studentCount.toLocaleString()} parent
+              {studentCount !== 1 ? "s" : ""}
+            </strong>{" "}
+            in your school will see this within 5 seconds when they open the
+            portal.
+            {totalStudents > studentCount && (
+              <span className="ml-1 text-muted-foreground">
+                ({totalStudents.toLocaleString()} total across all schools)
+              </span>
+            )}
           </p>
         </div>
       </div>
 
-      {/* Compose card */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-5">
-        <div className="space-y-1.5">
-          <Label htmlFor="msg-category">Category</Label>
-          <Select value={category} onValueChange={setCategory}>
-            <SelectTrigger
-              id="msg-category"
-              data-ocid="send-message.select"
-              className="mt-1"
+      {/* Last sent success */}
+      {lastSent && (
+        <div
+          className="rounded-xl p-4 flex items-start gap-3"
+          style={{
+            background: "oklch(0.52 0.18 255 / 0.07)",
+            border: "1px solid oklch(0.52 0.18 255 / 0.2)",
+          }}
+          data-ocid="send_message.success_state"
+        >
+          <CheckCircle2
+            size={18}
+            style={{
+              color: "oklch(0.52 0.18 255)",
+              flexShrink: 0,
+              marginTop: 2,
+            }}
+          />
+          <div>
+            <p
+              className="font-semibold text-sm"
+              style={{ color: "oklch(0.35 0.12 255)" }}
             >
-              <SelectValue placeholder="Select category" />
-            </SelectTrigger>
-            <SelectContent>
-              {CATEGORIES.map((c) => (
-                <SelectItem key={c.value} value={c.value}>
-                  <div className="flex items-center gap-2">
-                    <c.icon size={14} />
-                    {c.label}
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+              ✓ Last message sent: {lastSent.title}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {lastSent.type} · {lastSent.date} at {lastSent.time} · CSV
+              downloaded automatically
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Compose form */}
+      <div className="bg-card border border-border rounded-xl p-5 space-y-4 shadow-xs">
+        <div className="flex items-center gap-2 mb-1">
+          <MessageSquarePlus
+            size={18}
+            style={{ color: "oklch(0.52 0.18 255)" }}
+          />
+          <h2 className="font-semibold text-base">Compose Message</h2>
         </div>
 
-        <div className="space-y-1.5">
-          <Label htmlFor="msg-title">Title</Label>
+        <div>
+          <Label className="text-sm font-medium">Category</Label>
+          <div className="grid grid-cols-3 gap-2 mt-2">
+            {CATEGORIES.map(({ value, label, icon: Icon, color }) => (
+              <button
+                key={value}
+                type="button"
+                data-ocid={`send_message.${value.toLowerCase()}.radio`}
+                onClick={() => setCategory(value)}
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-all ${
+                  category === value
+                    ? "border-primary bg-primary/5 font-semibold"
+                    : "border-border hover:border-primary/40 hover:bg-muted/50"
+                }`}
+              >
+                <span
+                  className={`flex items-center justify-center w-6 h-6 rounded-full text-xs ${color}`}
+                >
+                  <Icon size={12} />
+                </span>
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <Label className="text-sm font-medium">Title</Label>
           <Input
-            id="msg-title"
-            data-ocid="send-message.input"
-            placeholder="e.g. Fee Payment Due — April 15"
+            data-ocid="send_message.title.input"
+            className="mt-1.5"
+            placeholder="e.g., Fee payment reminder for March"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
           />
         </div>
 
-        <div className="space-y-1.5">
-          <Label htmlFor="msg-body">Message</Label>
+        <div>
+          <Label className="text-sm font-medium">Message</Label>
           <Textarea
-            id="msg-body"
-            data-ocid="send-message.textarea"
-            placeholder="Type your message here..."
-            rows={4}
+            data-ocid="send_message.message.textarea"
+            className="mt-1.5 min-h-[100px]"
+            placeholder="Write your message to parents here..."
             value={message}
             onChange={(e) => setMessage(e.target.value)}
           />
+          <p className="text-xs text-muted-foreground mt-1">
+            {message.length} characters
+          </p>
         </div>
 
         <Button
-          data-ocid="send-message.primary_button"
+          data-ocid="send_message.send.primary_button"
+          className="w-full gap-2"
+          style={{ background: "oklch(0.25 0.10 265)", color: "white" }}
           onClick={handleSend}
           disabled={sending}
-          className="w-full gap-2 bg-indigo-600 hover:bg-indigo-700"
         >
-          <Send size={16} />
-          Send to All Parents
+          {sending ? (
+            <Loader2 size={15} className="animate-spin" />
+          ) : (
+            <Send size={15} />
+          )}
+          {sending
+            ? "Sending..."
+            : `Send to ${studentCount} Parent${studentCount !== 1 ? "s" : ""}`}
         </Button>
       </div>
 
       {/* Recent messages */}
-      {recent.length > 0 && (
-        <div className="space-y-3">
-          <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wider">
-            Recently Sent
+      {notifications.length > 0 && (
+        <div>
+          <h3 className="font-semibold text-sm text-foreground mb-3 flex items-center gap-2">
+            <Bell size={15} />
+            Recent Messages
+            <span className="text-xs text-muted-foreground font-normal">
+              ({notifications.length} total)
+            </span>
           </h3>
           <div className="space-y-2">
-            {recent.map((n, idx) => {
-              const meta = getCatMeta(n.type);
-              const Icon = meta.icon;
+            {notifications.slice(0, 8).map((n, i) => {
+              const cat = CATEGORIES.find((c) => c.value === n.type);
+              const Icon = cat?.icon || Bell;
               return (
                 <div
                   key={n.id}
-                  data-ocid={`send-message.item.${idx + 1}`}
-                  className="bg-white rounded-xl border border-gray-100 p-4 flex items-start gap-3"
+                  data-ocid={`send_message.item.${i + 1}`}
+                  className="flex items-start gap-3 bg-card border border-border rounded-lg px-4 py-3"
                 >
-                  <div
-                    className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${meta.color}`}
+                  <span
+                    className={`flex items-center justify-center w-7 h-7 rounded-full text-xs shrink-0 ${cat?.color || "bg-gray-100 text-gray-700"}`}
                   >
-                    <Icon size={15} />
-                  </div>
+                    <Icon size={13} />
+                  </span>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-0.5">
-                      <p className="text-sm font-medium text-gray-800 truncate">
-                        {n.title}
-                      </p>
-                      <Badge
-                        className={`border-0 text-xs flex-shrink-0 ${meta.color}`}
-                      >
-                        {n.type}
-                      </Badge>
-                    </div>
-                    <p className="text-xs text-gray-500 line-clamp-1">
+                    <p className="text-sm font-medium text-foreground truncate">
+                      {n.title}
+                    </p>
+                    <p className="text-xs text-muted-foreground truncate">
                       {n.message}
                     </p>
-                    <p className="text-xs text-gray-400 mt-0.5">{n.date}</p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-xs text-muted-foreground">{n.date}</p>
+                    <Badge variant="outline" className="text-xs mt-0.5">
+                      {n.type}
+                    </Badge>
                   </div>
                 </div>
               );
@@ -252,6 +389,45 @@ export default function PrincipalSendMessagePage({
           </div>
         </div>
       )}
+
+      {/* Parent count by school */}
+      <div className="bg-muted/40 rounded-xl p-4 border border-border">
+        <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
+          <Users size={14} />
+          Recipient Breakdown
+        </h3>
+        <div className="space-y-1.5">
+          {["p1", "p2", "p3", "p4", "p5"].map((pid, idx) => {
+            const count = countStudents(pid);
+            const names = [
+              "Churu",
+              "Sadulpur",
+              "Taranagar",
+              "Principal 4",
+              "Principal 5",
+            ];
+            if (count === 0) return null;
+            return (
+              <div
+                key={pid}
+                className="flex items-center justify-between text-sm"
+              >
+                <span className="text-muted-foreground">
+                  Lords {names[idx]}
+                </span>
+                <span className="font-medium">
+                  {count} student{count !== 1 ? "s" : ""}
+                </span>
+              </div>
+            );
+          })}
+          {totalStudents === 0 && (
+            <p className="text-xs text-muted-foreground">
+              No students added yet. Add students in Student Management first.
+            </p>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

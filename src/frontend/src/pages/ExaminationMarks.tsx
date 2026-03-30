@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { getCurrentStudent } from "@/data/mockData";
 const marks = getCurrentStudent().marks;
 

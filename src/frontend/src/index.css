@@ -1,83 +1,112 @@
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap");
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    --radius: 0.625rem;
-    --background: 1 0 0;
-    --foreground: 0.145 0 0;
+    --radius: 0.5rem;
+    /* Background: warm white with subtle blue tint */
+    --background: 0.985 0.004 255;
+    --foreground: 0.18 0.04 265;
+    /* Card: pure white */
     --card: 1 0 0;
-    --card-foreground: 0.145 0 0;
+    --card-foreground: 0.18 0.04 265;
     --popover: 1 0 0;
-    --popover-foreground: 0.145 0 0;
-    --primary: 0.205 0 0;
-    --primary-foreground: 0.985 0 0;
-    --secondary: 0.97 0 0;
-    --secondary-foreground: 0.205 0 0;
-    --muted: 0.97 0 0;
-    --muted-foreground: 0.556 0 0;
-    --accent: 0.97 0 0;
-    --accent-foreground: 0.205 0 0;
-    --destructive: 0.577 0.245 27.325;
-    --destructive-foreground: 0.985 0 0;
-    --border: 0.922 0 0;
-    --input: 0.922 0 0;
-    --ring: 0.708 0 0;
-    --chart-1: 0.646 0.222 41.116;
-    --chart-2: 0.6 0.118 184.704;
-    --chart-3: 0.398 0.07 227.392;
-    --chart-4: 0.828 0.189 84.429;
-    --chart-5: 0.769 0.188 70.08;
-    --sidebar: 0.985 0 0;
-    --sidebar-foreground: 0.145 0 0;
-    --sidebar-primary: 0.205 0 0;
-    --sidebar-primary-foreground: 0.985 0 0;
-    --sidebar-accent: 0.97 0 0;
-    --sidebar-accent-foreground: 0.205 0 0;
-    --sidebar-border: 0.922 0 0;
-    --sidebar-ring: 0.708 0 0;
-  }
-
-  .dark {
-    --background: 0.145 0 0;
-    --foreground: 0.985 0 0;
-    --card: 0.205 0 0;
-    --card-foreground: 0.985 0 0;
-    --popover: 0.269 0 0;
-    --popover-foreground: 0.985 0 0;
-    --primary: 0.922 0 0;
-    --primary-foreground: 0.205 0 0;
-    --secondary: 0.269 0 0;
-    --secondary-foreground: 0.985 0 0;
-    --muted: 0.269 0 0;
-    --muted-foreground: 0.708 0 0;
-    --accent: 0.371 0 0;
-    --accent-foreground: 0.985 0 0;
-    --destructive: 0.704 0.191 22.216;
-    --destructive-foreground: 0.205 0 0;
-    --border: 1 0 0 / 10%;
-    --input: 1 0 0 / 15%;
-    --ring: 0.556 0 0;
-    --chart-1: 0.488 0.243 264.376;
-    --chart-2: 0.696 0.17 162.48;
-    --chart-3: 0.769 0.188 70.08;
-    --chart-4: 0.627 0.265 303.9;
-    --chart-5: 0.645 0.246 16.439;
-    --sidebar: 0.205 0 0;
-    --sidebar-foreground: 0.985 0 0;
-    --sidebar-primary: 0.488 0.243 264.376;
-    --sidebar-primary-foreground: 0.985 0 0;
-    --sidebar-accent: 0.269 0 0;
-    --sidebar-accent-foreground: 0.985 0 0;
-    --sidebar-border: 1 0 0 / 10%;
-    --sidebar-ring: 0.439 0 0;
+    --popover-foreground: 0.18 0.04 265;
+    /* Primary: deep navy blue */
+    --primary: 0.25 0.1 265;
+    --primary-foreground: 0.99 0.002 265;
+    /* Secondary: soft muted blue-gray */
+    --secondary: 0.94 0.012 260;
+    --secondary-foreground: 0.25 0.08 265;
+    /* Muted */
+    --muted: 0.94 0.012 260;
+    --muted-foreground: 0.5 0.04 260;
+    /* Accent: bright royal blue */
+    --accent: 0.92 0.03 255;
+    --accent-foreground: 0.25 0.1 265;
+    /* Destructive */
+    --destructive: 0.55 0.22 25;
+    --destructive-foreground: 0.99 0 0;
+    /* Border & Input */
+    --border: 0.88 0.018 260;
+    --input: 0.88 0.018 260;
+    --ring: 0.45 0.14 265;
+    /* Charts */
+    --chart-1: 0.52 0.18 255;
+    --chart-2: 0.58 0.15 150;
+    --chart-3: 0.65 0.19 70;
+    --chart-4: 0.55 0.22 25;
+    --chart-5: 0.62 0.18 310;
+    /* Sidebar: dark navy */
+    --sidebar: 0.17 0.07 265;
+    --sidebar-foreground: 0.92 0.02 260;
+    --sidebar-primary: 0.6 0.19 255;
+    --sidebar-primary-foreground: 0.99 0 0;
+    --sidebar-accent: 0.23 0.06 265;
+    --sidebar-accent-foreground: 0.92 0.02 260;
+    --sidebar-border: 0.26 0.05 265;
+    --sidebar-ring: 0.5 0.14 260;
   }
 
   * {
     @apply border-border;
   }
+
   body {
     @apply bg-background text-foreground;
+    font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+    font-weight: 700;
+  }
+}
+
+@layer utilities {
+  .sidebar-nav-item {
+    @apply flex items-center gap-2.5 px-3 py-2 text-sm rounded-lg transition-all duration-150 cursor-pointer;
+    color: oklch(var(--sidebar-foreground) / 0.75);
+  }
+  .sidebar-nav-item:hover {
+    background: oklch(var(--sidebar-accent));
+    color: oklch(var(--sidebar-foreground));
+  }
+  .sidebar-nav-item.active {
+    background: oklch(var(--sidebar-primary) / 0.2);
+    color: oklch(var(--sidebar-primary));
+    font-weight: 600;
+  }
+  .badge-live {
+    @apply inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full;
+    background: oklch(0.58 0.16 150 / 0.15);
+    color: oklch(0.42 0.16 150);
+  }
+  .badge-live::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: oklch(0.58 0.16 150);
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    display: inline-block;
+  }
+  @keyframes pulse {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.4;
+    }
   }
 }

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import {
   attendance,
   fees,

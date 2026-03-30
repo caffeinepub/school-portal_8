@@ -1,35 +1,38 @@
 # Lord's International School Group
 
 ## Current State
-The Principal panel has separate sidebar items in a "Tools" section:
-- Error Fix (id: error-fix)
-- Storage & Backup (id: storage)
-- Data Backup (id: data-backup)
-- Data Server (id: data-server)
-
-A "Class Records" feature was planned but not implemented as a separate page.
+Fresh rebuild — no existing source files. Previous version had ICP backend with 503 errors and data not persisting. All data was falling back to localStorage. Rebuilding with a properly structured Motoko backend that actually stores and retrieves data.
 
 ## Requested Changes (Diff)
 
 ### Add
-- New `PrincipalServerPage.tsx` that unifies all server tools into one page with 5 tabs:
-  1. Data Server
-  2. Data Backup
-  3. Storage & Backup
-  4. Error Fix
-  5. Class Records (new: shows all data sent to parents, organized by class, auto-saved)
-- New `PrincipalPage` type value: `"server"`
-- New nav label: `server: "Server"`
+- Motoko backend with stable storage for all school data (students, marks, fees, attendance, syllabus, diary, notices, exam timetable, test marks, doubt chat, media metadata, school info)
+- Multi-principal support: 5 principals with isolated data stores
+- Google account sign-in on landing page (email-based, no Internet Identity)
+- Permanent principal and parent sessions (persisted in localStorage, cleared only on explicit logout)
+- Logout buttons in both Principal and Parent panels
+- Fast broadcast messaging: principals send notices/diary/announcements that all parents of that school can read instantly via polling
+- ICP Canister ID display in Server section with direct link to backend
+- All principal dashboard features: student management, marks, fees, attendance, syllabus (class-wise), diary (class-wise), exam timetable, test marks, notices, doubt chat, profile pictures, school info editor
+- All parent dashboard features: view-only child info, marks, fees, attendance, syllabus, diary, exam timetable, test marks, notices, media, doubt chat
+- Server section: Data Server (CSV download), Data Backup (auto-save/download/restore), Storage & Backup, Error Fix, Class Records archive
+- Auto CSV download when principal sends data to parents
+- Class Records archive auto-saving all sent data organized by class
+- Rank by Marks feature with leaderboard
+- Parent password: 10-digit numeric, unlimited edits, set by principal
+- Profile pictures for students
 
 ### Modify
-- `PrincipalLayout.tsx`: Replace the 4 individual toolsNavItems with a single `{ id: "server", label: "Server", icon: Server }` item. The "Tools" section heading is replaced by a "Server" single item (can stay under a renamed section or be standalone).
-- `App.tsx`: Add `"server"` to PrincipalPage union type; add `{principalPage === "server" && <PrincipalServerPage ... />}` render case.
+- N/A (fresh build)
 
 ### Remove
-- Individual sidebar entries for error-fix, storage, data-backup, data-server (replaced by single "Server" entry)
-- Their individual page renders in App.tsx (replaced by unified server page)
+- Internet Identity login (replaced with Google/email sign-in)
+- Example/demo students
 
 ## Implementation Plan
-1. Create `src/frontend/src/pages/PrincipalServerPage.tsx` with 5 tabs, embedding existing page components.
-2. Update `PrincipalLayout.tsx` to replace toolsNavItems with single Server item.
-3. Update `App.tsx` type union and render cases.
+1. Motoko backend: stable vars for all data, update/query functions for students, marks, fees, attendance, syllabus, diary, notices, exam timetable, test marks, doubt chat, school info, media metadata — keyed by principalId
+2. Frontend: Google-style email sign-in → portal → principal login (password) or parent login (10-digit code) → respective dashboards
+3. All data reads/writes go through backend canister calls
+4. Notices and diary use a simple append-only list per school+class, parents poll every 5s for fast updates
+5. Server section shows process.env canister ID and links
+6. Auto CSV download on all send-to-parents actions

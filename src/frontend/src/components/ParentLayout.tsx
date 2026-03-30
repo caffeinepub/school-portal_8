@@ -12,41 +12,81 @@ export default function ParentLayout({
   children,
 }: Props) {
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-indigo-950 text-white px-4 lg:px-8 py-4 flex items-center gap-3">
-        <div className="w-9 h-9 bg-indigo-500 rounded-lg flex items-center justify-center flex-shrink-0">
-          <GraduationCap size={20} />
+    <div className="min-h-screen bg-background">
+      <header
+        className="px-4 lg:px-8 py-3.5 flex items-center gap-3"
+        style={{ background: "oklch(var(--sidebar))" }}
+      >
+        <div
+          className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+          style={{ background: "oklch(0.60 0.19 255)" }}
+        >
+          <GraduationCap size={17} className="text-white" />
         </div>
-        <div>
-          <div className="font-bold text-sm leading-tight">
+        <div className="flex-1 min-w-0">
+          <div className="font-bold text-sm leading-tight text-sidebar-foreground">
             Lord&apos;s International School Group
           </div>
-          <div className="text-indigo-300 text-xs">Parent Portal</div>
+          <div className="text-xs text-sidebar-foreground/50">
+            Parent Portal
+          </div>
         </div>
-        <div className="ml-auto flex items-center gap-3">
-          <div className="flex items-center gap-2 bg-indigo-800 rounded-lg px-3 py-1.5">
-            <Users size={14} className="text-indigo-300" />
-            <span className="text-sm font-medium">{studentName}</span>
+        <div className="flex items-center gap-2.5">
+          <div
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg"
+            style={{ background: "oklch(0.60 0.19 255 / 0.18)" }}
+          >
+            <Users size={13} style={{ color: "oklch(0.78 0.12 255)" }} />
+            <span
+              className="text-sm font-medium max-w-[120px] truncate"
+              style={{ color: "oklch(0.92 0.04 255)" }}
+            >
+              {studentName}
+            </span>
           </div>
           <button
             type="button"
             data-ocid="parent.logout_button"
             onClick={onLogout}
-            className="flex items-center gap-1.5 text-red-300 hover:text-white bg-red-800/30 hover:bg-red-700/50 text-sm transition-colors px-3 py-1.5 rounded-lg border border-red-700/30"
+            className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg border transition-colors"
+            style={{
+              color: "oklch(0.72 0.18 25)",
+              borderColor: "oklch(0.55 0.22 25 / 0.25)",
+              background: "oklch(0.55 0.22 25 / 0.08)",
+            }}
           >
-            <LogOut size={14} />
+            <LogOut size={13} />
             <span className="hidden sm:inline">Logout</span>
           </button>
         </div>
       </header>
-      <main className="max-w-4xl mx-auto p-4 lg:p-8">{children}</main>
-      <footer className="text-center text-xs text-gray-400 py-6">
-        © {new Date().getFullYear()}. Built with love using{" "}
+
+      {/* Live indicator banner */}
+      <div
+        className="px-4 lg:px-8 py-1.5 flex items-center gap-2 text-xs"
+        style={{
+          background: "oklch(0.58 0.16 150 / 0.08)",
+          borderBottom: "1px solid oklch(0.58 0.16 150 / 0.15)",
+        }}
+      >
+        <span className="badge-live">LIVE</span>
+        <span style={{ color: "oklch(0.40 0.12 150)" }}>
+          Data updates every 5 seconds — messages from principal appear
+          instantly
+        </span>
+      </div>
+
+      <main className="max-w-5xl mx-auto px-4 lg:px-8 py-6">{children}</main>
+
+      <footer className="text-center py-6 text-xs text-muted-foreground border-t border-border">
+        &copy; {new Date().getFullYear()} Lord&apos;s International School
+        Group. Built with{" "}
         <a
           href={`https://caffeine.ai?utm_source=caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(window.location.hostname)}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="underline hover:text-gray-600"
+          className="hover:underline"
+          style={{ color: "oklch(0.52 0.18 255)" }}
         >
           caffeine.ai
         </a>
