@@ -32,6 +32,7 @@ import {
 import {
   ArrowLeft,
   Camera,
+  Copy,
   Edit2,
   Film,
   Image as ImageIcon,
@@ -88,6 +89,16 @@ export default function StudentEditPage({
     fees: student.fees.map((f) => ({ ...f })),
     attendance: student.attendance.map((a) => ({ ...a })),
   });
+
+  const [copiedParentPwd, setCopiedParentPwd] = useState(false);
+
+  const handleCopyParentPwd = () => {
+    if (draft.parentPassword) {
+      navigator.clipboard.writeText(String(draft.parentPassword));
+      setCopiedParentPwd(true);
+      setTimeout(() => setCopiedParentPwd(false), 2000);
+    }
+  };
 
   const [media, setMedia] = useState<MediaItem[]>(() => loadMedia(student.id));
   const [editingCaption, setEditingCaption] = useState<string | null>(null);
@@ -547,21 +558,45 @@ export default function StudentEditPage({
                 <Label className="text-sm font-medium text-gray-700 mb-1 block">
                   Parent Login Password
                 </Label>
-                <Input
-                  data-ocid="student_edit.parent_password_input"
-                  type="text"
-                  placeholder="Enter 10-digit parent password"
-                  value={draft.parentPassword ?? ""}
-                  onChange={(e) =>
-                    setField(
-                      "parentPassword",
-                      e.target.value.replace(/\D/g, "").slice(0, 10),
-                    )
-                  }
-                  maxLength={10}
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                />
+                <div className="flex gap-2">
+                  <Input
+                    data-ocid="student_edit.parent_password_input"
+                    type="text"
+                    placeholder="Enter 10-digit parent password"
+                    value={draft.parentPassword ?? ""}
+                    onChange={(e) =>
+                      setField(
+                        "parentPassword",
+                        e.target.value.replace(/\D/g, "").slice(0, 10),
+                      )
+                    }
+                    maxLength={10}
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    data-ocid="student_edit.copy_parent_password_button"
+                    onClick={handleCopyParentPwd}
+                    title="Copy parent password"
+                    className="shrink-0 px-3"
+                    style={
+                      copiedParentPwd
+                        ? {
+                            color: "oklch(0.55 0.18 150)",
+                            borderColor: "oklch(0.55 0.18 150 / 0.4)",
+                          }
+                        : {}
+                    }
+                  >
+                    <Copy size={14} />
+                    <span className="ml-1 text-xs">
+                      {copiedParentPwd ? "Copied!" : "Copy"}
+                    </span>
+                  </Button>
+                </div>
                 <p className="text-xs text-gray-500 mt-1">
                   {`Parent uses this 10-digit number to log in to their child's account. (${(draft.parentPassword ?? "").length}/10 digits)`}
                 </p>

@@ -12,6 +12,7 @@ import {
   Menu,
   MessageCircle,
   NotebookPen,
+  RefreshCw,
   Send,
   Server,
   UserPlus,
@@ -61,6 +62,20 @@ export default function PrincipalLayout({
   principalName,
 }: Props) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<string | null>(null);
+
+  const handleRefresh = () => {
+    setIsRefreshing(true);
+    setTimeout(() => {
+      setIsRefreshing(false);
+      const now = new Date();
+      setLastUpdated(now.toLocaleTimeString());
+      window.dispatchEvent(
+        new StorageEvent("storage", { key: "lords_refresh" }),
+      );
+    }, 800);
+  };
 
   const allNavItems = [
     ...studentNavItems,
@@ -248,9 +263,28 @@ export default function PrincipalLayout({
               {pageLabel || "Student Management"}
             </h1>
           </div>
-          <div className="hidden md:flex items-center gap-2">
+          <div className="flex items-center gap-3">
+            {lastUpdated && (
+              <span className="hidden sm:block text-xs text-muted-foreground">
+                Updated: {lastUpdated}
+              </span>
+            )}
+            <button
+              type="button"
+              data-ocid="principal.refresh_button"
+              onClick={handleRefresh}
+              title="Refresh data"
+              className="flex items-center gap-1.5 text-sm px-2.5 py-1.5 rounded-lg border transition-colors hover:bg-accent"
+              style={{ borderColor: "oklch(0.75 0.05 265 / 0.3)" }}
+            >
+              <RefreshCw
+                size={14}
+                className={isRefreshing ? "animate-spin" : ""}
+              />
+              <span className="hidden sm:inline text-xs">Refresh</span>
+            </button>
             <span
-              className="text-xs px-2.5 py-1 rounded-full font-medium"
+              className="hidden md:block text-xs px-2.5 py-1 rounded-full font-medium"
               style={{
                 background: "oklch(0.25 0.10 265 / 0.08)",
                 color: "oklch(0.25 0.10 265)",

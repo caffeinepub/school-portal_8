@@ -107,6 +107,8 @@ export default function Login({ onLogin }: Props) {
     }
   };
 
+  // Multi-device support: password-only match with no device fingerprinting or session lock.
+  // The same 10-digit parent password works from any number of devices simultaneously.
   const handleParentLogin = () => {
     if (!/^\d{10}$/.test(parentPwd)) {
       toast.error("Parent password must be a 10-digit number");

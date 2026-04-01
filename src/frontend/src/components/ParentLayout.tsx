@@ -1,4 +1,5 @@
-import { GraduationCap, LogOut, Users } from "lucide-react";
+import { GraduationCap, LogOut, RefreshCw, Users } from "lucide-react";
+import { useState } from "react";
 
 interface Props {
   studentName: string;
@@ -11,6 +12,21 @@ export default function ParentLayout({
   onLogout,
   children,
 }: Props) {
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<string | null>(null);
+
+  const handleRefresh = () => {
+    setIsRefreshing(true);
+    setTimeout(() => {
+      setIsRefreshing(false);
+      const now = new Date();
+      setLastUpdated(now.toLocaleTimeString());
+      window.dispatchEvent(
+        new StorageEvent("storage", { key: "lords_refresh" }),
+      );
+    }, 800);
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <header
@@ -44,6 +60,32 @@ export default function ParentLayout({
               {studentName}
             </span>
           </div>
+          {lastUpdated && (
+            <span
+              className="hidden sm:block text-xs"
+              style={{ color: "oklch(0.78 0.08 255)" }}
+            >
+              Updated: {lastUpdated}
+            </span>
+          )}
+          <button
+            type="button"
+            data-ocid="parent.refresh_button"
+            onClick={handleRefresh}
+            title="Refresh data"
+            className="flex items-center gap-1.5 text-sm px-2.5 py-1.5 rounded-lg border transition-colors"
+            style={{
+              color: "oklch(0.85 0.06 255)",
+              borderColor: "oklch(0.60 0.19 255 / 0.3)",
+              background: "oklch(0.60 0.19 255 / 0.12)",
+            }}
+          >
+            <RefreshCw
+              size={13}
+              className={isRefreshing ? "animate-spin" : ""}
+            />
+            <span className="hidden sm:inline text-xs">Refresh</span>
+          </button>
           <button
             type="button"
             data-ocid="parent.logout_button"
