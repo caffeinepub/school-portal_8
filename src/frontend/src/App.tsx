@@ -1,5 +1,6 @@
 import { Toaster } from "@/components/ui/sonner";
 import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import ParentLayout from "./components/ParentLayout";
 import PrincipalLayout from "./components/PrincipalLayout";
 import {
@@ -142,6 +143,41 @@ function loadSession(): SessionData {
     parentStudentId: null,
     parentPrincipalId: null,
   };
+}
+
+/** Generate `count` unique random 10-digit numeric passwords */
+function generateUniquePasswords(count: number): string[] {
+  const used = new Set<string>();
+  const result: string[] = [];
+  while (result.length < count) {
+    const pwd = String(Math.floor(1000000000 + Math.random() * 9000000000));
+    if (!used.has(pwd)) {
+      used.add(pwd);
+      result.push(pwd);
+    }
+  }
+  return result;
+}
+
+/** Download a CSV of student names, classes, roll numbers, and parent passwords */
+function downloadPasswordCSV(updatedStudents: Student[]) {
+  const rows = [
+    ["Student Name", "Class", "Roll No", "Parent Password"],
+    ...updatedStudents.map((s) => [
+      s.name,
+      s.class,
+      String(s.rollNo),
+      s.parentPassword ?? "",
+    ]),
+  ];
+  const csv = rows.map((r) => r.map((v) => `"${v}"`).join(",")).join("\n");
+  const blob = new Blob([csv], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `student_passwords_${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 export default function App() {
@@ -395,6 +431,27 @@ export default function App() {
     setStudents(ranked);
   };
 
+  /** Auto-generate unique 10-digit passwords for all students and download CSV */
+  const handleAutoGeneratePasswords = () => {
+    if (students.length === 0) return;
+    const passwords = generateUniquePasswords(students.length);
+    const updatedStudents = students.map((s, i) => ({
+      ...s,
+      parentPassword: passwords[i],
+    }));
+    setStudents(updatedStudents);
+    // Download CSV immediately with the updated students (before state flushes)
+    downloadPasswordCSV(updatedStudents);
+    toast.success(
+      `Passwords generated for ${updatedStudents.length} students! CSV downloaded.`,
+      {
+        description:
+          "Each student has a unique 10-digit password. Share using the copy/WhatsApp buttons in each student's profile.",
+        duration: 6000,
+      },
+    );
+  };
+
   const activePrincipalName =
     PRINCIPALS.find((p) => p.id === activePrincipalId)?.name ?? "Principal";
 
@@ -545,6 +602,7 @@ export default function App() {
               onEditStudent={handleEditStudent}
               onNavigateToAdd={() => setPrincipalPage("add")}
               onRankStudents={handleRankStudents}
+              onAutoGeneratePasswords={handleAutoGeneratePasswords}
             />
           )}
           {principalPage === "edit" && selectedStudent && (

@@ -111,32 +111,51 @@ export default function Login({ onLogin }: Props) {
   // The same 10-digit parent password works from any number of devices simultaneously.
   const handleParentLogin = () => {
     if (!/^\d{10}$/.test(parentPwd)) {
-      toast.error("Parent password must be a 10-digit number");
+      toast.error("Password or mobile number must be a 10-digit number");
       return;
     }
     for (const principal of PRINCIPALS) {
-      const students = loadStorage<{ id: number; parentPassword?: string }[]>(
-        `lords_students_${principal.id}`,
-        [],
-      );
-      const found = students.find(
-        (s) =>
-          s.parentPassword &&
-          String(s.parentPassword).trim() === String(parentPwd).trim(),
-      );
-      if (found) {
-        saveStorage("lords_session", {
-          role: "parent",
-          activePrincipalId: null,
-          parentStudentId: found.id,
-          parentPrincipalId: principal.id,
-        });
-        onLogin("parent", found.id, principal.id);
-        return;
+      const students = loadStorage<
+        { id: number; parentPassword?: string; parentMobile?: string }[]
+      >(`lords_students_${principal.id}`, []);
+      for (const s of students) {
+        // Check parentPassword
+        const storedPwd = localStorage.getItem(
+          `lords_parent_password_student_${s.id}_${principal.id}`,
+        );
+        const effectivePwd = storedPwd ?? s.parentPassword ?? null;
+        if (effectivePwd && parentPwd.trim() === String(effectivePwd).trim()) {
+          saveStorage("lords_session", {
+            role: "parent",
+            activePrincipalId: null,
+            parentStudentId: s.id,
+            parentPrincipalId: principal.id,
+          });
+          onLogin("parent", s.id, principal.id);
+          return;
+        }
+        // Check parentMobile
+        const storedMobile = localStorage.getItem(
+          `lords_parent_mobile_student_${s.id}_${principal.id}`,
+        );
+        const effectiveMobile = storedMobile ?? s.parentMobile ?? null;
+        if (
+          effectiveMobile &&
+          parentPwd.trim() === String(effectiveMobile).trim()
+        ) {
+          saveStorage("lords_session", {
+            role: "parent",
+            activePrincipalId: null,
+            parentStudentId: s.id,
+            parentPrincipalId: principal.id,
+          });
+          onLogin("parent", s.id, principal.id);
+          return;
+        }
       }
     }
     toast.error(
-      "Password not found. Please check your 10-digit parent password.",
+      "Login failed. Please check your 10-digit password or mobile number.",
     );
   };
 
@@ -455,14 +474,14 @@ export default function Login({ onLogin }: Props) {
                   className="flex items-center gap-1.5 text-sm font-medium text-foreground mb-1.5"
                 >
                   <Lock size={13} />
-                  10-Digit Parent Password
+                  Password or Mobile Number
                 </label>
                 <Input
                   id="parent-password"
                   data-ocid="login.parent_password.input"
                   type="password"
                   inputMode="numeric"
-                  placeholder="Enter 10-digit password"
+                  placeholder="Enter 10-digit password or mobile number"
                   maxLength={10}
                   value={parentPwd}
                   onChange={(e) =>

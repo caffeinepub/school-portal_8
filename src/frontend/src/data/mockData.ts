@@ -43,6 +43,7 @@ export interface Student {
   rank: number;
   password?: string;
   parentPassword?: string;
+  parentMobile?: string;
   profilePicture?: string;
 }
 

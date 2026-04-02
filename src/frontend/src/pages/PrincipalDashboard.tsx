@@ -1,3 +1,13 @@
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +22,7 @@ import type { Student } from "@/data/mockData";
 import {
   ChevronDown,
   ChevronUp,
+  KeyRound,
   Plus,
   Search,
   Trophy,
@@ -25,6 +36,7 @@ interface Props {
   onEditStudent: (id: number) => void;
   onNavigateToAdd?: () => void;
   onRankStudents?: (ranked: Student[]) => void;
+  onAutoGeneratePasswords?: () => void;
 }
 
 function getWorstFeeStatus(fees: Student["fees"]): string {
@@ -82,11 +94,13 @@ export default function PrincipalDashboard({
   onEditStudent,
   onNavigateToAdd,
   onRankStudents,
+  onAutoGeneratePasswords,
 }: Props) {
   const [search, setSearch] = useState("");
   const [classFilter, setClassFilter] = useState("All");
   const [rankSuccess, setRankSuccess] = useState(false);
   const [leaderboardOpen, setLeaderboardOpen] = useState(false);
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false);
 
   useEffect(() => {
     if (rankSuccess) {
@@ -136,6 +150,42 @@ export default function PrincipalDashboard({
 
   return (
     <div className="space-y-6">
+      {/* Auto Generate Passwords Confirmation Dialog */}
+      <AlertDialog
+        open={showPasswordDialog}
+        onOpenChange={setShowPasswordDialog}
+      >
+        <AlertDialogContent data-ocid="students.password_dialog">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <KeyRound size={18} className="text-indigo-600" />
+              Auto Generate Passwords
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              This will assign a unique random 10-digit password to{" "}
+              <strong>ALL {students.length} students</strong>. Existing
+              passwords will be replaced. A CSV file with all new passwords will
+              be downloaded automatically. Continue?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-ocid="students.password_dialog.cancel_button">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              data-ocid="students.password_dialog.confirm_button"
+              className="bg-indigo-600 hover:bg-indigo-700"
+              onClick={() => {
+                setShowPasswordDialog(false);
+                onAutoGeneratePasswords?.();
+              }}
+            >
+              Generate Passwords
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -155,6 +205,17 @@ export default function PrincipalDashboard({
           <Badge className="bg-indigo-600 text-white hover:bg-indigo-600 text-sm px-3 py-1">
             {students.length} Students
           </Badge>
+          <Button
+            size="sm"
+            variant="outline"
+            data-ocid="students.auto_password_button"
+            onClick={() => setShowPasswordDialog(true)}
+            disabled={students.length === 0}
+            className="border-indigo-300 text-indigo-700 hover:bg-indigo-50 gap-1.5"
+          >
+            <KeyRound size={14} />
+            Auto Passwords
+          </Button>
           <Button
             size="sm"
             data-ocid="students.rank_button"

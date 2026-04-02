@@ -38,6 +38,7 @@ import {
   Image as ImageIcon,
   PlayCircle,
   Save,
+  Share2,
   Trash2,
   Upload,
 } from "lucide-react";
@@ -91,6 +92,7 @@ export default function StudentEditPage({
   });
 
   const [copiedParentPwd, setCopiedParentPwd] = useState(false);
+  const [copiedParentMobile, setCopiedParentMobile] = useState(false);
 
   const handleCopyParentPwd = () => {
     if (draft.parentPassword) {
@@ -98,6 +100,26 @@ export default function StudentEditPage({
       setCopiedParentPwd(true);
       setTimeout(() => setCopiedParentPwd(false), 2000);
     }
+  };
+
+  const handleCopyParentMobile = () => {
+    if (draft.parentMobile) {
+      navigator.clipboard.writeText(String(draft.parentMobile));
+      setCopiedParentMobile(true);
+      setTimeout(() => setCopiedParentMobile(false), 2000);
+    }
+  };
+
+  const handleShareWhatsAppPwd = () => {
+    const pwd = draft.parentPassword ?? "";
+    const msg = `🏫 *Lord's International School Group*\nStudent: ${draft.name} | Class: ${draft.class}\nParent Login: Open the school portal\nPassword: ${pwd}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank");
+  };
+
+  const handleShareWhatsAppMobile = () => {
+    const mobile = draft.parentMobile ?? "";
+    const msg = `🏫 *Lord's International School Group*\nStudent: ${draft.name} | Class: ${draft.class}\nParent Login: Open the school portal\nMobile Login: ${mobile}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank");
   };
 
   const [media, setMedia] = useState<MediaItem[]>(() => loadMedia(student.id));
@@ -240,6 +262,12 @@ export default function StudentEditPage({
       localStorage.setItem(
         `lords_parent_password_student_${draft.id}_${principalId}`,
         draft.parentPassword,
+      );
+    }
+    if (draft.parentMobile) {
+      localStorage.setItem(
+        `lords_parent_mobile_student_${draft.id}_${principalId}`,
+        draft.parentMobile,
       );
     }
     // Instant broadcast so parent tabs refresh immediately
@@ -596,9 +624,80 @@ export default function StudentEditPage({
                       {copiedParentPwd ? "Copied!" : "Copy"}
                     </span>
                   </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    data-ocid="student_edit.share_parent_password_button"
+                    onClick={handleShareWhatsAppPwd}
+                    title="Share via WhatsApp"
+                    className="shrink-0 px-3 text-green-600 border-green-300 hover:bg-green-50"
+                  >
+                    <Share2 size={14} />
+                    <span className="ml-1 text-xs">WhatsApp</span>
+                  </Button>
                 </div>
                 <p className="text-xs text-gray-500 mt-1">
                   {`Parent uses this 10-digit number to log in to their child's account. (${(draft.parentPassword ?? "").length}/10 digits)`}
+                </p>
+              </div>
+              <div className="sm:col-span-2">
+                <Label className="text-sm font-medium text-gray-700 mb-1 block">
+                  Parent Mobile Number
+                </Label>
+                <div className="flex gap-2">
+                  <Input
+                    data-ocid="student_edit.parent_mobile_input"
+                    type="text"
+                    placeholder="10-digit mobile number"
+                    value={draft.parentMobile ?? ""}
+                    onChange={(e) =>
+                      setField(
+                        "parentMobile",
+                        e.target.value.replace(/\D/g, "").slice(0, 10),
+                      )
+                    }
+                    maxLength={10}
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    data-ocid="student_edit.copy_parent_mobile_button"
+                    onClick={handleCopyParentMobile}
+                    title="Copy mobile number"
+                    className="shrink-0 px-3"
+                    style={
+                      copiedParentMobile
+                        ? {
+                            color: "oklch(0.55 0.18 150)",
+                            borderColor: "oklch(0.55 0.18 150 / 0.4)",
+                          }
+                        : {}
+                    }
+                  >
+                    <Copy size={14} />
+                    <span className="ml-1 text-xs">
+                      {copiedParentMobile ? "Copied!" : "Copy"}
+                    </span>
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    data-ocid="student_edit.share_parent_mobile_button"
+                    onClick={handleShareWhatsAppMobile}
+                    title="Share via WhatsApp"
+                    className="shrink-0 px-3 text-green-600 border-green-300 hover:bg-green-50"
+                  >
+                    <Share2 size={14} />
+                    <span className="ml-1 text-xs">WhatsApp</span>
+                  </Button>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  {`Parent can also log in using this mobile number. (${(draft.parentMobile ?? "").length}/10 digits)`}
                 </p>
               </div>
             </div>

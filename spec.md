@@ -1,24 +1,29 @@
 # Lord's International School Group
 
 ## Current State
-Full school management portal with Principal and Parent panels. Both panels have logout buttons at the top of the sidebar. Parent login uses a 10-digit password set by the principal per student. Parent sessions persist. Real-time sync via localStorage events with 3-second polling backup. App has a Server section with Data Server, Data Backup, Storage & Backup, Error Fix, and Class Records.
+The Principal panel's Student Management (PrincipalDashboard) shows a list of students with edit, rank, and filter options. Each student has a `parentPassword` field (10-digit numeric) and a `password` field. Principals currently must open each student's edit page individually to set or change their parent login password.
 
 ## Requested Changes (Diff)
 
 ### Add
-- Refresh button in the top header bar (top-right area) of both Principal panel and Parent panel. Shows a spinner while refreshing. Displays a "Last updated" timestamp after refresh.
-- "Copy Password" button next to each student's parent password field in the Student Management / Student Edit page (Profile tab). One click copies the password to clipboard for easy WhatsApp/SMS sharing.
+- A prominent "Auto Generate Passwords" button in the Student Management list header (near the existing Rank by Marks button).
+- Clicking this button generates a unique random 10-digit numeric password for EVERY student in the current principal's student list (no two students get the same password).
+- A confirmation dialog before running, showing how many students will be updated.
+- After generation, a success toast showing "Passwords generated for X students".
+- All generated passwords are saved to localStorage immediately (same as manual save).
+- A download/export button (optional) to get a CSV list of student names + generated passwords for easy sharing.
 
 ### Modify
-- Parent login: ensure the same 10-digit password works from multiple devices simultaneously (no device restriction). Currently this should already be the case since passwords are stored in localStorage keyed by student, but verify login logic doesn't block concurrent logins.
-- Parent panel header: add the Refresh button alongside the page title.
-- Principal panel header: add the Refresh button alongside the page title.
+- PrincipalDashboard component: add the Auto Generate Passwords button and its handler.
+- App.tsx: expose `onAutoGeneratePasswords` prop to PrincipalDashboard so it can update all students at once.
 
 ### Remove
 - Nothing removed.
 
 ## Implementation Plan
-1. Add a `RefreshButton` component (inline or small reusable) to PrincipalLayout and ParentLayout headers — top-right area. On click, reload student data from localStorage (and ICP backend if available), show spinner, then update "Last updated" timestamp.
-2. In StudentEditPage Profile tab, add a "Copy Password" button (copy icon + "Copy") next to the parent password input. Use `navigator.clipboard.writeText()` with a brief "Copied!" confirmation state.
-3. Verify parent login in Login.tsx allows same password from any device (no device fingerprinting or single-session lock) — fix if needed.
-4. Keep all existing features intact.
+1. Add `generateUniquePasswords(count: number): string[]` utility — generates `count` unique random 10-digit numeric strings.
+2. Add `onAutoGeneratePasswords` callback prop to PrincipalDashboard.
+3. Add "Auto Generate Passwords" button with confirmation AlertDialog in the PrincipalDashboard header toolbar.
+4. On confirm: call the callback which updates all students with new unique passwords and saves to storage.
+5. Show success toast with count + option to download a CSV of name/password pairs.
+6. In App.tsx: wire up the handler to update students state and persist to localStorage + ICP backend.
