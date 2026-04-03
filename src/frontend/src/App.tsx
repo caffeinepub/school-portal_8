@@ -159,6 +159,15 @@ function generateUniquePasswords(count: number): string[] {
   return result;
 }
 
+/** Generate a single unique 10-digit password not already in the used set */
+function generateUniquePassword(usedPasswords: Set<string>): string {
+  let pwd: string;
+  do {
+    pwd = String(Math.floor(1000000000 + Math.random() * 9000000000));
+  } while (usedPasswords.has(pwd));
+  return pwd;
+}
+
 /** Download a CSV of student names, classes, roll numbers, and parent passwords */
 function downloadPasswordCSV(updatedStudents: Student[]) {
   const rows = [
@@ -393,7 +402,19 @@ export default function App() {
   };
 
   const handleAddStudent = (newStudent: Omit<Student, "id">) => {
-    setStudents((prev) => [...prev, { ...newStudent, id: Date.now() }]);
+    setStudents((prev) => {
+      // Auto-assign a unique 10-digit password if not already set
+      const withId: Student = { ...newStudent, id: Date.now() };
+      if (!withId.parentPassword) {
+        const usedPasswords = new Set(
+          prev
+            .map((s) => s.parentPassword)
+            .filter((p): p is string => Boolean(p)),
+        );
+        withId.parentPassword = generateUniquePassword(usedPasswords);
+      }
+      return [...prev, withId];
+    });
   };
 
   const handleBulkAddStudents = (newStudents: Omit<Student, "id">[]) => {

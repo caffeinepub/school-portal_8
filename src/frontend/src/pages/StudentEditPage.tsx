@@ -38,7 +38,9 @@ import {
   Image as ImageIcon,
   PlayCircle,
   Save,
+  Send,
   Share2,
+  Shield,
   Trash2,
   Upload,
 } from "lucide-react";
@@ -119,6 +121,13 @@ export default function StudentEditPage({
   const handleShareWhatsAppMobile = () => {
     const mobile = draft.parentMobile ?? "";
     const msg = `🏫 *Lord's International School Group*\nStudent: ${draft.name} | Class: ${draft.class}\nParent Login: Open the school portal\nMobile Login: ${mobile}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank");
+  };
+
+  const handleSendToParentPortal = () => {
+    const pwd = draft.parentPassword ?? "";
+    const mobile = draft.parentMobile ?? "";
+    const msg = `*Lord's International School Group*\nParent Portal Login Credentials for ${draft.name} (${draft.class})\n\nLogin Password: ${pwd}\nOR Mobile Number: ${mobile}\n\nLogin at the school portal anytime from any device.`;
     window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank");
   };
 
@@ -582,123 +591,190 @@ export default function StudentEditPage({
                   Students use this password to log in to their dashboard.
                 </p>
               </div>
+
+              {/* Parent Login Credentials — enhanced section */}
               <div className="sm:col-span-2">
-                <Label className="text-sm font-medium text-gray-700 mb-1 block">
-                  Parent Login Password
-                </Label>
-                <div className="flex gap-2">
-                  <Input
-                    data-ocid="student_edit.parent_password_input"
-                    type="text"
-                    placeholder="Enter 10-digit parent password"
-                    value={draft.parentPassword ?? ""}
-                    onChange={(e) =>
-                      setField(
-                        "parentPassword",
-                        e.target.value.replace(/\D/g, "").slice(0, 10),
-                      )
-                    }
-                    maxLength={10}
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    data-ocid="student_edit.copy_parent_password_button"
-                    onClick={handleCopyParentPwd}
-                    title="Copy parent password"
-                    className="shrink-0 px-3"
-                    style={
-                      copiedParentPwd
-                        ? {
-                            color: "oklch(0.55 0.18 150)",
-                            borderColor: "oklch(0.55 0.18 150 / 0.4)",
-                          }
-                        : {}
-                    }
+                <div
+                  className="rounded-xl border overflow-hidden"
+                  style={{
+                    borderColor: "oklch(0.25 0.10 265 / 0.25)",
+                    background: "oklch(0.97 0.02 265)",
+                  }}
+                >
+                  {/* Section header */}
+                  <div
+                    className="flex items-center gap-2.5 px-4 py-3 border-b"
+                    style={{
+                      borderColor: "oklch(0.25 0.10 265 / 0.18)",
+                      background: "oklch(0.25 0.10 265 / 0.06)",
+                    }}
                   >
-                    <Copy size={14} />
-                    <span className="ml-1 text-xs">
-                      {copiedParentPwd ? "Copied!" : "Copy"}
+                    <Shield
+                      size={15}
+                      style={{ color: "oklch(0.35 0.12 265)" }}
+                    />
+                    <span
+                      className="text-sm font-semibold"
+                      style={{ color: "oklch(0.25 0.10 265)" }}
+                    >
+                      Parent Login Credentials
                     </span>
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    data-ocid="student_edit.share_parent_password_button"
-                    onClick={handleShareWhatsAppPwd}
-                    title="Share via WhatsApp"
-                    className="shrink-0 px-3 text-green-600 border-green-300 hover:bg-green-50"
-                  >
-                    <Share2 size={14} />
-                    <span className="ml-1 text-xs">WhatsApp</span>
-                  </Button>
-                </div>
-                <p className="text-xs text-gray-500 mt-1">
-                  {`Parent uses this 10-digit number to log in to their child's account. (${(draft.parentPassword ?? "").length}/10 digits)`}
-                </p>
-              </div>
-              <div className="sm:col-span-2">
-                <Label className="text-sm font-medium text-gray-700 mb-1 block">
-                  Parent Mobile Number
-                </Label>
-                <div className="flex gap-2">
-                  <Input
-                    data-ocid="student_edit.parent_mobile_input"
-                    type="text"
-                    placeholder="10-digit mobile number"
-                    value={draft.parentMobile ?? ""}
-                    onChange={(e) =>
-                      setField(
-                        "parentMobile",
-                        e.target.value.replace(/\D/g, "").slice(0, 10),
-                      )
-                    }
-                    maxLength={10}
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    data-ocid="student_edit.copy_parent_mobile_button"
-                    onClick={handleCopyParentMobile}
-                    title="Copy mobile number"
-                    className="shrink-0 px-3"
-                    style={
-                      copiedParentMobile
-                        ? {
-                            color: "oklch(0.55 0.18 150)",
-                            borderColor: "oklch(0.55 0.18 150 / 0.4)",
-                          }
-                        : {}
-                    }
-                  >
-                    <Copy size={14} />
-                    <span className="ml-1 text-xs">
-                      {copiedParentMobile ? "Copied!" : "Copy"}
+                    <span
+                      className="text-xs px-2 py-0.5 rounded-full font-medium"
+                      style={{
+                        background: "oklch(0.72 0.18 80 / 0.20)",
+                        color: "oklch(0.45 0.18 80)",
+                      }}
+                    >
+                      Secure
                     </span>
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    data-ocid="student_edit.share_parent_mobile_button"
-                    onClick={handleShareWhatsAppMobile}
-                    title="Share via WhatsApp"
-                    className="shrink-0 px-3 text-green-600 border-green-300 hover:bg-green-50"
-                  >
-                    <Share2 size={14} />
-                    <span className="ml-1 text-xs">WhatsApp</span>
-                  </Button>
+                  </div>
+
+                  <div className="p-4 space-y-4">
+                    {/* Password field */}
+                    <div>
+                      <Label className="text-xs font-semibold text-gray-600 mb-1.5 block uppercase tracking-wide">
+                        Login Password (10 digits)
+                      </Label>
+                      <div className="flex gap-2">
+                        <Input
+                          data-ocid="student_edit.parent_password_input"
+                          type="text"
+                          placeholder="Enter 10-digit parent password"
+                          value={draft.parentPassword ?? ""}
+                          onChange={(e) =>
+                            setField(
+                              "parentPassword",
+                              e.target.value.replace(/\D/g, "").slice(0, 10),
+                            )
+                          }
+                          maxLength={10}
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          className="font-mono tracking-widest"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          data-ocid="student_edit.copy_parent_password_button"
+                          onClick={handleCopyParentPwd}
+                          title="Copy parent password"
+                          className="shrink-0 px-3"
+                          style={
+                            copiedParentPwd
+                              ? {
+                                  color: "oklch(0.55 0.18 150)",
+                                  borderColor: "oklch(0.55 0.18 150 / 0.4)",
+                                }
+                              : {}
+                          }
+                        >
+                          <Copy size={14} />
+                          <span className="ml-1 text-xs">
+                            {copiedParentPwd ? "Copied!" : "Copy"}
+                          </span>
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          data-ocid="student_edit.share_parent_password_button"
+                          onClick={handleShareWhatsAppPwd}
+                          title="Share via WhatsApp"
+                          className="shrink-0 px-3 text-green-600 border-green-300 hover:bg-green-50"
+                        >
+                          <Share2 size={14} />
+                          <span className="ml-1 text-xs">WhatsApp</span>
+                        </Button>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {`${(draft.parentPassword ?? "").length}/10 digits — unique to this student`}
+                      </p>
+                    </div>
+
+                    {/* Mobile field */}
+                    <div>
+                      <Label className="text-xs font-semibold text-gray-600 mb-1.5 block uppercase tracking-wide">
+                        Mobile Number (alternate login)
+                      </Label>
+                      <div className="flex gap-2">
+                        <Input
+                          data-ocid="student_edit.parent_mobile_input"
+                          type="text"
+                          placeholder="10-digit mobile number"
+                          value={draft.parentMobile ?? ""}
+                          onChange={(e) =>
+                            setField(
+                              "parentMobile",
+                              e.target.value.replace(/\D/g, "").slice(0, 10),
+                            )
+                          }
+                          maxLength={10}
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          className="font-mono tracking-widest"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          data-ocid="student_edit.copy_parent_mobile_button"
+                          onClick={handleCopyParentMobile}
+                          title="Copy mobile number"
+                          className="shrink-0 px-3"
+                          style={
+                            copiedParentMobile
+                              ? {
+                                  color: "oklch(0.55 0.18 150)",
+                                  borderColor: "oklch(0.55 0.18 150 / 0.4)",
+                                }
+                              : {}
+                          }
+                        >
+                          <Copy size={14} />
+                          <span className="ml-1 text-xs">
+                            {copiedParentMobile ? "Copied!" : "Copy"}
+                          </span>
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          data-ocid="student_edit.share_parent_mobile_button"
+                          onClick={handleShareWhatsAppMobile}
+                          title="Share via WhatsApp"
+                          className="shrink-0 px-3 text-green-600 border-green-300 hover:bg-green-50"
+                        >
+                          <Share2 size={14} />
+                          <span className="ml-1 text-xs">WhatsApp</span>
+                        </Button>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {`${(draft.parentMobile ?? "").length}/10 digits — parent can also log in with this`}
+                      </p>
+                    </div>
+
+                    {/* Send to Parent Portal button */}
+                    <Button
+                      type="button"
+                      data-ocid="student_edit.send_to_parent_portal_button"
+                      onClick={handleSendToParentPortal}
+                      className="w-full gap-2 font-semibold"
+                      style={{
+                        background: "oklch(0.25 0.10 265)",
+                        color: "white",
+                      }}
+                    >
+                      <Send size={15} />
+                      Send to Parent Portal (via WhatsApp)
+                    </Button>
+                    <p className="text-xs text-center text-muted-foreground -mt-2">
+                      Sends login instructions + credentials to parent via
+                      WhatsApp in one tap
+                    </p>
+                  </div>
                 </div>
-                <p className="text-xs text-gray-500 mt-1">
-                  {`Parent can also log in using this mobile number. (${(draft.parentMobile ?? "").length}/10 digits)`}
-                </p>
               </div>
             </div>
           </TabsContent>
