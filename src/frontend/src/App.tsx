@@ -145,12 +145,23 @@ function loadSession(): SessionData {
   };
 }
 
-/** Generate `count` unique random 10-digit numeric passwords */
+/** Generate a strong unique password: Lords@ + 7 random alphanumeric chars */
+function generateStrongPassword(): string {
+  const chars =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  let suffix = "";
+  for (let i = 0; i < 7; i++) {
+    suffix += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return `Lords@${suffix}`;
+}
+
+/** Generate `count` unique strong passwords (Lords@XXXXXXX format) */
 function generateUniquePasswords(count: number): string[] {
   const used = new Set<string>();
   const result: string[] = [];
   while (result.length < count) {
-    const pwd = String(Math.floor(1000000000 + Math.random() * 9000000000));
+    const pwd = generateStrongPassword();
     if (!used.has(pwd)) {
       used.add(pwd);
       result.push(pwd);
@@ -159,11 +170,11 @@ function generateUniquePasswords(count: number): string[] {
   return result;
 }
 
-/** Generate a single unique 10-digit password not already in the used set */
+/** Generate a single unique strong password not already in the used set */
 function generateUniquePassword(usedPasswords: Set<string>): string {
   let pwd: string;
   do {
-    pwd = String(Math.floor(1000000000 + Math.random() * 9000000000));
+    pwd = generateStrongPassword();
   } while (usedPasswords.has(pwd));
   return pwd;
 }
@@ -467,7 +478,7 @@ export default function App() {
       `Passwords generated for ${updatedStudents.length} students! CSV downloaded.`,
       {
         description:
-          "Each student has a unique 10-digit password. Share using the copy/WhatsApp buttons in each student's profile.",
+          "Each student has a unique strong password (Lords@XXXXXXX format). Share using the copy/WhatsApp buttons in each student's profile.",
         duration: 6000,
       },
     );

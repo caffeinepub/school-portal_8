@@ -634,23 +634,17 @@ export default function StudentEditPage({
                     {/* Password field */}
                     <div>
                       <Label className="text-xs font-semibold text-gray-600 mb-1.5 block uppercase tracking-wide">
-                        Login Password (10 digits)
+                        Parent Login Password
                       </Label>
                       <div className="flex gap-2">
                         <Input
                           data-ocid="student_edit.parent_password_input"
                           type="text"
-                          placeholder="Enter 10-digit parent password"
+                          placeholder="Enter parent login password"
                           value={draft.parentPassword ?? ""}
                           onChange={(e) =>
-                            setField(
-                              "parentPassword",
-                              e.target.value.replace(/\D/g, "").slice(0, 10),
-                            )
+                            setField("parentPassword", e.target.value)
                           }
-                          maxLength={10}
-                          inputMode="numeric"
-                          pattern="[0-9]*"
                           className="font-mono tracking-widest"
                         />
                         <Button
@@ -689,7 +683,7 @@ export default function StudentEditPage({
                         </Button>
                       </div>
                       <p className="text-xs text-gray-500 mt-1">
-                        {`${(draft.parentPassword ?? "").length}/10 digits — unique to this student`}
+                        {`${(draft.parentPassword ?? "").length} chars — unique password for this student`}
                       </p>
                     </div>
 

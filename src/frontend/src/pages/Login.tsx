@@ -1,11 +1,11 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PRINCIPALS } from "@/data/principals";
+import { useActor } from "@/hooks/useActor";
 import {
   GraduationCap,
   Loader2,
   Lock,
-  Mail,
   Phone,
   Shield,
   ShieldCheck,
@@ -32,7 +32,7 @@ interface Props {
   onLogin: (role: string, studentId?: number, principalId?: string) => void;
 }
 
-type Step = "welcome" | "portal" | "principal-select" | "parent-password";
+type Step = "portal" | "principal-select" | "parent-password";
 
 const SCHOOL_INFO = [
   {
@@ -59,9 +59,8 @@ const SCHOOL_INFO = [
 ];
 
 export default function Login({ onLogin }: Props) {
-  const [step, setStep] = useState<Step>("welcome");
-  const [email, setEmail] = useState("");
-  const [loading, setLoading] = useState(false);
+  // Start directly on portal — no welcome/email step
+  const [step, setStep] = useState<Step>("portal");
   const [selectedPrincipalIdx, setSelectedPrincipalIdx] = useState<
     number | null
   >(null);
@@ -69,27 +68,7 @@ export default function Login({ onLogin }: Props) {
   const [parentPwd, setParentPwd] = useState("");
   const [parentLoginLoading, setParentLoginLoading] = useState(false);
 
-  const savedUser = loadStorage<{ email: string; name: string } | null>(
-    "lords_user",
-    null,
-  );
-
-  const handleEmailContinue = () => {
-    if (!email.trim() || !email.includes("@")) {
-      toast.error("Please enter a valid email address");
-      return;
-    }
-    setLoading(true);
-    setTimeout(() => {
-      saveStorage("lords_user", {
-        email: email.trim(),
-        name: email.split("@")[0],
-        signedIn: true,
-      });
-      setLoading(false);
-      setStep("portal");
-    }, 600);
-  };
+  const { actor } = useActor();
 
   const handlePrincipalLogin = () => {
     if (selectedPrincipalIdx === null) {
@@ -110,73 +89,109 @@ export default function Login({ onLogin }: Props) {
     }
   };
 
-  // Multi-device support: password-only match with no device fingerprinting or session lock.
-  // The same 10-digit parent password works from any number of devices simultaneously.
-  const handleParentLogin = () => {
-    if (!/^\d{10}$/.test(parentPwd)) {
-      toast.error("Password or mobile number must be a 10-digit number");
+  // Try to match password/mobile against student data from localStorage.
+  // Returns true and calls onLogin if a match is found.
+  function tryMatchFromStudents(
+    students: { id: number; parentPassword?: string; parentMobile?: string }[],
+    principalId: string,
+    pwd: string,
+  ): boolean {
+    for (const s of students) {
+      // Check parentPassword
+      const storedPwd = localStorage.getItem(
+        `lords_parent_password_student_${s.id}_${principalId}`,
+      );
+      const effectivePwd = storedPwd ?? s.parentPassword ?? null;
+      if (effectivePwd && pwd.trim() === String(effectivePwd).trim()) {
+        saveStorage("lords_session", {
+          role: "parent",
+          activePrincipalId: null,
+          parentStudentId: s.id,
+          parentPrincipalId: principalId,
+        });
+        onLogin("parent", s.id, principalId);
+        return true;
+      }
+      // Check parentMobile (always 10-digit numeric)
+      const storedMobile = localStorage.getItem(
+        `lords_parent_mobile_student_${s.id}_${principalId}`,
+      );
+      const effectiveMobile = storedMobile ?? s.parentMobile ?? null;
+      if (effectiveMobile && pwd.trim() === String(effectiveMobile).trim()) {
+        saveStorage("lords_session", {
+          role: "parent",
+          activePrincipalId: null,
+          parentStudentId: s.id,
+          parentPrincipalId: principalId,
+        });
+        onLogin("parent", s.id, principalId);
+        return true;
+      }
+    }
+    return false;
+  }
+
+  // Multi-device support: password can be letters/digits/special chars (min 6).
+  // Falls back to ICP backend if no local data found on this device.
+  const handleParentLogin = async () => {
+    if (parentPwd.trim().length < 6) {
+      toast.error("Password must be at least 6 characters");
       return;
     }
     setParentLoginLoading(true);
-    // Small delay for loading UX, then do the sync match
-    setTimeout(() => {
-      for (const principal of PRINCIPALS) {
-        const students = loadStorage<
-          { id: number; parentPassword?: string; parentMobile?: string }[]
-        >(`lords_students_${principal.id}`, []);
-        for (const s of students) {
-          // Check parentPassword
-          const storedPwd = localStorage.getItem(
-            `lords_parent_password_student_${s.id}_${principal.id}`,
-          );
-          const effectivePwd = storedPwd ?? s.parentPassword ?? null;
-          if (
-            effectivePwd &&
-            parentPwd.trim() === String(effectivePwd).trim()
-          ) {
-            saveStorage("lords_session", {
-              role: "parent",
-              activePrincipalId: null,
-              parentStudentId: s.id,
-              parentPrincipalId: principal.id,
-            });
-            onLogin("parent", s.id, principal.id);
-            setParentLoginLoading(false);
-            return;
-          }
-          // Check parentMobile
-          const storedMobile = localStorage.getItem(
-            `lords_parent_mobile_student_${s.id}_${principal.id}`,
-          );
-          const effectiveMobile = storedMobile ?? s.parentMobile ?? null;
-          if (
-            effectiveMobile &&
-            parentPwd.trim() === String(effectiveMobile).trim()
-          ) {
-            saveStorage("lords_session", {
-              role: "parent",
-              activePrincipalId: null,
-              parentStudentId: s.id,
-              parentPrincipalId: principal.id,
-            });
-            onLogin("parent", s.id, principal.id);
-            setParentLoginLoading(false);
-            return;
+
+    // Step 1: Try local storage on this device
+    for (const principal of PRINCIPALS) {
+      const students = loadStorage<
+        { id: number; parentPassword?: string; parentMobile?: string }[]
+      >(`lords_students_${principal.id}`, []);
+      if (tryMatchFromStudents(students, principal.id, parentPwd)) {
+        setParentLoginLoading(false);
+        return;
+      }
+    }
+
+    // Step 2: Fallback — fetch student data from ICP backend (new device)
+    if (actor) {
+      try {
+        const principalKeys = PRINCIPALS.map((p) => `lords_students_${p.id}`);
+        const results = await Promise.all(
+          principalKeys.map((key) => actor.getData(key).catch(() => null)),
+        );
+        for (let i = 0; i < PRINCIPALS.length; i++) {
+          const raw = results[i];
+          if (!raw) continue;
+          try {
+            const parsed = JSON.parse(raw) as {
+              id: number;
+              parentPassword?: string;
+              parentMobile?: string;
+            }[];
+            if (!Array.isArray(parsed)) continue;
+            // Cache locally for future logins
+            saveStorage(`lords_students_${PRINCIPALS[i].id}`, parsed);
+            if (tryMatchFromStudents(parsed, PRINCIPALS[i].id, parentPwd)) {
+              setParentLoginLoading(false);
+              return;
+            }
+          } catch {
+            // ignore parse errors
           }
         }
+      } catch {
+        // silently ignore ICP errors
       }
-      setParentLoginLoading(false);
-      toast.error(
-        "Incorrect password. Please check your credentials or contact the school.",
-      );
-    }, 500);
+    }
+
+    setParentLoginLoading(false);
+    toast.error(
+      "Incorrect password. Please check your credentials or contact the school.",
+    );
   };
 
   const handleKeyDown = (e: React.KeyboardEvent, action: () => void) => {
     if (e.key === "Enter") action();
   };
-
-  const effectiveStep = step === "welcome" && savedUser ? "portal" : step;
 
   return (
     <div
@@ -204,70 +219,8 @@ export default function Login({ onLogin }: Props) {
       </header>
 
       <div className="flex-1 flex flex-col items-center justify-center px-4 py-8">
-        {/* STEP: WELCOME */}
-        {effectiveStep === "welcome" && (
-          <div className="w-full max-w-sm">
-            <div className="text-center mb-8">
-              <div
-                className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4"
-                style={{ background: "oklch(0.25 0.10 265)" }}
-              >
-                <GraduationCap size={32} className="text-white" />
-              </div>
-              <h1 className="text-2xl font-bold text-foreground mb-1">
-                Welcome
-              </h1>
-              <p className="text-muted-foreground text-sm">
-                Sign in to access the school portal
-              </p>
-            </div>
-            <div className="bg-card rounded-xl shadow-card border border-border p-6 space-y-4">
-              <div>
-                <label
-                  htmlFor="login-email"
-                  className="block text-sm font-medium text-foreground mb-1.5"
-                >
-                  Email address
-                </label>
-                <div className="relative">
-                  <Mail
-                    size={16}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-                  />
-                  <Input
-                    id="login-email"
-                    data-ocid="login.email.input"
-                    type="email"
-                    placeholder="you@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    onKeyDown={(e) => handleKeyDown(e, handleEmailContinue)}
-                    className="pl-9"
-                    autoFocus
-                  />
-                </div>
-              </div>
-              <Button
-                data-ocid="login.continue.primary_button"
-                className="w-full"
-                style={{ background: "oklch(0.25 0.10 265)", color: "white" }}
-                onClick={handleEmailContinue}
-                disabled={loading}
-              >
-                {loading ? (
-                  <Loader2 size={16} className="mr-2 animate-spin" />
-                ) : null}
-                {loading ? "Signing in..." : "Continue"}
-              </Button>
-              <p className="text-xs text-muted-foreground text-center">
-                Your email identifies your session. No external account needed.
-              </p>
-            </div>
-          </div>
-        )}
-
         {/* STEP: PORTAL */}
-        {effectiveStep === "portal" && (
+        {step === "portal" && (
           <div className="w-full max-w-2xl">
             <div className="text-center mb-8">
               <h1 className="text-2xl font-bold text-foreground mb-1">
@@ -276,12 +229,6 @@ export default function Login({ onLogin }: Props) {
               <p className="text-muted-foreground text-sm">
                 Choose your login type to continue
               </p>
-              {savedUser && (
-                <p className="text-xs text-muted-foreground mt-1">
-                  Signed in as{" "}
-                  <span className="font-medium">{savedUser.email}</span>
-                </p>
-              )}
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-10">
               <button
@@ -369,7 +316,7 @@ export default function Login({ onLogin }: Props) {
         )}
 
         {/* STEP: PRINCIPAL SELECT */}
-        {effectiveStep === "principal-select" && (
+        {step === "principal-select" && (
           <div className="w-full max-w-md">
             <button
               type="button"
@@ -453,8 +400,8 @@ export default function Login({ onLogin }: Props) {
           </div>
         )}
 
-        {/* STEP: PARENT PASSWORD — Fully redesigned */}
-        {effectiveStep === "parent-password" && (
+        {/* STEP: PARENT PASSWORD */}
+        {step === "parent-password" && (
           <div className="w-full max-w-md">
             <button
               type="button"
@@ -515,7 +462,7 @@ export default function Login({ onLogin }: Props) {
                     Parent Portal Login
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    Enter your 10-digit password or mobile number
+                    Enter your password or mobile number
                   </p>
                 </div>
               </div>
@@ -529,41 +476,23 @@ export default function Login({ onLogin }: Props) {
                     <Lock size={13} style={{ color: "oklch(0.25 0.10 265)" }} />
                     Password or Mobile Number
                   </label>
-                  <div className="relative">
-                    <Input
-                      id="parent-password"
-                      data-ocid="login.parent_password.input"
-                      type="password"
-                      inputMode="numeric"
-                      placeholder="Enter 10-digit password"
-                      maxLength={10}
-                      value={parentPwd}
-                      onChange={(e) =>
-                        setParentPwd(
-                          e.target.value.replace(/\D/g, "").slice(0, 10),
-                        )
-                      }
-                      onKeyDown={(e) => handleKeyDown(e, handleParentLogin)}
-                      autoFocus
-                      className="h-12 text-base tracking-widest pr-16"
-                      style={{ borderColor: "oklch(0.78 0.05 265)" }}
-                    />
-                    <span
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium tabular-nums"
-                      style={{
-                        color:
-                          parentPwd.length === 10
-                            ? "oklch(0.50 0.18 150)"
-                            : "oklch(0.55 0.04 260)",
-                      }}
-                    >
-                      {parentPwd.length}/10
-                    </span>
-                  </div>
-                  {parentPwd.length > 0 && parentPwd.length < 10 && (
+                  <Input
+                    id="parent-password"
+                    data-ocid="login.parent_password.input"
+                    type="password"
+                    placeholder="Enter your password or mobile number"
+                    value={parentPwd}
+                    onChange={(e) => setParentPwd(e.target.value)}
+                    onKeyDown={(e) =>
+                      handleKeyDown(e, () => void handleParentLogin())
+                    }
+                    autoFocus
+                    className="h-12 text-base"
+                    style={{ borderColor: "oklch(0.78 0.05 265)" }}
+                  />
+                  {parentPwd.length > 0 && parentPwd.length < 6 && (
                     <p className="text-xs text-muted-foreground mt-1">
-                      {10 - parentPwd.length} more digit
-                      {10 - parentPwd.length !== 1 ? "s" : ""} required
+                      Minimum 6 characters required
                     </p>
                   )}
                 </div>
@@ -573,14 +502,14 @@ export default function Login({ onLogin }: Props) {
                   className="w-full h-11 text-base font-semibold gap-2"
                   style={{
                     background:
-                      parentPwd.length === 10
+                      parentPwd.trim().length >= 6
                         ? "oklch(0.25 0.10 265)"
                         : "oklch(0.75 0.04 265)",
                     color: "white",
                     transition: "background 0.2s",
                   }}
-                  onClick={handleParentLogin}
-                  disabled={parentPwd.length !== 10 || parentLoginLoading}
+                  onClick={() => void handleParentLogin()}
+                  disabled={parentPwd.trim().length < 6 || parentLoginLoading}
                 >
                   {parentLoginLoading ? (
                     <Loader2 size={16} className="animate-spin" />
@@ -628,7 +557,7 @@ export default function Login({ onLogin }: Props) {
               </p>
               <ul className="space-y-1">
                 {[
-                  "Enter your 10-digit parent password (set by principal)",
+                  "Enter your parent password set by the principal",
                   "OR enter your registered 10-digit mobile number",
                   "Works from any device — phone, tablet, or computer",
                   "Multiple family members can be logged in simultaneously",

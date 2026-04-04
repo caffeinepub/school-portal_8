@@ -1,72 +1,37 @@
-# Lord's International School Group — Version 69
+# Lord's International School Group
 
 ## Current State
 
-The app is a full-stack school management portal for Lord's International School Group with:
-- 5 principal accounts (Churu, Sadulpur, Taranagar, Principal 4, Principal 5) with hardcoded passwords
-- A parent portal accessible via 10-digit password or mobile number set per student by principal
-- State-driven SPA (no URL router) — role/page state controls rendering
-- All data stored in localStorage, synced to ICP backend via `actor.setData/getData`
-- ParentView has 11 tabs: profile, marks, fees, attendance, syllabus, notices, media, doubt-chat, diary, exam-timetable, test-marks
-- StudentEditPage has password and mobile fields with Copy/WhatsApp Share buttons
-- Auto Password Manager generates unique 10-digit passwords for all students at once
-- Parent login checks both `lords_parent_password_student_{id}_{pid}` override key and student object field
-- Parent panel auto-refreshes via 3s interval + storage events for sub-second updates
-- Session persisted in `lords_session` localStorage key
-- Backend: `setData/getData` generic KV store, plus media/blob storage
+- App has a two-step login: (1) Welcome/email screen, (2) Portal screen with Principal or Parent choice.
+- Parent login validates 10 digits only - no letters or special characters allowed.
+- Critical bug: On a fresh/new device, parent login fails silently because student rosters in localStorage are empty until a principal logs in on that device first. ICP sync only runs when a principal is active.
+- Session persists via lords_session localStorage key across browser restarts.
+- No Google OAuth - just a cosmetic email field on the welcome screen.
+- Logout buttons exist at top of both sidebars. Refresh button in both panel headers.
 
 ## Requested Changes (Diff)
 
 ### Add
-- Completely rebuilt Parent Portal (ParentView) with a fresh, professional, mobile-responsive design
-- Clean, dedicated parent login screen: single input field for password/mobile number, prominent school logo/name, clear error feedback, fast matching
-- "Send to Parent Portal" button in StudentEditPage next to the password field — opens a share sheet / copies credentials with a friendly message
-- Security visual indicators in parent portal (locked icon, secure session badge)
-- Better credential display in Student Management — show password and mobile clearly with dedicated "Send Credentials" button that composes a WhatsApp message with both login methods
+- On parent login, after local lookup fails, fetch student roster from ICP backend for all principals before failing - so parent login works on any fresh device.
+- Strong password support for parent passwords: allow letters, digits, special characters.
 
 ### Modify
-- Parent login UI: redesign to be cleaner, faster, more mobile-friendly — large input field, clear CTA button, logo at top
-- ParentView UI: full redesign — modern card-based layout, improved tab navigation, student profile header, better data presentation for marks/fees/attendance
-- StudentEditPage Profile tab: improve password/mobile credential section — group them together under "Parent Login Credentials" heading, add "Send to Parent Portal" action button
-- All parent panel tabs: make fully mobile-responsive, improve typography and spacing
-- Logout button stays at top of sidebar in both panels
-- Refresh button stays in top header with "Last updated" timestamp
+- Remove the Welcome/email screen entirely. App opens directly to portal (Principal or Parent login). Delete welcome step, remove lords_user references.
+- Parent login works independently of principal ever having logged in on the same device. After localStorage check fails, fetch from ICP and retry.
+- Parent password field: accept any string (letters, digits, special chars), minimum 6 characters. Remove 10-digit numeric-only restriction.
+- Mobile number login: keep working, remains numeric-only (phone numbers).
+- When principal saves a student's parent password, sync to ICP backend immediately so fresh-device parent login works.
+- Auto Password Manager: generate passwords mixing letters, digits, special characters (e.g. Lords@1234567 format).
 
 ### Remove
-- No features removed — all existing functionality (marks, fees, attendance, syllabus, diary, exam timetable, test marks, notices, doubt chat, media, server section, auto CSV download, class records, data backup, data server, error fix) must be preserved exactly
+- Remove the Welcome/email step entirely (welcome state, email form, lords_user localStorage key).
+- Remove the 10-digit regex validation for parent password on login form.
+- Remove any UI hinting parent password must be exactly 10 digits.
 
 ## Implementation Plan
 
-1. **ParentView.tsx** — Complete UI redesign:
-   - New student profile header card: profile picture, name, class, roll number, school name
-   - Tab navigation redesign: horizontal scrollable tabs on mobile, icon+label tabs
-   - Marks tab: styled grade card with color-coded grades, total/rank prominently displayed
-   - Fees tab: clean card list with status badges (Paid/Due/Overdue)
-   - Attendance tab: improved grid with month/date grouping, percentage summary card
-   - Syllabus tab: accordion-style subject/chapter list
-   - Notices tab: timeline-style notice cards with category badges
-   - Media tab: improved grid layout, full-screen preview capability
-   - Diary tab: date-grouped card list
-   - Exam Timetable tab: table with date/subject/time
-   - Test Marks tab: card with marks table
-
-2. **Login.tsx** — Parent login screen redesign:
-   - School logo/name centered at top
-   - Single large input field: "Enter your 10-digit password or mobile number"
-   - Auto-format: digits only, max 10
-   - Login button with loading state
-   - Clear error: "Password not found. Please check your credentials or contact the school."
-   - Back button to return to portal selection
-   - School information shown below login form
-
-3. **StudentEditPage.tsx** — Credential section enhancement:
-   - Group parentPassword and parentMobile under "Parent Login Credentials" section header
-   - Add "Send to Parent Portal" button that triggers WhatsApp share with a complete message:
-     "Your ward [Name] ([Class])'s parent login credentials:\nPassword: [pwd]\nMobile: [mobile]\nLogin at: [app URL]"
-   - Keep existing Copy buttons for each field
-
-4. **ParentLayout.tsx** — Keep logout button at top of sidebar, refresh in header
-
-5. All existing principal panel pages preserved as-is (StudentEditPage, PrincipalDashboard, etc.)
-
-6. Backend: no changes needed — `setData/getData` already handles all data sync
+1. Login.tsx: Delete welcome step. Initial state = portal. Remove lords_user. Parent login: remove 10-digit regex, accept any 6+ char string. After localStorage lookup fails, call ICP actor.getData for each principal and retry match. Mobile login stays numeric.
+2. StudentEditPage.tsx: Change parent password field to accept any string. Update label/placeholder. On save, sync credentials to ICP immediately.
+3. App.tsx: Remove lords_user references, remove welcome-screen guard logic. Session still persists via lords_session.
+4. Auto Password Manager: update generated passwords to include letters + digits + special characters.
+5. Validate TypeScript build compiles cleanly.
