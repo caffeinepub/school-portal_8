@@ -264,32 +264,48 @@ export default function StudentEditPage({
     }));
   }
 
-  function handleSave() {
-    // Track parent password edits - limit to 10 times
+  function handleSend() {
+    // Update React state (triggers useEffect save to ICP in background)
     onUpdateStudent(draft);
-    if (draft.parentPassword) {
+
+    // Immediately write updated student into the students array in localStorage
+    // so parent login works instantly without waiting for React useEffect
+    try {
+      const allStudents: {
+        id: number;
+        parentPassword?: string;
+        parentMobile?: string;
+      }[] = JSON.parse(
+        localStorage.getItem(`lords_students_${principalId}`) ?? "[]",
+      );
+      const idx = allStudents.findIndex((s) => s.id === draft.id);
+      if (idx !== -1) {
+        allStudents[idx] = { ...allStudents[idx], ...draft };
+      } else {
+        allStudents.push(draft);
+      }
       localStorage.setItem(
-        `lords_parent_password_student_${draft.id}_${principalId}`,
-        draft.parentPassword,
+        `lords_students_${principalId}`,
+        JSON.stringify(allStudents),
+      );
+      // Instant broadcast so parent tabs refresh immediately
+      window.dispatchEvent(
+        new StorageEvent("storage", {
+          key: `lords_students_${principalId}`,
+          newValue: JSON.stringify(allStudents),
+        }),
+      );
+    } catch {
+      // fallback: broadcast with current value
+      const raw = localStorage.getItem(`lords_students_${principalId}`);
+      window.dispatchEvent(
+        new StorageEvent("storage", {
+          key: `lords_students_${principalId}`,
+          newValue: raw ?? "[]",
+        }),
       );
     }
-    if (draft.parentMobile) {
-      localStorage.setItem(
-        `lords_parent_mobile_student_${draft.id}_${principalId}`,
-        draft.parentMobile,
-      );
-    }
-    // Instant broadcast so parent tabs refresh immediately
-    const allStudents = JSON.parse(
-      localStorage.getItem(`lords_students_${principalId}`) ?? "[]",
-    );
-    window.dispatchEvent(
-      new StorageEvent("storage", {
-        key: `lords_students_${principalId}`,
-        newValue: JSON.stringify(allStudents),
-      }),
-    );
-    toast.success(`${draft.name}'s record saved permanently!`);
+    toast.success(`${draft.name}'s data saved and sent to parents!`);
   }
 
   async function handleUploadMedia(file: File, replaceItem?: MediaItem) {
@@ -1408,11 +1424,12 @@ export default function StudentEditPage({
         </Button>
         <Button
           data-ocid="student_edit.save_button"
-          onClick={handleSave}
-          className="bg-indigo-600 hover:bg-indigo-700 gap-2"
+          onClick={handleSend}
+          className="gap-2"
+          style={{ background: "oklch(0.25 0.10 265)", color: "white" }}
         >
-          <Save size={15} />
-          Save Changes
+          <Send size={15} />
+          Send (Save &amp; Send to Parents)
         </Button>
       </div>
     </div>

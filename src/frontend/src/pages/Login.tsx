@@ -96,13 +96,11 @@ export default function Login({ onLogin }: Props) {
     principalId: string,
     pwd: string,
   ): boolean {
+    const input = pwd.trim();
     for (const s of students) {
-      // Check parentPassword
-      const storedPwd = localStorage.getItem(
-        `lords_parent_password_student_${s.id}_${principalId}`,
-      );
-      const effectivePwd = storedPwd ?? s.parentPassword ?? null;
-      if (effectivePwd && pwd.trim() === String(effectivePwd).trim()) {
+      // Check parentPassword (stored directly in student object — single source of truth)
+      const effectivePwd = (s.parentPassword ?? "").trim();
+      if (effectivePwd && input === effectivePwd) {
         saveStorage("lords_session", {
           role: "parent",
           activePrincipalId: null,
@@ -112,12 +110,9 @@ export default function Login({ onLogin }: Props) {
         onLogin("parent", s.id, principalId);
         return true;
       }
-      // Check parentMobile (always 10-digit numeric)
-      const storedMobile = localStorage.getItem(
-        `lords_parent_mobile_student_${s.id}_${principalId}`,
-      );
-      const effectiveMobile = storedMobile ?? s.parentMobile ?? null;
-      if (effectiveMobile && pwd.trim() === String(effectiveMobile).trim()) {
+      // Check parentMobile
+      const effectiveMobile = (s.parentMobile ?? "").trim();
+      if (effectiveMobile && input === effectiveMobile) {
         saveStorage("lords_session", {
           role: "parent",
           activePrincipalId: null,
