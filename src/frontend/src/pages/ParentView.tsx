@@ -30,6 +30,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import ParentDiaryView from "./ParentDiaryView";
 import ParentDoubtChat from "./ParentDoubtChat";
 import ParentExamTimetableView from "./ParentExamTimetableView";
@@ -329,6 +330,26 @@ export default function ParentView({
       cancelled = true;
     };
   }, [media]);
+
+  // Show toast when principal sends new data
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (
+        e.key &&
+        (e.key.includes("lords_notices") ||
+          e.key.includes("lords_diary") ||
+          e.key.includes("lords_students") ||
+          e.key.includes("lords_notifications"))
+      ) {
+        toast("New information received from school", {
+          icon: "📩",
+          duration: 3000,
+        });
+      }
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
 
   // Initials fallback
   const initials = student.name

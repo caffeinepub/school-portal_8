@@ -1,26 +1,49 @@
 import { GraduationCap, LogOut, RefreshCw, Users } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 interface Props {
   studentName: string;
   onLogout: () => void;
   children: React.ReactNode;
+  onRefresh?: () => void;
 }
 
 export default function ParentLayout({
   studentName,
   onLogout,
   children,
+  onRefresh,
 }: Props) {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
 
+  // Listen for storage events to show "New data received" toast
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (
+        e.key &&
+        (e.key.includes("lords_notices") ||
+          e.key.includes("lords_diary") ||
+          e.key.includes("lords_students") ||
+          e.key.includes("lords_notifications"))
+      ) {
+        toast("New information received from school", {
+          icon: "📩",
+          duration: 3000,
+        });
+      }
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
+
   const handleRefresh = () => {
     setIsRefreshing(true);
+    onRefresh?.();
     setTimeout(() => {
       setIsRefreshing(false);
-      const now = new Date();
-      setLastUpdated(now.toLocaleTimeString());
+      setLastUpdated(new Date().toLocaleTimeString());
       window.dispatchEvent(
         new StorageEvent("storage", { key: "lords_refresh" }),
       );
@@ -113,7 +136,7 @@ export default function ParentLayout({
       >
         <span className="badge-live">LIVE</span>
         <span style={{ color: "oklch(0.40 0.12 150)" }}>
-          Data updates every 5 seconds — messages from principal appear
+          Data updates every 3 seconds — messages from principal appear
           instantly
         </span>
       </div>

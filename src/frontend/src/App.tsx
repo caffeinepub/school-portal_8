@@ -14,6 +14,11 @@ import AddStudentPage from "./pages/AddStudentPage";
 import Login from "./pages/Login";
 import ParentView from "./pages/ParentView";
 import PrincipalAnnouncementsPage from "./pages/PrincipalAnnouncementsPage";
+import PrincipalAppBuilderPage, {
+  CustomPanelPage,
+  DynamicCustomPanelPage,
+} from "./pages/PrincipalAppBuilderPage";
+import type { CustomPanelDef } from "./pages/PrincipalAppBuilderPage";
 import PrincipalClassView from "./pages/PrincipalClassView";
 import PrincipalDashboard from "./pages/PrincipalDashboard";
 import PrincipalDiaryPage from "./pages/PrincipalDiaryPage";
@@ -28,21 +33,7 @@ import PrincipalTestMarksPage from "./pages/PrincipalTestMarksPage";
 import StudentEditPage from "./pages/StudentEditPage";
 
 type Role = "principal" | "parent" | null;
-type PrincipalPage =
-  | "list"
-  | "edit"
-  | "add"
-  | "info"
-  | "holidays"
-  | "school-syllabus"
-  | "announcements"
-  | "doubt-chat"
-  | "class-view"
-  | "diary"
-  | "exam-timetable"
-  | "test-marks"
-  | "send-message"
-  | "server";
+type PrincipalPage = string;
 
 export type Notification = (typeof mockNotifications)[number];
 export type SyllabusSubject = {
@@ -249,6 +240,7 @@ export default function App() {
   const [liveParentSyllabus, setLiveParentSyllabus] = useState<ClassSyllabus>(
     {},
   );
+  const [parentRefreshing, setParentRefreshing] = useState(false);
 
   useEffect(() => {
     if (role !== "parent" || !parentPrincipalId || parentStudentId === null)
@@ -414,7 +406,7 @@ export default function App() {
 
   const handleAddStudent = (newStudent: Omit<Student, "id">) => {
     setStudents((prev) => {
-      // Auto-assign a unique 10-digit password if not already set
+      // Auto-assign a unique password if not already set
       const withId: Student = { ...newStudent, id: Date.now() };
       if (!withId.parentPassword) {
         const usedPasswords = new Set(
@@ -463,7 +455,7 @@ export default function App() {
     setStudents(ranked);
   };
 
-  /** Auto-generate unique 10-digit passwords for all students and download CSV */
+  /** Auto-generate unique passwords for all students and download CSV */
   const handleAutoGeneratePasswords = () => {
     if (students.length === 0) return;
     const passwords = generateUniquePasswords(students.length);
@@ -576,6 +568,51 @@ export default function App() {
               parentPrincipalId: null,
             });
           }}
+          onRefresh={() => {
+            if (
+              !parentPrincipalId ||
+              parentStudentId === null ||
+              parentRefreshing
+            )
+              return;
+            setParentRefreshing(true);
+            // Re-fetch from ICP backend if available
+            const refreshFromICP = async () => {
+              try {
+                if (actor) {
+                  const raw = await actor.getData(
+                    `lords_students_${parentPrincipalId}`,
+                  );
+                  if (raw) {
+                    const parsed = JSON.parse(raw) as Student[];
+                    saveStorage(`lords_students_${parentPrincipalId}`, parsed);
+                    const found = parsed.find((s) => s.id === parentStudentId);
+                    if (found) setLiveParentStudent(found);
+                  }
+                }
+              } catch {
+                // fallback to localStorage
+              }
+              const principalStudents = loadStorage(
+                `lords_students_${parentPrincipalId}`,
+                [] as Student[],
+              );
+              const found = principalStudents.find(
+                (s: Student) => s.id === parentStudentId,
+              );
+              if (found) setLiveParentStudent(found);
+              setLiveParentNotifications(
+                loadStorage(
+                  `lords_notifications_${parentPrincipalId}`,
+                  mockNotifications,
+                ),
+              );
+              setLiveParentSyllabus(loadSyllabus(parentPrincipalId));
+              toast.success("Data refreshed");
+              setParentRefreshing(false);
+            };
+            void refreshFromICP();
+          }}
         >
           <ParentView
             student={parentStudent}
@@ -606,7 +643,27 @@ export default function App() {
       "test-marks": "Test Marks",
       "send-message": "Send Message to Parents",
       server: "Server",
+      "app-builder": "App Builder",
       edit: "Edit Student",
+    };
+
+    // Resolve custom panel label from dynamic panels
+    const resolvePageLabel = (page: string): string => {
+      if (page.startsWith("custom-")) {
+        const panelId = page.replace("custom-", "");
+        try {
+          const raw = localStorage.getItem(
+            `lords_dynamic_panels_${activePrincipalId ?? "default"}`,
+          );
+          if (raw) {
+            const defs = JSON.parse(raw) as CustomPanelDef[];
+            const def = defs.find((d) => d.id === panelId);
+            if (def) return def.name;
+          }
+        } catch {}
+        return "Custom Panel";
+      }
+      return allNavLabels[page] ?? "Student Management";
     };
 
     return (
@@ -625,8 +682,13 @@ export default function App() {
               parentPrincipalId: null,
             });
           }}
-          pageLabel={allNavLabels[principalPage] ?? "Student Management"}
+          pageLabel={resolvePageLabel(principalPage)}
           principalName={activePrincipalName}
+          principalId={activePrincipalId ?? "default"}
+          onRefresh={() => {
+            // Reload students from localStorage/ICP
+            setStudents(loadStorage(`lords_students_${ns}`, [] as Student[]));
+          }}
         >
           {principalPage === "list" && (
             <PrincipalDashboard
@@ -724,6 +786,37 @@ export default function App() {
               }
             />
           )}
+          {principalPage === "app-builder" && (
+            <PrincipalAppBuilderPage
+              principalId={activePrincipalId ?? "default"}
+              onNavigateToPanel={(id) => setPrincipalPage(`custom-${id}`)}
+            />
+          )}
+          {principalPage.startsWith("custom-") &&
+            (() => {
+              const panelId = principalPage.replace("custom-", "");
+              try {
+                const raw = localStorage.getItem(
+                  `lords_dynamic_panels_${activePrincipalId ?? "default"}`,
+                );
+                const defs: CustomPanelDef[] = raw
+                  ? (JSON.parse(raw) as CustomPanelDef[])
+                  : [];
+                const def = defs.find((p) => p.id === panelId);
+                if (def) {
+                  return (
+                    <DynamicCustomPanelPage
+                      panelDef={def}
+                      principalId={activePrincipalId ?? "default"}
+                      onNavigateToBuilder={() =>
+                        setPrincipalPage("app-builder")
+                      }
+                    />
+                  );
+                }
+              } catch {}
+              return <CustomPanelPage panelId={panelId} />;
+            })()}
         </PrincipalLayout>
         <Toaster />
       </>

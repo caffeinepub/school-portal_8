@@ -1,10 +1,23 @@
 import {
+  AlertCircle,
+  Award,
+  Banknote,
+  Bell,
+  BookMarked,
   BookOpen,
+  Bus,
   Calendar,
+  CalendarCheck,
+  CalendarDays,
   ChevronLeft,
+  Clipboard,
   ClipboardList,
+  FileOutput,
   FileText,
+  FlaskConical,
   GraduationCap,
+  Heart,
+  HeartHandshake,
   Info,
   LayoutGrid,
   LogOut,
@@ -12,14 +25,30 @@ import {
   Menu,
   MessageCircle,
   NotebookPen,
+  Package,
+  Pencil,
   RefreshCw,
   Send,
   Server,
+  Trophy,
+  UserCheck,
   UserPlus,
   Users,
+  Wand2,
+  Wrench,
   X,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+
+// Inline type for the dynamic panels (mirrors CustomPanelDef)
+interface CustomPanelDef {
+  id: string;
+  name: string;
+  icon: string;
+  description: string;
+  createdAt?: string;
+  visibleToParents?: boolean;
+}
 
 const studentNavItems = [
   { id: "list", label: "All Students", icon: Users },
@@ -43,6 +72,39 @@ const communicationNavItems = [
 ];
 
 const serverNavItem = [{ id: "server", label: "Server", icon: Server }];
+const appBuilderNavItem = [
+  { id: "app-builder", label: "App Builder", icon: Wand2 },
+];
+
+// Icon map for dynamic panels
+function getIconComponent(iconName: string): React.ElementType {
+  const map: Record<string, React.ElementType> = {
+    Bus,
+    Heart,
+    BookMarked,
+    Banknote,
+    Pencil,
+    AlertCircle,
+    UserCheck,
+    Trophy,
+    Package,
+    CalendarCheck,
+    Award,
+    FileOutput,
+    GraduationCap,
+    UserPlus,
+    Wrench,
+    HeartHandshake,
+    FlaskConical,
+    LayoutGrid,
+    // Fallback aliases
+    MessageSquareWarning: MessageCircle,
+    Bell,
+    Clipboard,
+    CalendarDays,
+  };
+  return map[iconName] ?? LayoutGrid;
+}
 
 interface Props {
   currentPage: string;
@@ -51,6 +113,8 @@ interface Props {
   children: React.ReactNode;
   pageLabel?: string;
   principalName?: string;
+  principalId?: string;
+  onRefresh?: () => void;
 }
 
 export default function PrincipalLayout({
@@ -60,21 +124,74 @@ export default function PrincipalLayout({
   children,
   pageLabel,
   principalName,
+  principalId,
+  onRefresh,
 }: Props) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
+  const [customPanelDefs, setCustomPanelDefs] = useState<CustomPanelDef[]>([]);
+
+  // Load dynamic panels on mount and watch for storage changes
+  useEffect(() => {
+    const pid = principalId ?? "default";
+
+    const loadPanels = () => {
+      try {
+        // New key: lords_dynamic_panels_
+        const dynamicKey = `lords_dynamic_panels_${pid}`;
+        const dynamicRaw = localStorage.getItem(dynamicKey);
+        if (dynamicRaw) {
+          const defs = JSON.parse(dynamicRaw) as CustomPanelDef[];
+          setCustomPanelDefs(defs);
+          return;
+        }
+        // Backward compat: old lords_custom_panels_ key (simple string array)
+        const oldKey = `lords_custom_panels_${pid}`;
+        const oldRaw = localStorage.getItem(oldKey);
+        if (oldRaw) {
+          const ids = JSON.parse(oldRaw) as string[];
+          // Convert to minimal CustomPanelDef
+          const defs: CustomPanelDef[] = ids.map((id) => ({
+            id,
+            name: id
+              .replace(/-/g, " ")
+              .replace(/\b\w/g, (c) => c.toUpperCase()),
+            icon: "LayoutGrid",
+            description: "",
+          }));
+          setCustomPanelDefs(defs);
+          return;
+        }
+        setCustomPanelDefs([]);
+      } catch {
+        setCustomPanelDefs([]);
+      }
+    };
+
+    loadPanels();
+
+    const onStorage = (e: StorageEvent) => {
+      if (
+        e.key?.startsWith("lords_dynamic_panels_") ||
+        e.key?.startsWith("lords_custom_panels_")
+      ) {
+        loadPanels();
+      }
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, [principalId]);
 
   const handleRefresh = () => {
     setIsRefreshing(true);
+    onRefresh?.();
+    window.dispatchEvent(new StorageEvent("storage", { key: "lords_refresh" }));
+    window.dispatchEvent(new CustomEvent("lords_full_refresh"));
     setTimeout(() => {
       setIsRefreshing(false);
-      const now = new Date();
-      setLastUpdated(now.toLocaleTimeString());
-      window.dispatchEvent(
-        new StorageEvent("storage", { key: "lords_refresh" }),
-      );
-    }, 800);
+      setLastUpdated(new Date().toLocaleTimeString());
+    }, 1000);
   };
 
   const allNavItems = [
@@ -82,9 +199,12 @@ export default function PrincipalLayout({
     ...schoolNavItems,
     ...communicationNavItems,
     ...serverNavItem,
+    ...appBuilderNavItem,
   ];
 
-  const renderNavSection = (items: typeof studentNavItems) =>
+  const renderNavSection = (
+    items: { id: string; label: string; icon: React.ElementType }[],
+  ) =>
     items.map(({ id, label, icon: Icon }) => (
       <button
         key={id}
@@ -187,8 +307,42 @@ export default function PrincipalLayout({
           <p className="text-xs font-semibold uppercase tracking-wider px-2 mb-2 text-sidebar-foreground/40">
             Server & Data
           </p>
-          <div className="space-y-0.5">{renderNavSection(serverNavItem)}</div>
+          <div className="space-y-0.5">
+            {renderNavSection(serverNavItem)}
+            {renderNavSection(appBuilderNavItem)}
+          </div>
         </div>
+
+        {/* Custom Panels section */}
+        {customPanelDefs.length > 0 && (
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider px-2 mb-2 text-sidebar-foreground/40">
+              Custom Panels
+            </p>
+            <div className="space-y-0.5">
+              {customPanelDefs.map((panel) => {
+                const Icon = getIconComponent(panel.icon);
+                return (
+                  <button
+                    key={panel.id}
+                    type="button"
+                    data-ocid={`principal.custom_${panel.id.replace(/-/g, "_").replace(/[^a-z0-9_]/gi, "")}.link`}
+                    onClick={() => {
+                      onPageChange(`custom-${panel.id}`);
+                      setSidebarOpen(false);
+                    }}
+                    className={`sidebar-nav-item w-full text-left${
+                      currentPage === `custom-${panel.id}` ? " active" : ""
+                    }`}
+                  >
+                    <Icon size={16} className="shrink-0" />
+                    <span>{panel.name}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -295,7 +449,7 @@ export default function PrincipalLayout({
           </div>
         </header>
 
-        {/* Nav tabs (mobile, all items) */}
+        {/* Nav tabs (mobile) */}
         <div className="lg:hidden flex gap-1 px-3 py-2 overflow-x-auto border-b border-border bg-card shrink-0">
           {allNavItems.map(({ id, label, icon: Icon }) => (
             <button

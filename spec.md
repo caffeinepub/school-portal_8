@@ -1,29 +1,35 @@
-# Lord's International School Group
+# Lord's International School Group — AI App Builder Upgrade
 
 ## Current State
-- Principal login works correctly via PRINCIPALS array password match
-- Parent login reads `lords_parent_password_student_${id}_${principalId}` per-student keys first, then falls back to `s.parentPassword` from the student array, then ICP
-- StudentEditPage has a "Save Changes" button that calls `onUpdateStudent(draft)` AND writes per-student localStorage keys separately
-- The `onUpdateStudent` in App.tsx only updates React state; a useEffect auto-saves the full students array to localStorage and ICP
-- Bug: When principal saves a student via StudentEditPage, the per-student key `lords_parent_password_student_${id}_${principalId}` is written directly as a string, but the student array in `lords_students_${pid}` is only updated after React re-render. If a parent logs in before the useEffect fires, or if state is stale, the passwords can be out of sync. Additionally, login checks the per-student key first — if this key exists from an old password it may shadow the new one saved into the student object.
-- StudentEditPage bottom bar has "Cancel" + "Save Changes" buttons
+The App Builder page (`PrincipalAppBuilderPage.tsx`) exists in the Principal panel under "Server & Data". It uses simple keyword matching to toggle 6 fixed pre-built panel templates (Transport, Fee Reminder, Notice Board, Events, Health, Library). It cannot create custom sections, has no real AI logic, and custom panels only show a "Coming Soon" placeholder.
 
 ## Requested Changes (Diff)
 
 ### Add
-- "Send" button in StudentEditPage bottom bar (replaces "Save Changes"): saves student data AND explicitly broadcasts to parents via localStorage storageEvent
+- **AI-powered chat engine** inside App Builder: parses natural language requests and dynamically creates real functional custom sections/panels
+- **Dynamic panel schema**: each custom panel has a name, icon, description, and a set of custom fields defined by the principal (text, number, date, select, textarea)
+- **Dynamic panel renderer**: renders a full functional page for each custom panel with data entry forms, save, list view, and delete — all stored in localStorage per principal
+- **30+ built-in panel templates** the AI can suggest and create (Transport, Fees, Health, Library, Homework, Behavior, Staff, Events, Inventory, etc.)
+- **"Create custom section"** flow: principal types anything like "add a transport tracker with bus number, route, driver name" and the AI creates a real panel with exactly those fields
+- **Parent visibility toggle**: principal can choose whether a custom panel's data is visible to parents
+- **Panel management**: list of all created panels with edit name/delete options
+- **Undo last action** command in chat
 
 ### Modify
-- Fix parent login: unify password storage so the password saved in the student object is the single source of truth. Remove per-student localStorage key shadowing — store the password only in the student object (in `lords_students_${pid}`), and write it there explicitly on save. The login code must read from the student object consistently.
-- Rename "Save Changes" → "Send" (with a Send icon) in StudentEditPage footer
-- On Send: call `onUpdateStudent(draft)`, write full student array with updated password to localStorage immediately (not waiting for useEffect), dispatch storageEvent for instant parent panel refresh, show success toast "Data saved and sent to parents!"
+- `PrincipalAppBuilderPage.tsx`: full rewrite with AI chat engine, dynamic panel creation, and panel management UI
+- `PrincipalLayout.tsx`: update custom panels section to render all dynamic panels (not just the 6 fixed ones) with their custom icons/names
+- `App.tsx`: update custom panel routing to render `DynamicCustomPanelPage` for any `custom-*` route
 
 ### Remove
-- Per-student password localStorage keys (`lords_parent_password_student_${id}_${principalId}` and `lords_parent_mobile_student_${id}_${principalId}`) as primary storage -- these cause stale-shadowing bugs. They can stay as write-through but login must prioritize the student object from the main array.
-- Separate per-student key reads in Login.tsx's `tryMatchFromStudents` -- simplify to read only from the student's parentPassword/parentMobile fields (which are saved in the main array).
+- Old 6-template keyword matching logic
+- "Coming Soon" placeholder on custom panel pages
+- Fixed `PANEL_TEMPLATES` and `CUSTOM_PANEL_ICONS/LABELS` maps (replaced by dynamic schema stored in localStorage)
 
 ## Implementation Plan
-1. **Login.tsx** `tryMatchFromStudents`: remove per-student key lookups. Compare only `s.parentPassword` and `s.parentMobile` directly (trimmed string comparison). This ensures the password in the student object is authoritative.
-2. **StudentEditPage.tsx** `handleSave` → rename to `handleSend`: after calling `onUpdateStudent(draft)`, immediately update the full `lords_students_${principalId}` localStorage key with the new password embedded in the updated student, dispatch a storageEvent, and toast "Data saved and sent to parents!".
-3. **StudentEditPage.tsx** bottom buttons: rename "Save Changes" to "Send" and swap icon to `Send`.
-4. Validate, build, and deploy.
+1. Define `CustomPanelDef` type: `{ id, name, icon, description, fields: FieldDef[], createdAt, visibleToParents }`
+2. Define `FieldDef` type: `{ id, label, type: 'text'|'number'|'date'|'select'|'textarea', options?: string[] }`
+3. Build AI chat engine with 30+ template suggestions + free-form field extraction from natural language
+4. Build `DynamicCustomPanelPage` component: form + list view for any custom panel
+5. Rewrite `PrincipalAppBuilderPage` with new chat UI + panel management grid
+6. Update `PrincipalLayout` to load panels from `lords_dynamic_panels_{principalId}` key and render them with dynamic icons
+7. Update `App.tsx` to import and route `DynamicCustomPanelPage`

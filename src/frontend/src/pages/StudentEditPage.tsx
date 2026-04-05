@@ -36,6 +36,7 @@ import {
   Edit2,
   Film,
   Image as ImageIcon,
+  Loader2,
   PlayCircle,
   Save,
   Send,
@@ -95,6 +96,8 @@ export default function StudentEditPage({
 
   const [copiedParentPwd, setCopiedParentPwd] = useState(false);
   const [copiedParentMobile, setCopiedParentMobile] = useState(false);
+  const [isSending, setIsSending] = useState(false);
+  const [sendSuccess, setSendSuccess] = useState(false);
 
   const handleCopyParentPwd = () => {
     if (draft.parentPassword) {
@@ -265,8 +268,27 @@ export default function StudentEditPage({
   }
 
   function handleSend() {
+    setIsSending(true);
+
     // Update React state (triggers useEffect save to ICP in background)
     onUpdateStudent(draft);
+
+    // Write to centralized password map for reliable parent login
+    try {
+      const pwdMapKey = `lords_parent_passwords_${principalId}`;
+      const existing = JSON.parse(
+        localStorage.getItem(pwdMapKey) ?? "{}",
+      ) as Record<string, { password: string; mobile: string }>;
+      existing[String(draft.id)] = {
+        password: draft.parentPassword ?? "",
+        mobile: draft.parentMobile ?? "",
+      };
+      localStorage.setItem(pwdMapKey, JSON.stringify(existing));
+      // Sync password map to ICP backend
+      actor?.setData(pwdMapKey, JSON.stringify(existing)).catch(() => {});
+    } catch {
+      // ignore storage errors
+    }
 
     // Immediately write updated student into the students array in localStorage
     // so parent login works instantly without waiting for React useEffect
@@ -305,7 +327,15 @@ export default function StudentEditPage({
         }),
       );
     }
+
     toast.success(`${draft.name}'s data saved and sent to parents!`);
+
+    // Show sending -> sent state
+    setTimeout(() => {
+      setIsSending(false);
+      setSendSuccess(true);
+      setTimeout(() => setSendSuccess(false), 2000);
+    }, 800);
   }
 
   async function handleUploadMedia(file: File, replaceItem?: MediaItem) {
@@ -1425,11 +1455,34 @@ export default function StudentEditPage({
         <Button
           data-ocid="student_edit.save_button"
           onClick={handleSend}
+          disabled={isSending}
           className="gap-2"
-          style={{ background: "oklch(0.25 0.10 265)", color: "white" }}
+          style={{
+            background: sendSuccess
+              ? "oklch(0.50 0.18 150)"
+              : isSending
+                ? "oklch(0.50 0.12 265)"
+                : "oklch(0.25 0.10 265)",
+            color: "white",
+            transition: "background 0.3s",
+          }}
         >
-          <Send size={15} />
-          Send (Save &amp; Send to Parents)
+          {isSending ? (
+            <>
+              <Loader2 size={15} className="animate-spin" />
+              Sending...
+            </>
+          ) : sendSuccess ? (
+            <>
+              <Save size={15} />
+              Sent ✓
+            </>
+          ) : (
+            <>
+              <Send size={15} />
+              Send (Save &amp; Send to Parents)
+            </>
+          )}
         </Button>
       </div>
     </div>

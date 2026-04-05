@@ -67,6 +67,7 @@ export default function Login({ onLogin }: Props) {
   const [password, setPassword] = useState("");
   const [parentPwd, setParentPwd] = useState("");
   const [parentLoginLoading, setParentLoginLoading] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
 
   const { actor } = useActor();
 
@@ -127,7 +128,9 @@ export default function Login({ onLogin }: Props) {
   }
 
   // Multi-device support: password can be letters/digits/special chars (min 6).
-  // Falls back to ICP backend if no local data found on this device.
+  // Step 1: Check centralized password map (most reliable — written on every Send)
+  // Step 2: Check student objects in localStorage
+  // Step 3: Fallback to ICP backend (new device)
   const handleParentLogin = async () => {
     if (parentPwd.trim().length < 6) {
       toast.error("Password must be at least 6 characters");
@@ -135,7 +138,40 @@ export default function Login({ onLogin }: Props) {
     }
     setParentLoginLoading(true);
 
-    // Step 1: Try local storage on this device
+    // Step 1: Check centralized password map lords_parent_passwords_${principalId}
+    for (const principal of PRINCIPALS) {
+      const pwdMap = loadStorage<
+        Record<string, { password: string; mobile: string }>
+      >(`lords_parent_passwords_${principal.id}`, {});
+      const input = parentPwd.trim();
+      for (const [studentId, creds] of Object.entries(pwdMap)) {
+        if (
+          (creds.password && input === creds.password.trim()) ||
+          (creds.mobile && input === creds.mobile.trim())
+        ) {
+          // Find the actual student to get integer id
+          const students = loadStorage<{ id: number }[]>(
+            `lords_students_${principal.id}`,
+            [],
+          );
+          const student = students.find((s) => String(s.id) === studentId);
+          const numericId = student?.id ?? Number(studentId);
+          if (!Number.isNaN(numericId)) {
+            saveStorage("lords_session", {
+              role: "parent",
+              activePrincipalId: null,
+              parentStudentId: numericId,
+              parentPrincipalId: principal.id,
+            });
+            onLogin("parent", numericId, principal.id);
+            setParentLoginLoading(false);
+            return;
+          }
+        }
+      }
+    }
+
+    // Step 2: Try student objects in localStorage
     for (const principal of PRINCIPALS) {
       const students = loadStorage<
         { id: number; parentPassword?: string; parentMobile?: string }[]
@@ -146,15 +182,60 @@ export default function Login({ onLogin }: Props) {
       }
     }
 
-    // Step 2: Fallback — fetch student data from ICP backend (new device)
+    // Step 3: Fallback — fetch from ICP backend (new device, no local data)
     if (actor) {
+      setIsConnecting(true);
       try {
-        const principalKeys = PRINCIPALS.map((p) => `lords_students_${p.id}`);
-        const results = await Promise.all(
-          principalKeys.map((key) => actor.getData(key).catch(() => null)),
+        // Fetch both password maps and student arrays in parallel
+        const pwdMapKeys = PRINCIPALS.map(
+          (p) => `lords_parent_passwords_${p.id}`,
         );
+        const studentKeys = PRINCIPALS.map((p) => `lords_students_${p.id}`);
+        const allKeys = [...pwdMapKeys, ...studentKeys];
+
+        const results = await Promise.all(
+          allKeys.map((key) => actor.getData(key).catch(() => null)),
+        );
+
+        // Check password maps first (more reliable)
         for (let i = 0; i < PRINCIPALS.length; i++) {
           const raw = results[i];
+          if (!raw) continue;
+          try {
+            const pwdMap = JSON.parse(raw) as Record<
+              string,
+              { password: string; mobile: string }
+            >;
+            saveStorage(`lords_parent_passwords_${PRINCIPALS[i].id}`, pwdMap);
+            const input = parentPwd.trim();
+            for (const [studentId, creds] of Object.entries(pwdMap)) {
+              if (
+                (creds.password && input === creds.password.trim()) ||
+                (creds.mobile && input === creds.mobile.trim())
+              ) {
+                const numericId = Number(studentId);
+                if (!Number.isNaN(numericId)) {
+                  saveStorage("lords_session", {
+                    role: "parent",
+                    activePrincipalId: null,
+                    parentStudentId: numericId,
+                    parentPrincipalId: PRINCIPALS[i].id,
+                  });
+                  onLogin("parent", numericId, PRINCIPALS[i].id);
+                  setParentLoginLoading(false);
+                  setIsConnecting(false);
+                  return;
+                }
+              }
+            }
+          } catch {
+            // ignore parse errors
+          }
+        }
+
+        // Then check student arrays
+        for (let i = 0; i < PRINCIPALS.length; i++) {
+          const raw = results[PRINCIPALS.length + i];
           if (!raw) continue;
           try {
             const parsed = JSON.parse(raw) as {
@@ -163,10 +244,10 @@ export default function Login({ onLogin }: Props) {
               parentMobile?: string;
             }[];
             if (!Array.isArray(parsed)) continue;
-            // Cache locally for future logins
             saveStorage(`lords_students_${PRINCIPALS[i].id}`, parsed);
             if (tryMatchFromStudents(parsed, PRINCIPALS[i].id, parentPwd)) {
               setParentLoginLoading(false);
+              setIsConnecting(false);
               return;
             }
           } catch {
@@ -176,11 +257,12 @@ export default function Login({ onLogin }: Props) {
       } catch {
         // silently ignore ICP errors
       }
+      setIsConnecting(false);
     }
 
     setParentLoginLoading(false);
     toast.error(
-      "Incorrect password. Please check your credentials or contact the school.",
+      "Wrong password. Please try again or ask the school principal to share your login credentials.",
     );
   };
 
@@ -511,9 +593,11 @@ export default function Login({ onLogin }: Props) {
                   ) : (
                     <Lock size={15} />
                   )}
-                  {parentLoginLoading
-                    ? "Verifying..."
-                    : "Login to Parent Portal"}
+                  {isConnecting
+                    ? "Connecting to server..."
+                    : parentLoginLoading
+                      ? "Verifying..."
+                      : "Login to Parent Portal"}
                 </Button>
               </div>
 
