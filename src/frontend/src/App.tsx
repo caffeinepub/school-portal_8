@@ -11,10 +11,11 @@ import type { Student } from "./data/mockData";
 import { PRINCIPALS } from "./data/principals";
 import { useActor } from "./hooks/useActor";
 import AddStudentPage from "./pages/AddStudentPage";
+import AppControllerPage from "./pages/AppControllerPage";
 import Login from "./pages/Login";
 import ParentView from "./pages/ParentView";
 import PrincipalAnnouncementsPage from "./pages/PrincipalAnnouncementsPage";
-import PrincipalAppBuilderPage, {
+import {
   CustomPanelPage,
   DynamicCustomPanelPage,
 } from "./pages/PrincipalAppBuilderPage";
@@ -32,7 +33,7 @@ import PrincipalSyllabusPage from "./pages/PrincipalSyllabusPage";
 import PrincipalTestMarksPage from "./pages/PrincipalTestMarksPage";
 import StudentEditPage from "./pages/StudentEditPage";
 
-type Role = "principal" | "parent" | null;
+type Role = "principal" | "parent" | "app-controller" | null;
 type PrincipalPage = string;
 
 export type Notification = (typeof mockNotifications)[number];
@@ -230,7 +231,7 @@ export default function App() {
     loadSyllabus(ns),
   );
 
-  // Live data for parent panel — refreshes every 5 seconds
+  // Live data for parent panel
   const [liveParentStudent, setLiveParentStudent] = useState<Student | null>(
     null,
   );
@@ -280,7 +281,6 @@ export default function App() {
 
   const loadingRef = useRef(false);
   const savedPrincipalIdRef = useRef<string | null>(activePrincipalId);
-  // Track which principals we've attempted to load from ICP (to avoid re-loading)
   const icpLoadedRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
@@ -306,8 +306,6 @@ export default function App() {
     }
   }, [activePrincipalId]);
 
-  // ICP backend load: when actor becomes ready and principal is logged in,
-  // try to load data from ICP and use it if found (runs once per principal session).
   useEffect(() => {
     if (!actor || !activePrincipalId) return;
     const pid = activePrincipalId;
@@ -339,7 +337,6 @@ export default function App() {
         if (icpSyllabus) {
           const parsed = JSON.parse(icpSyllabus) as ClassSyllabus;
           if (typeof parsed === "object" && parsed !== null) {
-            // Ensure all default classes are present
             for (const cls of DEFAULT_CLASSES) {
               if (!(cls in parsed)) parsed[cls] = [];
             }
@@ -348,14 +345,14 @@ export default function App() {
           }
         }
       } catch {
-        // silently ignore — localStorage remains the source
+        // silently ignore
       }
     };
 
     loadFromICP();
   }, [actor, activePrincipalId]);
 
-  // Save effects: write to localStorage AND sync to ICP backend (fire-and-forget)
+  // Save effects
   useEffect(() => {
     if (!savedPrincipalIdRef.current || loadingRef.current) return;
     const pid = savedPrincipalIdRef.current;
@@ -394,6 +391,7 @@ export default function App() {
   const [selectedStudentId, setSelectedStudentId] = useState<number | null>(
     null,
   );
+
   const handleUpdateStudent = (updated: Student) => {
     setStudents((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
   };
@@ -406,7 +404,6 @@ export default function App() {
 
   const handleAddStudent = (newStudent: Omit<Student, "id">) => {
     setStudents((prev) => {
-      // Auto-assign a unique password if not already set
       const withId: Student = { ...newStudent, id: Date.now() };
       if (!withId.parentPassword) {
         const usedPasswords = new Set(
@@ -455,7 +452,6 @@ export default function App() {
     setStudents(ranked);
   };
 
-  /** Auto-generate unique passwords for all students and download CSV */
   const handleAutoGeneratePasswords = () => {
     if (students.length === 0) return;
     const passwords = generateUniquePasswords(students.length);
@@ -464,7 +460,6 @@ export default function App() {
       parentPassword: passwords[i],
     }));
     setStudents(updatedStudents);
-    // Download CSV immediately with the updated students (before state flushes)
     downloadPasswordCSV(updatedStudents);
     toast.success(
       `Passwords generated for ${updatedStudents.length} students! CSV downloaded.`,
@@ -478,6 +473,26 @@ export default function App() {
 
   const activePrincipalName =
     PRINCIPALS.find((p) => p.id === activePrincipalId)?.name ?? "Principal";
+
+  // App Controller role
+  if (role === "app-controller") {
+    return (
+      <>
+        <AppControllerPage
+          onLogout={() => {
+            setRole(null);
+            saveStorage("lords_session", {
+              role: null,
+              activePrincipalId: null,
+              parentStudentId: null,
+              parentPrincipalId: null,
+            });
+          }}
+        />
+        <Toaster />
+      </>
+    );
+  }
 
   if (!role) {
     return (
@@ -576,7 +591,6 @@ export default function App() {
             )
               return;
             setParentRefreshing(true);
-            // Re-fetch from ICP backend if available
             const refreshFromICP = async () => {
               try {
                 if (actor) {
@@ -643,11 +657,9 @@ export default function App() {
       "test-marks": "Test Marks",
       "send-message": "Send Message to Parents",
       server: "Server",
-      "app-builder": "App Builder",
       edit: "Edit Student",
     };
 
-    // Resolve custom panel label from dynamic panels
     const resolvePageLabel = (page: string): string => {
       if (page.startsWith("custom-")) {
         const panelId = page.replace("custom-", "");
@@ -686,7 +698,6 @@ export default function App() {
           principalName={activePrincipalName}
           principalId={activePrincipalId ?? "default"}
           onRefresh={() => {
-            // Reload students from localStorage/ICP
             setStudents(loadStorage(`lords_students_${ns}`, [] as Student[]));
           }}
         >
@@ -786,12 +797,6 @@ export default function App() {
               }
             />
           )}
-          {principalPage === "app-builder" && (
-            <PrincipalAppBuilderPage
-              principalId={activePrincipalId ?? "default"}
-              onNavigateToPanel={(id) => setPrincipalPage(`custom-${id}`)}
-            />
-          )}
           {principalPage.startsWith("custom-") &&
             (() => {
               const panelId = principalPage.replace("custom-", "");
@@ -808,9 +813,7 @@ export default function App() {
                     <DynamicCustomPanelPage
                       panelDef={def}
                       principalId={activePrincipalId ?? "default"}
-                      onNavigateToBuilder={() =>
-                        setPrincipalPage("app-builder")
-                      }
+                      onNavigateToBuilder={() => setPrincipalPage("list")}
                     />
                   );
                 }

@@ -34,7 +34,6 @@ import {
   UserCheck,
   UserPlus,
   Users,
-  Wand2,
   Wrench,
   X,
 } from "lucide-react";
@@ -72,9 +71,6 @@ const communicationNavItems = [
 ];
 
 const serverNavItem = [{ id: "server", label: "Server", icon: Server }];
-const appBuilderNavItem = [
-  { id: "app-builder", label: "App Builder", icon: Wand2 },
-];
 
 // Icon map for dynamic panels
 function getIconComponent(iconName: string): React.ElementType {
@@ -138,7 +134,6 @@ export default function PrincipalLayout({
 
     const loadPanels = () => {
       try {
-        // New key: lords_dynamic_panels_
         const dynamicKey = `lords_dynamic_panels_${pid}`;
         const dynamicRaw = localStorage.getItem(dynamicKey);
         if (dynamicRaw) {
@@ -151,7 +146,6 @@ export default function PrincipalLayout({
         const oldRaw = localStorage.getItem(oldKey);
         if (oldRaw) {
           const ids = JSON.parse(oldRaw) as string[];
-          // Convert to minimal CustomPanelDef
           const defs: CustomPanelDef[] = ids.map((id) => ({
             id,
             name: id
@@ -199,7 +193,6 @@ export default function PrincipalLayout({
     ...schoolNavItems,
     ...communicationNavItems,
     ...serverNavItem,
-    ...appBuilderNavItem,
   ];
 
   const renderNavSection = (
@@ -307,10 +300,7 @@ export default function PrincipalLayout({
           <p className="text-xs font-semibold uppercase tracking-wider px-2 mb-2 text-sidebar-foreground/40">
             Server & Data
           </p>
-          <div className="space-y-0.5">
-            {renderNavSection(serverNavItem)}
-            {renderNavSection(appBuilderNavItem)}
-          </div>
+          <div className="space-y-0.5">{renderNavSection(serverNavItem)}</div>
         </div>
 
         {/* Custom Panels section */}

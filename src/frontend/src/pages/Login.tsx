@@ -4,9 +4,11 @@ import { PRINCIPALS } from "@/data/principals";
 import { useActor } from "@/hooks/useActor";
 import {
   GraduationCap,
+  LayoutDashboard,
   Loader2,
   Lock,
   Phone,
+  Settings2,
   Shield,
   ShieldCheck,
   Users,
@@ -32,7 +34,11 @@ interface Props {
   onLogin: (role: string, studentId?: number, principalId?: string) => void;
 }
 
-type Step = "portal" | "principal-select" | "parent-password";
+type Step =
+  | "portal"
+  | "principal-select"
+  | "parent-password"
+  | "app-controller";
 
 const SCHOOL_INFO = [
   {
@@ -59,13 +65,13 @@ const SCHOOL_INFO = [
 ];
 
 export default function Login({ onLogin }: Props) {
-  // Start directly on portal — no welcome/email step
   const [step, setStep] = useState<Step>("portal");
   const [selectedPrincipalIdx, setSelectedPrincipalIdx] = useState<
     number | null
   >(null);
   const [password, setPassword] = useState("");
   const [parentPwd, setParentPwd] = useState("");
+  const [appCtrlPwd, setAppCtrlPwd] = useState("");
   const [parentLoginLoading, setParentLoginLoading] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
 
@@ -90,8 +96,24 @@ export default function Login({ onLogin }: Props) {
     }
   };
 
-  // Try to match password/mobile against student data from localStorage.
-  // Returns true and calls onLogin if a match is found.
+  const handleAppControllerLogin = () => {
+    const correctPwd = loadStorage<string>(
+      "lords_app_controller_password",
+      "Admin@Lords2026",
+    );
+    if (appCtrlPwd === correctPwd) {
+      saveStorage("lords_session", {
+        role: "app-controller",
+        activePrincipalId: null,
+        parentStudentId: null,
+        parentPrincipalId: null,
+      });
+      onLogin("app-controller");
+    } else {
+      toast.error("Incorrect App Controller password.");
+    }
+  };
+
   function tryMatchFromStudents(
     students: { id: number; parentPassword?: string; parentMobile?: string }[],
     principalId: string,
@@ -99,7 +121,6 @@ export default function Login({ onLogin }: Props) {
   ): boolean {
     const input = pwd.trim();
     for (const s of students) {
-      // Check parentPassword (stored directly in student object — single source of truth)
       const effectivePwd = (s.parentPassword ?? "").trim();
       if (effectivePwd && input === effectivePwd) {
         saveStorage("lords_session", {
@@ -111,7 +132,6 @@ export default function Login({ onLogin }: Props) {
         onLogin("parent", s.id, principalId);
         return true;
       }
-      // Check parentMobile
       const effectiveMobile = (s.parentMobile ?? "").trim();
       if (effectiveMobile && input === effectiveMobile) {
         saveStorage("lords_session", {
@@ -127,10 +147,6 @@ export default function Login({ onLogin }: Props) {
     return false;
   }
 
-  // Multi-device support: password can be letters/digits/special chars (min 6).
-  // Step 1: Check centralized password map (most reliable — written on every Send)
-  // Step 2: Check student objects in localStorage
-  // Step 3: Fallback to ICP backend (new device)
   const handleParentLogin = async () => {
     if (parentPwd.trim().length < 6) {
       toast.error("Password must be at least 6 characters");
@@ -138,7 +154,7 @@ export default function Login({ onLogin }: Props) {
     }
     setParentLoginLoading(true);
 
-    // Step 1: Check centralized password map lords_parent_passwords_${principalId}
+    // Step 1: Check centralized password map
     for (const principal of PRINCIPALS) {
       const pwdMap = loadStorage<
         Record<string, { password: string; mobile: string }>
@@ -149,7 +165,6 @@ export default function Login({ onLogin }: Props) {
           (creds.password && input === creds.password.trim()) ||
           (creds.mobile && input === creds.mobile.trim())
         ) {
-          // Find the actual student to get integer id
           const students = loadStorage<{ id: number }[]>(
             `lords_students_${principal.id}`,
             [],
@@ -171,7 +186,7 @@ export default function Login({ onLogin }: Props) {
       }
     }
 
-    // Step 2: Try student objects in localStorage
+    // Step 2: Check student objects in localStorage
     for (const principal of PRINCIPALS) {
       const students = loadStorage<
         { id: number; parentPassword?: string; parentMobile?: string }[]
@@ -182,22 +197,19 @@ export default function Login({ onLogin }: Props) {
       }
     }
 
-    // Step 3: Fallback — fetch from ICP backend (new device, no local data)
+    // Step 3: Fallback to ICP backend
     if (actor) {
       setIsConnecting(true);
       try {
-        // Fetch both password maps and student arrays in parallel
         const pwdMapKeys = PRINCIPALS.map(
           (p) => `lords_parent_passwords_${p.id}`,
         );
         const studentKeys = PRINCIPALS.map((p) => `lords_students_${p.id}`);
         const allKeys = [...pwdMapKeys, ...studentKeys];
-
         const results = await Promise.all(
           allKeys.map((key) => actor.getData(key).catch(() => null)),
         );
 
-        // Check password maps first (more reliable)
         for (let i = 0; i < PRINCIPALS.length; i++) {
           const raw = results[i];
           if (!raw) continue;
@@ -228,12 +240,9 @@ export default function Login({ onLogin }: Props) {
                 }
               }
             }
-          } catch {
-            // ignore parse errors
-          }
+          } catch {}
         }
 
-        // Then check student arrays
         for (let i = 0; i < PRINCIPALS.length; i++) {
           const raw = results[PRINCIPALS.length + i];
           if (!raw) continue;
@@ -250,13 +259,9 @@ export default function Login({ onLogin }: Props) {
               setIsConnecting(false);
               return;
             }
-          } catch {
-            // ignore parse errors
-          }
+          } catch {}
         }
-      } catch {
-        // silently ignore ICP errors
-      }
+      } catch {}
       setIsConnecting(false);
     }
 
@@ -296,7 +301,7 @@ export default function Login({ onLogin }: Props) {
       </header>
 
       <div className="flex-1 flex flex-col items-center justify-center px-4 py-8">
-        {/* STEP: PORTAL */}
+        {/* PORTAL STEP */}
         {step === "portal" && (
           <div className="w-full max-w-2xl">
             <div className="text-center mb-8">
@@ -307,12 +312,14 @@ export default function Login({ onLogin }: Props) {
                 Choose your login type to continue
               </p>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-10">
+
+            {/* 3-card grid: Principal, Parent, App Controller */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
               <button
                 type="button"
                 data-ocid="login.principal.primary_button"
                 onClick={() => setStep("principal-select")}
-                className="group bg-card border border-border rounded-xl p-6 text-left hover:border-primary/50 transition-all duration-200 shadow-card hover:shadow-md"
+                className="group bg-card border border-border rounded-xl p-6 text-left hover:border-primary/50 transition-all duration-200 shadow-sm hover:shadow-md"
               >
                 <div
                   className="w-12 h-12 rounded-xl flex items-center justify-center mb-4 group-hover:scale-105 transition-transform"
@@ -323,18 +330,19 @@ export default function Login({ onLogin }: Props) {
                     style={{ color: "oklch(0.25 0.10 265)" }}
                   />
                 </div>
-                <h3 className="font-bold text-foreground text-lg mb-1">
+                <h3 className="font-bold text-foreground text-base mb-1">
                   Principal Login
                 </h3>
-                <p className="text-muted-foreground text-sm">
-                  Manage students, marks, fees, announcements, and school data
+                <p className="text-muted-foreground text-xs">
+                  Manage students, marks, fees, and school data
                 </p>
               </button>
+
               <button
                 type="button"
                 data-ocid="login.parent.primary_button"
                 onClick={() => setStep("parent-password")}
-                className="group bg-card border border-border rounded-xl p-6 text-left hover:border-primary/50 transition-all duration-200 shadow-card hover:shadow-md"
+                className="group bg-card border border-border rounded-xl p-6 text-left hover:border-primary/50 transition-all duration-200 shadow-sm hover:shadow-md"
               >
                 <div
                   className="w-12 h-12 rounded-xl flex items-center justify-center mb-4 group-hover:scale-105 transition-transform"
@@ -342,15 +350,38 @@ export default function Login({ onLogin }: Props) {
                 >
                   <Users size={24} style={{ color: "oklch(0.42 0.16 150)" }} />
                 </div>
-                <h3 className="font-bold text-foreground text-lg mb-1">
+                <h3 className="font-bold text-foreground text-base mb-1">
                   Parent Login
                 </h3>
-                <p className="text-muted-foreground text-sm">
-                  View your child&apos;s academic records, notices, diary, and
-                  more
+                <p className="text-muted-foreground text-xs">
+                  View your child&apos;s records, notices, diary, and more
+                </p>
+              </button>
+
+              <button
+                type="button"
+                data-ocid="login.app_controller.primary_button"
+                onClick={() => setStep("app-controller")}
+                className="group bg-card border border-border rounded-xl p-6 text-left hover:border-primary/50 transition-all duration-200 shadow-sm hover:shadow-md"
+              >
+                <div
+                  className="w-12 h-12 rounded-xl flex items-center justify-center mb-4 group-hover:scale-105 transition-transform"
+                  style={{ background: "oklch(0.55 0.18 80 / 0.1)" }}
+                >
+                  <LayoutDashboard
+                    size={24}
+                    style={{ color: "oklch(0.50 0.18 80)" }}
+                  />
+                </div>
+                <h3 className="font-bold text-foreground text-base mb-1">
+                  App Controller
+                </h3>
+                <p className="text-muted-foreground text-xs">
+                  Master control centre for all schools
                 </p>
               </button>
             </div>
+
             <div className="border-t border-border pt-8">
               <h2 className="text-sm font-bold text-foreground mb-4 uppercase tracking-wider">
                 Our Schools
@@ -392,7 +423,7 @@ export default function Login({ onLogin }: Props) {
           </div>
         )}
 
-        {/* STEP: PRINCIPAL SELECT */}
+        {/* PRINCIPAL SELECT STEP */}
         {step === "principal-select" && (
           <div className="w-full max-w-md">
             <button
@@ -420,7 +451,7 @@ export default function Login({ onLogin }: Props) {
                 Select your school and enter your password
               </p>
             </div>
-            <div className="bg-card rounded-xl shadow-card border border-border p-6 space-y-4">
+            <div className="bg-card rounded-xl shadow-sm border border-border p-6 space-y-4">
               <fieldset>
                 <legend className="block text-sm font-medium text-foreground mb-2">
                   Select School
@@ -449,8 +480,7 @@ export default function Login({ onLogin }: Props) {
                     htmlFor="principal-password"
                     className="flex items-center gap-1.5 text-sm font-medium text-foreground mb-1.5"
                   >
-                    <Lock size={13} />
-                    Password
+                    <Lock size={13} /> Password
                   </label>
                   <Input
                     id="principal-password"
@@ -477,7 +507,7 @@ export default function Login({ onLogin }: Props) {
           </div>
         )}
 
-        {/* STEP: PARENT PASSWORD */}
+        {/* PARENT PASSWORD STEP */}
         {step === "parent-password" && (
           <div className="w-full max-w-md">
             <button
@@ -492,7 +522,6 @@ export default function Login({ onLogin }: Props) {
               ← Back
             </button>
 
-            {/* Logo + Heading */}
             <div className="text-center mb-6">
               <div className="relative inline-flex items-center justify-center mb-4">
                 <div
@@ -516,7 +545,6 @@ export default function Login({ onLogin }: Props) {
               </p>
             </div>
 
-            {/* Login Card */}
             <div
               className="rounded-2xl border shadow-md p-6 mb-6"
               style={{
@@ -601,7 +629,6 @@ export default function Login({ onLogin }: Props) {
                 </Button>
               </div>
 
-              {/* Security note */}
               <div
                 className="mt-4 pt-4 flex items-start gap-2"
                 style={{ borderTop: "1px solid oklch(0.92 0.01 260)" }}
@@ -616,13 +643,11 @@ export default function Login({ onLogin }: Props) {
                   style={{ color: "oklch(0.45 0.05 260)" }}
                 >
                   Your password is set by the school principal. Contact your
-                  school if you need help logging in. Each student has a unique
-                  private password.
+                  school if you need help.
                 </p>
               </div>
             </div>
 
-            {/* How to login */}
             <div
               className="rounded-xl border p-4 mb-6"
               style={{
@@ -631,7 +656,7 @@ export default function Login({ onLogin }: Props) {
               }}
             >
               <p className="text-xs font-semibold text-foreground mb-2 flex items-center gap-1.5">
-                <Phone size={12} style={{ color: "oklch(0.52 0.18 255)" }} />
+                <Phone size={12} style={{ color: "oklch(0.52 0.18 255)" }} />{" "}
                 How to login
               </p>
               <ul className="space-y-1">
@@ -656,30 +681,87 @@ export default function Login({ onLogin }: Props) {
                 ))}
               </ul>
             </div>
+          </div>
+        )}
 
-            {/* School info */}
-            <div className="space-y-3">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                Our Schools
+        {/* APP CONTROLLER STEP */}
+        {step === "app-controller" && (
+          <div className="w-full max-w-md">
+            <button
+              type="button"
+              data-ocid="login.app_controller_back.button"
+              onClick={() => {
+                setStep("portal");
+                setAppCtrlPwd("");
+              }}
+              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors"
+            >
+              ← Back
+            </button>
+
+            <div className="text-center mb-8">
+              <div
+                className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4"
+                style={{ background: "oklch(0.50 0.18 80)" }}
+              >
+                <Settings2 size={30} className="text-white" />
+              </div>
+              <h1 className="text-2xl font-bold text-foreground mb-1">
+                App Controller
+              </h1>
+              <p className="text-sm text-muted-foreground">
+                Master control centre for all schools
               </p>
-              {SCHOOL_INFO.map((school) => (
-                <div
-                  key={school.name}
-                  className="bg-card border border-border rounded-xl p-3 shadow-xs"
-                >
-                  <p className="font-semibold text-foreground text-xs mb-1">
-                    {school.name}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {school.address}
-                  </p>
-                  {school.phone && (
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      📞 {school.phone}
-                    </p>
-                  )}
+            </div>
+
+            <div
+              className="rounded-2xl border shadow-md p-6"
+              style={{
+                background: "oklch(1 0 0)",
+                borderColor: "oklch(0.88 0.018 260)",
+              }}
+            >
+              <div className="space-y-4">
+                <div>
+                  <label
+                    htmlFor="app-ctrl-password"
+                    className="flex items-center gap-1.5 text-sm font-medium text-foreground mb-2"
+                  >
+                    <Lock size={13} style={{ color: "oklch(0.50 0.18 80)" }} />
+                    Admin Password
+                  </label>
+                  <Input
+                    id="app-ctrl-password"
+                    data-ocid="login.app_controller_password.input"
+                    type="password"
+                    placeholder="Enter App Controller password"
+                    value={appCtrlPwd}
+                    onChange={(e) => setAppCtrlPwd(e.target.value)}
+                    onKeyDown={(e) =>
+                      handleKeyDown(e, handleAppControllerLogin)
+                    }
+                    autoFocus
+                    className="h-12 text-base"
+                  />
                 </div>
-              ))}
+                <Button
+                  data-ocid="login.app_controller_login.primary_button"
+                  className="w-full h-11 text-base font-semibold"
+                  style={{ background: "oklch(0.50 0.18 80)", color: "white" }}
+                  onClick={handleAppControllerLogin}
+                  disabled={!appCtrlPwd.trim()}
+                >
+                  <LayoutDashboard size={15} className="mr-1.5" />
+                  Access App Controller
+                </Button>
+              </div>
+              <p
+                className="text-xs mt-4 text-center"
+                style={{ color: "oklch(0.55 0.05 260)" }}
+              >
+                Default password:{" "}
+                <code className="font-mono">Admin@Lords2026</code>
+              </p>
             </div>
           </div>
         )}
