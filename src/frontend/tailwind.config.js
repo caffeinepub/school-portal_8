@@ -67,6 +67,18 @@ export default {
           border: "oklch(var(--sidebar-border))",
           ring: "oklch(var(--sidebar-ring))",
         },
+        portal: {
+          principal: "oklch(var(--portal-principal))",
+          "principal-light": "oklch(var(--portal-principal-light))",
+          teachers: "oklch(var(--portal-teachers))",
+          "teachers-light": "oklch(var(--portal-teachers-light))",
+          students: "oklch(var(--portal-students))",
+          "students-light": "oklch(var(--portal-students-light))",
+          driver: "oklch(var(--portal-driver))",
+          "driver-light": "oklch(var(--portal-driver-light))",
+          controller: "oklch(var(--portal-controller))",
+          "controller-light": "oklch(var(--portal-controller-light))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",

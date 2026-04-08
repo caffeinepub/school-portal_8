@@ -1,106 +1,42 @@
 import {
-  AlertCircle,
-  Award,
-  Banknote,
-  Bell,
-  BookMarked,
   BookOpen,
-  Bus,
-  Calendar,
-  CalendarCheck,
-  CalendarDays,
   ChevronLeft,
-  Clipboard,
   ClipboardList,
-  FileOutput,
-  FileText,
-  FlaskConical,
+  DollarSign,
   GraduationCap,
-  Heart,
-  HeartHandshake,
-  Info,
-  LayoutGrid,
   LogOut,
   Megaphone,
   Menu,
-  MessageCircle,
-  NotebookPen,
-  Package,
-  Pencil,
   RefreshCw,
-  Send,
-  Server,
-  Trophy,
-  UserCheck,
-  UserPlus,
   Users,
-  Wrench,
   X,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
-// Inline type for the dynamic panels (mirrors CustomPanelDef)
-interface CustomPanelDef {
-  id: string;
-  name: string;
-  icon: string;
-  description: string;
-  createdAt?: string;
-  visibleToParents?: boolean;
-}
-
-const studentNavItems = [
-  { id: "list", label: "All Students", icon: Users },
-  { id: "class-view", label: "Class View", icon: LayoutGrid },
-  { id: "add", label: "Add Student", icon: UserPlus },
-  { id: "info", label: "School Info", icon: Info },
+const navSections = [
+  {
+    label: "Administration",
+    items: [
+      { id: "user-management", label: "User Management", icon: Users },
+      {
+        id: "financial-dashboard",
+        label: "Financial Dashboard",
+        icon: DollarSign,
+      },
+      { id: "academic-oversight", label: "Academic Oversight", icon: BookOpen },
+      { id: "announcements", label: "Announcements", icon: Megaphone },
+      { id: "inquiries", label: "Inquiries", icon: ClipboardList },
+    ],
+  },
 ];
 
-const schoolNavItems = [
-  { id: "holidays", label: "Holidays", icon: Calendar },
-  { id: "school-syllabus", label: "Syllabus", icon: BookOpen },
-  { id: "announcements", label: "Announcements", icon: Megaphone },
-  { id: "diary", label: "Diary", icon: NotebookPen },
-  { id: "exam-timetable", label: "Exam Timetable", icon: ClipboardList },
-  { id: "test-marks", label: "Test Marks", icon: FileText },
-];
-
-const communicationNavItems = [
-  { id: "doubt-chat", label: "Doubt Chat", icon: MessageCircle },
-  { id: "send-message", label: "Send Message", icon: Send },
-];
-
-const serverNavItem = [{ id: "server", label: "Server", icon: Server }];
-
-// Icon map for dynamic panels
-function getIconComponent(iconName: string): React.ElementType {
-  const map: Record<string, React.ElementType> = {
-    Bus,
-    Heart,
-    BookMarked,
-    Banknote,
-    Pencil,
-    AlertCircle,
-    UserCheck,
-    Trophy,
-    Package,
-    CalendarCheck,
-    Award,
-    FileOutput,
-    GraduationCap,
-    UserPlus,
-    Wrench,
-    HeartHandshake,
-    FlaskConical,
-    LayoutGrid,
-    // Fallback aliases
-    MessageSquareWarning: MessageCircle,
-    Bell,
-    Clipboard,
-    CalendarDays,
-  };
-  return map[iconName] ?? LayoutGrid;
-}
+const PAGE_LABELS: Record<string, string> = {
+  "user-management": "User Management",
+  "financial-dashboard": "Financial Dashboard",
+  "academic-oversight": "Academic Oversight",
+  announcements: "Announcements",
+  inquiries: "Inquiry Management",
+};
 
 interface Props {
   currentPage: string;
@@ -118,107 +54,28 @@ export default function PrincipalLayout({
   onPageChange,
   onLogout,
   children,
-  pageLabel,
   principalName,
-  principalId,
   onRefresh,
 }: Props) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
-  const [customPanelDefs, setCustomPanelDefs] = useState<CustomPanelDef[]>([]);
-
-  // Load dynamic panels on mount and watch for storage changes
-  useEffect(() => {
-    const pid = principalId ?? "default";
-
-    const loadPanels = () => {
-      try {
-        const dynamicKey = `lords_dynamic_panels_${pid}`;
-        const dynamicRaw = localStorage.getItem(dynamicKey);
-        if (dynamicRaw) {
-          const defs = JSON.parse(dynamicRaw) as CustomPanelDef[];
-          setCustomPanelDefs(defs);
-          return;
-        }
-        // Backward compat: old lords_custom_panels_ key (simple string array)
-        const oldKey = `lords_custom_panels_${pid}`;
-        const oldRaw = localStorage.getItem(oldKey);
-        if (oldRaw) {
-          const ids = JSON.parse(oldRaw) as string[];
-          const defs: CustomPanelDef[] = ids.map((id) => ({
-            id,
-            name: id
-              .replace(/-/g, " ")
-              .replace(/\b\w/g, (c) => c.toUpperCase()),
-            icon: "LayoutGrid",
-            description: "",
-          }));
-          setCustomPanelDefs(defs);
-          return;
-        }
-        setCustomPanelDefs([]);
-      } catch {
-        setCustomPanelDefs([]);
-      }
-    };
-
-    loadPanels();
-
-    const onStorage = (e: StorageEvent) => {
-      if (
-        e.key?.startsWith("lords_dynamic_panels_") ||
-        e.key?.startsWith("lords_custom_panels_")
-      ) {
-        loadPanels();
-      }
-    };
-    window.addEventListener("storage", onStorage);
-    return () => window.removeEventListener("storage", onStorage);
-  }, [principalId]);
 
   const handleRefresh = () => {
     setIsRefreshing(true);
     onRefresh?.();
-    window.dispatchEvent(new StorageEvent("storage", { key: "lords_refresh" }));
-    window.dispatchEvent(new CustomEvent("lords_full_refresh"));
     setTimeout(() => {
       setIsRefreshing(false);
       setLastUpdated(new Date().toLocaleTimeString());
-    }, 1000);
+    }, 800);
   };
 
-  const allNavItems = [
-    ...studentNavItems,
-    ...schoolNavItems,
-    ...communicationNavItems,
-    ...serverNavItem,
-  ];
+  const allItems = navSections.flatMap((s) => s.items);
+  const activeLabel = PAGE_LABELS[currentPage] ?? "Principal Panel";
 
-  const renderNavSection = (
-    items: { id: string; label: string; icon: React.ElementType }[],
-  ) =>
-    items.map(({ id, label, icon: Icon }) => (
-      <button
-        key={id}
-        type="button"
-        data-ocid={`principal.${id.replace(/-/g, "_")}.link`}
-        onClick={() => {
-          onPageChange(id);
-          setSidebarOpen(false);
-        }}
-        className={`sidebar-nav-item w-full text-left${
-          currentPage === id ? " active" : ""
-        }`}
-      >
-        <Icon size={16} className="shrink-0" />
-        <span>{label}</span>
-      </button>
-    ));
-
-  const Sidebar = () => (
+  const SidebarContent = () => (
     <div className="flex flex-col h-full">
-      {/* Logo */}
+      {/* Brand */}
       <div className="px-4 py-5 border-b border-sidebar-border">
         <div className="flex items-center gap-3">
           <div
@@ -249,7 +106,7 @@ export default function PrincipalLayout({
         )}
       </div>
 
-      {/* Logout — top of sidebar */}
+      {/* Logout — top of nav */}
       <div className="px-3 pt-3 pb-2">
         <button
           type="button"
@@ -276,63 +133,32 @@ export default function PrincipalLayout({
 
       {/* Nav */}
       <div className="flex-1 overflow-y-auto px-3 py-4 space-y-5">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-wider px-2 mb-2 text-sidebar-foreground/40">
-            Students
-          </p>
-          <div className="space-y-0.5">{renderNavSection(studentNavItems)}</div>
-        </div>
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-wider px-2 mb-2 text-sidebar-foreground/40">
-            School
-          </p>
-          <div className="space-y-0.5">{renderNavSection(schoolNavItems)}</div>
-        </div>
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-wider px-2 mb-2 text-sidebar-foreground/40">
-            Communication
-          </p>
-          <div className="space-y-0.5">
-            {renderNavSection(communicationNavItems)}
-          </div>
-        </div>
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-wider px-2 mb-2 text-sidebar-foreground/40">
-            Server & Data
-          </p>
-          <div className="space-y-0.5">{renderNavSection(serverNavItem)}</div>
-        </div>
-
-        {/* Custom Panels section */}
-        {customPanelDefs.length > 0 && (
-          <div>
+        {navSections.map((section) => (
+          <div key={section.label}>
             <p className="text-xs font-semibold uppercase tracking-wider px-2 mb-2 text-sidebar-foreground/40">
-              Custom Panels
+              {section.label}
             </p>
             <div className="space-y-0.5">
-              {customPanelDefs.map((panel) => {
-                const Icon = getIconComponent(panel.icon);
-                return (
-                  <button
-                    key={panel.id}
-                    type="button"
-                    data-ocid={`principal.custom_${panel.id.replace(/-/g, "_").replace(/[^a-z0-9_]/gi, "")}.link`}
-                    onClick={() => {
-                      onPageChange(`custom-${panel.id}`);
-                      setSidebarOpen(false);
-                    }}
-                    className={`sidebar-nav-item w-full text-left${
-                      currentPage === `custom-${panel.id}` ? " active" : ""
-                    }`}
-                  >
-                    <Icon size={16} className="shrink-0" />
-                    <span>{panel.name}</span>
-                  </button>
-                );
-              })}
+              {section.items.map(({ id, label, icon: Icon }) => (
+                <button
+                  key={id}
+                  type="button"
+                  data-ocid={`principal.${id.replace(/-/g, "_")}.link`}
+                  onClick={() => {
+                    onPageChange(id);
+                    setSidebarOpen(false);
+                  }}
+                  className={`sidebar-nav-item w-full text-left${
+                    currentPage === id ? " active" : ""
+                  }`}
+                >
+                  <Icon size={16} className="shrink-0" />
+                  <span>{label}</span>
+                </button>
+              ))}
             </div>
           </div>
-        )}
+        ))}
       </div>
     </div>
   );
@@ -344,7 +170,7 @@ export default function PrincipalLayout({
         className="hidden lg:flex lg:flex-col w-56 shrink-0 h-full"
         style={{ background: "oklch(var(--sidebar))" }}
       >
-        <Sidebar />
+        <SidebarContent />
       </aside>
 
       {/* Mobile overlay */}
@@ -375,7 +201,7 @@ export default function PrincipalLayout({
             <X size={20} />
           </button>
         </div>
-        <Sidebar />
+        <SidebarContent />
       </aside>
 
       {/* Main */}
@@ -392,19 +218,17 @@ export default function PrincipalLayout({
           >
             <Menu size={20} />
           </button>
-          {currentPage !== "list" && (
-            <button
-              type="button"
-              data-ocid="principal.back_button"
-              onClick={() => onPageChange("list")}
-              className="hidden lg:flex items-center gap-1 text-muted-foreground hover:text-foreground text-sm transition-colors"
-            >
-              <ChevronLeft size={16} />
-            </button>
-          )}
+          <button
+            type="button"
+            data-ocid="principal.back_button"
+            onClick={() => onPageChange("user-management")}
+            className="hidden lg:flex items-center gap-1 text-muted-foreground hover:text-foreground text-sm transition-colors"
+          >
+            <ChevronLeft size={16} />
+          </button>
           <div className="flex-1">
             <h1 className="text-base font-semibold text-foreground">
-              {pageLabel || "Student Management"}
+              {activeLabel}
             </h1>
           </div>
           <div className="flex items-center gap-3">
@@ -430,8 +254,8 @@ export default function PrincipalLayout({
             <span
               className="hidden md:block text-xs px-2.5 py-1 rounded-full font-medium"
               style={{
-                background: "oklch(0.25 0.10 265 / 0.08)",
-                color: "oklch(0.25 0.10 265)",
+                background: "oklch(var(--portal-principal) / 0.08)",
+                color: "oklch(var(--portal-principal))",
               }}
             >
               Principal Panel
@@ -439,9 +263,9 @@ export default function PrincipalLayout({
           </div>
         </header>
 
-        {/* Nav tabs (mobile) */}
+        {/* Mobile quick nav */}
         <div className="lg:hidden flex gap-1 px-3 py-2 overflow-x-auto border-b border-border bg-card shrink-0">
-          {allNavItems.map(({ id, label, icon: Icon }) => (
+          {allItems.map(({ id, label, icon: Icon }) => (
             <button
               key={id}
               type="button"

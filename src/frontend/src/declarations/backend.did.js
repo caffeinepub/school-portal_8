@@ -8,179 +8,1464 @@
 
 import { IDL } from '@icp-sdk/core/candid';
 
-export const _CaffeineStorageCreateCertificateResult = IDL.Record({
-  'method' : IDL.Text,
-  'blob_hash' : IDL.Text,
+export const SchoolId = IDL.Nat;
+export const UserId = IDL.Nat;
+export const MaintenanceType = IDL.Variant({
+  'service' : IDL.Null,
+  'fuel' : IDL.Null,
 });
-export const _CaffeineStorageRefillInformation = IDL.Record({
-  'proposed_top_up_amount' : IDL.Opt(IDL.Nat),
+export const ExamSlot = IDL.Record({
+  'startTime' : IDL.Text,
+  'subject' : IDL.Text,
+  'endTime' : IDL.Text,
+  'date' : IDL.Text,
 });
-export const _CaffeineStorageRefillResult = IDL.Record({
-  'success' : IDL.Opt(IDL.Bool),
-  'topped_up_amount' : IDL.Opt(IDL.Nat),
+export const TargetPortal = IDL.Variant({
+  'principal' : IDL.Null,
+  'teacher' : IDL.Null,
+  'student' : IDL.Null,
+  'driver' : IDL.Null,
 });
-export const FileType = IDL.Variant({ 'video' : IDL.Null, 'photo' : IDL.Null });
-export const MediaItem = IDL.Record({
-  'studentId' : IDL.Nat,
-  'fileType' : FileType,
-  'timestamp' : IDL.Text,
-  'caption' : IDL.Text,
-  'blobReferenceId' : IDL.Text,
-});
-export const UserRole = IDL.Variant({
-  'admin' : IDL.Null,
-  'user' : IDL.Null,
-  'guest' : IDL.Null,
-});
-export const UserProfile = IDL.Record({
-  'studentId' : IDL.Opt(IDL.Nat),
+export const RouteStop = IDL.Record({
   'name' : IDL.Text,
+  'studentIds' : IDL.Vec(UserId),
+});
+export const Timestamp = IDL.Int;
+export const BusLocation = IDL.Record({
+  'latitude' : IDL.Float64,
+  'driverId' : UserId,
+  'schoolId' : SchoolId,
+  'longitude' : IDL.Float64,
+  'timestamp' : Timestamp,
+});
+export const FeeStatus = IDL.Variant({
+  'paid' : IDL.Null,
+  'unpaid' : IDL.Null,
+  'partial' : IDL.Null,
+});
+export const FeeRecord = IDL.Record({
+  'id' : IDL.Nat,
+  'status' : FeeStatus,
+  'studentId' : UserId,
+  'dueDate' : IDL.Text,
+  'description' : IDL.Text,
+  'paidDate' : IDL.Opt(IDL.Text),
+  'schoolId' : SchoolId,
+  'amount' : IDL.Nat,
+});
+export const Assignment = IDL.Record({
+  'id' : IDL.Nat,
+  'attachmentUrl' : IDL.Opt(IDL.Text),
+  'title' : IDL.Text,
+  'subject' : IDL.Text,
+  'class' : IDL.Text,
+  'createdAt' : Timestamp,
+  'dueDate' : IDL.Text,
+  'section' : IDL.Text,
+  'description' : IDL.Text,
+  'schoolId' : SchoolId,
+  'teacherId' : UserId,
+});
+export const AttendanceStatus = IDL.Variant({
+  'present' : IDL.Null,
+  'late' : IDL.Null,
+  'absent' : IDL.Null,
+});
+export const AttendanceRecord = IDL.Record({
+  'id' : IDL.Nat,
+  'status' : AttendanceStatus,
+  'studentId' : UserId,
+  'date' : IDL.Text,
+  'note' : IDL.Text,
+  'markedByTeacherId' : UserId,
+  'schoolId' : SchoolId,
+});
+export const DiaryEntry = IDL.Record({
+  'id' : IDL.Nat,
+  'content' : IDL.Text,
+  'date' : IDL.Text,
+  'class' : IDL.Text,
+  'createdAt' : Timestamp,
+  'section' : IDL.Text,
+  'schoolId' : SchoolId,
+  'teacherId' : UserId,
+});
+export const DigitalResource = IDL.Record({
+  'id' : IDL.Nat,
+  'url' : IDL.Text,
+  'title' : IDL.Text,
+  'subject' : IDL.Text,
+  'class' : IDL.Text,
+  'createdAt' : Timestamp,
+  'type' : IDL.Variant({
+    'pdf' : IDL.Null,
+    'video' : IDL.Null,
+    'note' : IDL.Null,
+  }),
+  'schoolId' : SchoolId,
+  'uploadedBy' : UserId,
+});
+export const DriverPublic = IDL.Record({
+  'id' : UserId,
+  'name' : IDL.Text,
+  'schoolId' : SchoolId,
+  'route' : IDL.Text,
+  'vehicleNo' : IDL.Text,
+});
+export const ExamTimetable = IDL.Record({
+  'id' : IDL.Nat,
+  'subjects' : IDL.Vec(ExamSlot),
+  'class' : IDL.Text,
+  'createdAt' : Timestamp,
+  'section' : IDL.Text,
+  'schoolId' : SchoolId,
+  'examName' : IDL.Text,
+});
+export const LessonPlan = IDL.Record({
+  'id' : IDL.Nat,
+  'content' : IDL.Text,
+  'subject' : IDL.Text,
+  'class' : IDL.Text,
+  'section' : IDL.Text,
+  'schoolId' : SchoolId,
+  'teacherId' : UserId,
+  'weekOf' : IDL.Text,
+});
+export const MaintenanceLog = IDL.Record({
+  'id' : IDL.Nat,
+  'driverId' : UserId,
+  'cost' : IDL.Nat,
+  'date' : IDL.Text,
+  'type' : MaintenanceType,
+  'schoolId' : SchoolId,
+  'notes' : IDL.Text,
+  'vehicleNo' : IDL.Text,
+});
+export const ExamMark = IDL.Record({
+  'id' : IDL.Nat,
+  'studentId' : UserId,
+  'subject' : IDL.Text,
+  'date' : IDL.Text,
+  'schoolId' : SchoolId,
+  'teacherId' : UserId,
+  'maxMarks' : IDL.Nat,
+  'obtainedMarks' : IDL.Nat,
+  'examName' : IDL.Text,
+});
+export const ParentMessage = IDL.Record({
+  'id' : IDL.Nat,
+  'studentId' : UserId,
+  'read' : IDL.Bool,
+  'schoolId' : SchoolId,
+  'message' : IDL.Text,
+  'teacherId' : UserId,
+  'timestamp' : Timestamp,
+});
+export const PickupAction = IDL.Variant({
+  'drop' : IDL.Null,
+  'pickup' : IDL.Null,
+});
+export const PickupLog = IDL.Record({
+  'id' : IDL.Nat,
+  'driverId' : UserId,
+  'action' : PickupAction,
+  'studentId' : UserId,
+  'schoolId' : SchoolId,
+  'timestamp' : Timestamp,
+});
+export const TransportRoute = IDL.Record({
+  'id' : IDL.Nat,
+  'stops' : IDL.Vec(RouteStop),
+  'schoolId' : SchoolId,
+  'driverName' : IDL.Text,
+  'vehicleNo' : IDL.Text,
+});
+export const SchoolConfig = IDL.Record({
+  'subjects' : IDL.Vec(IDL.Text),
+  'classes' : IDL.Vec(IDL.Text),
+  'schoolId' : SchoolId,
+  'sections' : IDL.Vec(IDL.Text),
+  'schoolName' : IDL.Text,
+});
+export const StudentPublic = IDL.Record({
+  'id' : UserId,
+  'class' : IDL.Text,
+  'name' : IDL.Text,
+  'section' : IDL.Text,
+  'schoolId' : SchoolId,
+  'profilePictureUrl' : IDL.Opt(IDL.Text),
+  'rollNo' : IDL.Nat,
+  'parentMobile' : IDL.Text,
+});
+export const SubmissionStatus = IDL.Variant({
+  'graded' : IDL.Null,
+  'submitted' : IDL.Null,
+  'pending' : IDL.Null,
+});
+export const Submission = IDL.Record({
+  'id' : IDL.Nat,
+  'attachmentUrl' : IDL.Opt(IDL.Text),
+  'status' : SubmissionStatus,
+  'content' : IDL.Text,
+  'studentId' : UserId,
+  'submittedAt' : Timestamp,
+  'schoolId' : SchoolId,
+  'assignmentId' : IDL.Nat,
+});
+export const Syllabus = IDL.Record({
+  'id' : IDL.Nat,
+  'content' : IDL.Text,
+  'subject' : IDL.Text,
+  'class' : IDL.Text,
+  'updatedAt' : Timestamp,
+  'schoolId' : SchoolId,
+  'teacherId' : UserId,
+});
+export const TeacherPublic = IDL.Record({
+  'id' : UserId,
+  'subjects' : IDL.Vec(IDL.Text),
+  'name' : IDL.Text,
+  'assignedClass' : IDL.Text,
+  'email' : IDL.Text,
+  'schoolId' : SchoolId,
+});
+export const Period = IDL.Record({
+  'day' : IDL.Text,
+  'subject' : IDL.Text,
+  'teacherName' : IDL.Text,
+  'timeSlot' : IDL.Text,
+});
+export const Timetable = IDL.Record({
+  'id' : IDL.Nat,
+  'class' : IDL.Text,
+  'section' : IDL.Text,
+  'periods' : IDL.Vec(Period),
+  'schoolId' : SchoolId,
+});
+export const EmergencyAlert = IDL.Record({
+  'id' : IDL.Nat,
+  'driverId' : UserId,
+  'resolved' : IDL.Bool,
+  'schoolId' : SchoolId,
+  'message' : IDL.Text,
+  'timestamp' : Timestamp,
+  'location' : IDL.Text,
+});
+export const Inquiry = IDL.Record({
+  'id' : IDL.Nat,
+  'status' : IDL.Variant({
+    'new' : IDL.Null,
+    'closed' : IDL.Null,
+    'inProgress' : IDL.Null,
+  }),
+  'studentName' : IDL.Text,
+  'class' : IDL.Text,
+  'createdAt' : Timestamp,
+  'email' : IDL.Text,
+  'schoolId' : SchoolId,
+  'notes' : IDL.Text,
+  'phone' : IDL.Text,
+  'parentName' : IDL.Text,
+});
+export const Notice = IDL.Record({
+  'id' : IDL.Nat,
+  'title' : IDL.Text,
+  'createdAt' : Timestamp,
+  'createdBy' : UserId,
+  'schoolId' : SchoolId,
+  'message' : IDL.Text,
+  'targetPortals' : IDL.Vec(TargetPortal),
+  'priority' : IDL.Variant({
+    'low' : IDL.Null,
+    'high' : IDL.Null,
+    'medium' : IDL.Null,
+  }),
 });
 
 export const idlService = IDL.Service({
-  '_caffeineStorageBlobIsLive' : IDL.Func(
-      [IDL.Vec(IDL.Nat8)],
+  'addDigitalResource' : IDL.Func(
+      [
+        SchoolId,
+        IDL.Text,
+        IDL.Text,
+        IDL.Variant({
+          'pdf' : IDL.Null,
+          'video' : IDL.Null,
+          'note' : IDL.Null,
+        }),
+        IDL.Text,
+        IDL.Text,
+        IDL.Text,
+        UserId,
+      ],
+      [IDL.Nat],
+      [],
+    ),
+  'addDriver' : IDL.Func(
+      [SchoolId, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text],
+      [UserId],
+      [],
+    ),
+  'addFeeRecord' : IDL.Func(
+      [SchoolId, IDL.Text, UserId, IDL.Nat, IDL.Text, IDL.Text],
+      [IDL.Nat],
+      [],
+    ),
+  'addMaintenanceLog' : IDL.Func(
+      [
+        SchoolId,
+        IDL.Text,
+        IDL.Text,
+        MaintenanceType,
+        IDL.Text,
+        IDL.Nat,
+        IDL.Text,
+        UserId,
+      ],
+      [IDL.Nat],
+      [],
+    ),
+  'addMark' : IDL.Func(
+      [
+        SchoolId,
+        IDL.Text,
+        UserId,
+        IDL.Text,
+        IDL.Text,
+        IDL.Nat,
+        IDL.Nat,
+        UserId,
+        IDL.Text,
+      ],
+      [IDL.Nat],
+      [],
+    ),
+  'addStudent' : IDL.Func(
+      [SchoolId, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Nat, IDL.Text],
+      [UserId],
+      [],
+    ),
+  'addTeacher' : IDL.Func(
+      [
+        SchoolId,
+        IDL.Text,
+        IDL.Text,
+        IDL.Text,
+        IDL.Text,
+        IDL.Text,
+        IDL.Vec(IDL.Text),
+      ],
+      [UserId],
+      [],
+    ),
+  'autoGenerateStudentPasswords' : IDL.Func(
+      [SchoolId, IDL.Text],
+      [IDL.Vec(IDL.Tuple(UserId, IDL.Text))],
+      [],
+    ),
+  'changeMainControllerPassword' : IDL.Func(
+      [IDL.Text, IDL.Text],
       [IDL.Bool],
+      [],
+    ),
+  'createAssignment' : IDL.Func(
+      [
+        SchoolId,
+        IDL.Text,
+        IDL.Text,
+        IDL.Text,
+        IDL.Text,
+        IDL.Text,
+        IDL.Text,
+        IDL.Text,
+        UserId,
+        IDL.Opt(IDL.Text),
+      ],
+      [IDL.Nat],
+      [],
+    ),
+  'createDiaryEntry' : IDL.Func(
+      [SchoolId, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text, UserId],
+      [IDL.Nat],
+      [],
+    ),
+  'createEmergencyAlert' : IDL.Func(
+      [SchoolId, IDL.Text, UserId, IDL.Text, IDL.Text],
+      [IDL.Nat],
+      [],
+    ),
+  'createExamTimetable' : IDL.Func(
+      [SchoolId, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Vec(ExamSlot)],
+      [IDL.Nat],
+      [],
+    ),
+  'createInquiry' : IDL.Func(
+      [SchoolId, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text],
+      [IDL.Nat],
+      [],
+    ),
+  'createLessonPlan' : IDL.Func(
+      [
+        SchoolId,
+        IDL.Text,
+        IDL.Text,
+        IDL.Text,
+        IDL.Text,
+        IDL.Text,
+        IDL.Text,
+        UserId,
+      ],
+      [IDL.Nat],
+      [],
+    ),
+  'createNotice' : IDL.Func(
+      [
+        SchoolId,
+        IDL.Text,
+        IDL.Text,
+        IDL.Text,
+        IDL.Vec(TargetPortal),
+        IDL.Variant({
+          'low' : IDL.Null,
+          'high' : IDL.Null,
+          'medium' : IDL.Null,
+        }),
+        UserId,
+      ],
+      [IDL.Nat],
+      [],
+    ),
+  'createRoute' : IDL.Func(
+      [SchoolId, IDL.Text, IDL.Text, IDL.Text, IDL.Vec(RouteStop)],
+      [IDL.Nat],
+      [],
+    ),
+  'deleteAssignment' : IDL.Func([SchoolId, IDL.Text, IDL.Nat], [IDL.Bool], []),
+  'deleteDiaryEntry' : IDL.Func([SchoolId, IDL.Text, IDL.Nat], [IDL.Bool], []),
+  'deleteDigitalResource' : IDL.Func(
+      [SchoolId, IDL.Text, IDL.Nat],
+      [IDL.Bool],
+      [],
+    ),
+  'deleteDriver' : IDL.Func([SchoolId, IDL.Text, UserId], [IDL.Bool], []),
+  'deleteExamTimetable' : IDL.Func(
+      [SchoolId, IDL.Text, IDL.Nat],
+      [IDL.Bool],
+      [],
+    ),
+  'deleteFeeRecord' : IDL.Func([SchoolId, IDL.Text, IDL.Nat], [IDL.Bool], []),
+  'deleteLessonPlan' : IDL.Func([SchoolId, IDL.Text, IDL.Nat], [IDL.Bool], []),
+  'deleteMark' : IDL.Func([SchoolId, IDL.Text, IDL.Nat], [IDL.Bool], []),
+  'deleteNotice' : IDL.Func([SchoolId, IDL.Text, IDL.Nat], [IDL.Bool], []),
+  'deleteRoute' : IDL.Func([SchoolId, IDL.Text, IDL.Nat], [IDL.Bool], []),
+  'deleteStudent' : IDL.Func([SchoolId, IDL.Text, UserId], [IDL.Bool], []),
+  'deleteTeacher' : IDL.Func([SchoolId, IDL.Text, UserId], [IDL.Bool], []),
+  'exportAllData' : IDL.Func([IDL.Text], [IDL.Text], ['query']),
+  'getAllBusLocations' : IDL.Func(
+      [SchoolId],
+      [IDL.Vec(BusLocation)],
       ['query'],
     ),
-  '_caffeineStorageBlobsToDelete' : IDL.Func(
-      [],
-      [IDL.Vec(IDL.Vec(IDL.Nat8))],
+  'getAllFees' : IDL.Func([SchoolId], [IDL.Vec(FeeRecord)], ['query']),
+  'getAssignmentsByClass' : IDL.Func(
+      [SchoolId, IDL.Text],
+      [IDL.Vec(Assignment)],
       ['query'],
     ),
-  '_caffeineStorageConfirmBlobDeletion' : IDL.Func(
-      [IDL.Vec(IDL.Vec(IDL.Nat8))],
-      [],
-      [],
-    ),
-  '_caffeineStorageCreateCertificate' : IDL.Func(
-      [IDL.Text],
-      [_CaffeineStorageCreateCertificateResult],
-      [],
-    ),
-  '_caffeineStorageRefillCashier' : IDL.Func(
-      [IDL.Opt(_CaffeineStorageRefillInformation)],
-      [_CaffeineStorageRefillResult],
-      [],
-    ),
-  '_caffeineStorageUpdateGatewayPrincipals' : IDL.Func([], [], []),
-  '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
-  'addMedia' : IDL.Func([MediaItem], [], []),
-  'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
-  'deleteMedia' : IDL.Func([IDL.Text], [], []),
-  'getAllKeys' : IDL.Func([], [IDL.Vec(IDL.Text)], ['query']),
-  'getAllMedia' : IDL.Func([], [IDL.Vec(MediaItem)], ['query']),
-  'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
-  'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
-  'getData' : IDL.Func([IDL.Text], [IDL.Opt(IDL.Text)], ['query']),
-  'getMedia' : IDL.Func([IDL.Text], [IDL.Opt(MediaItem)], ['query']),
-  'getMediaByStudentId' : IDL.Func([IDL.Nat], [IDL.Vec(MediaItem)], ['query']),
-  'getMediaByType' : IDL.Func(
-      [IDL.Nat, FileType],
-      [IDL.Vec(MediaItem)],
+  'getAttendanceByClass' : IDL.Func(
+      [SchoolId, IDL.Text, IDL.Text],
+      [IDL.Vec(AttendanceRecord)],
       ['query'],
     ),
-  'getStudentMediaCount' : IDL.Func([IDL.Nat], [IDL.Nat], ['query']),
-  'getUserProfile' : IDL.Func(
-      [IDL.Principal],
-      [IDL.Opt(UserProfile)],
+  'getAttendanceByStudent' : IDL.Func(
+      [SchoolId, UserId],
+      [IDL.Vec(AttendanceRecord)],
       ['query'],
     ),
-  'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
-  'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
-  'setData' : IDL.Func([IDL.Text, IDL.Text], [], []),
-  'updateCaption' : IDL.Func([IDL.Text, IDL.Text], [], []),
+  'getBusLocation' : IDL.Func(
+      [SchoolId, UserId],
+      [IDL.Opt(BusLocation)],
+      ['query'],
+    ),
+  'getDiaryByClass' : IDL.Func(
+      [SchoolId, IDL.Text],
+      [IDL.Vec(DiaryEntry)],
+      ['query'],
+    ),
+  'getDigitalResourcesByClass' : IDL.Func(
+      [SchoolId, IDL.Text],
+      [IDL.Vec(DigitalResource)],
+      ['query'],
+    ),
+  'getDriver' : IDL.Func(
+      [SchoolId, UserId],
+      [IDL.Opt(DriverPublic)],
+      ['query'],
+    ),
+  'getExamTimetablesByClass' : IDL.Func(
+      [SchoolId, IDL.Text],
+      [IDL.Vec(ExamTimetable)],
+      ['query'],
+    ),
+  'getFeesByStudent' : IDL.Func(
+      [SchoolId, UserId],
+      [IDL.Vec(FeeRecord)],
+      ['query'],
+    ),
+  'getLessonPlansByClass' : IDL.Func(
+      [SchoolId, IDL.Text],
+      [IDL.Vec(LessonPlan)],
+      ['query'],
+    ),
+  'getMaintenanceLogs' : IDL.Func(
+      [SchoolId, IDL.Text],
+      [IDL.Vec(MaintenanceLog)],
+      ['query'],
+    ),
+  'getMarksByExam' : IDL.Func(
+      [SchoolId, IDL.Text],
+      [IDL.Vec(ExamMark)],
+      ['query'],
+    ),
+  'getMarksByStudent' : IDL.Func(
+      [SchoolId, UserId],
+      [IDL.Vec(ExamMark)],
+      ['query'],
+    ),
+  'getParentMessagesByStudent' : IDL.Func(
+      [SchoolId, UserId],
+      [IDL.Vec(ParentMessage)],
+      ['query'],
+    ),
+  'getPendingFees' : IDL.Func([SchoolId], [IDL.Vec(FeeRecord)], ['query']),
+  'getPickupLogsByDriver' : IDL.Func(
+      [SchoolId, UserId],
+      [IDL.Vec(PickupLog)],
+      ['query'],
+    ),
+  'getRoute' : IDL.Func(
+      [SchoolId, IDL.Nat],
+      [IDL.Opt(TransportRoute)],
+      ['query'],
+    ),
+  'getSchoolConfig' : IDL.Func([SchoolId], [IDL.Opt(SchoolConfig)], ['query']),
+  'getStudent' : IDL.Func(
+      [SchoolId, UserId],
+      [IDL.Opt(StudentPublic)],
+      ['query'],
+    ),
+  'getStudentRank' : IDL.Func(
+      [SchoolId, UserId, IDL.Text],
+      [IDL.Nat],
+      ['query'],
+    ),
+  'getSubmissionsByAssignment' : IDL.Func(
+      [SchoolId, IDL.Nat],
+      [IDL.Vec(Submission)],
+      ['query'],
+    ),
+  'getSubmissionsByStudent' : IDL.Func(
+      [SchoolId, UserId],
+      [IDL.Vec(Submission)],
+      ['query'],
+    ),
+  'getSyllabusByClass' : IDL.Func(
+      [SchoolId, IDL.Text],
+      [IDL.Vec(Syllabus)],
+      ['query'],
+    ),
+  'getTeacher' : IDL.Func(
+      [SchoolId, UserId],
+      [IDL.Opt(TeacherPublic)],
+      ['query'],
+    ),
+  'getTimetable' : IDL.Func(
+      [SchoolId, IDL.Text, IDL.Text],
+      [IDL.Opt(Timetable)],
+      ['query'],
+    ),
+  'getTotalRevenue' : IDL.Func([SchoolId], [IDL.Nat], ['query']),
+  'listDrivers' : IDL.Func([SchoolId], [IDL.Vec(DriverPublic)], ['query']),
+  'listEmergencyAlerts' : IDL.Func(
+      [SchoolId],
+      [IDL.Vec(EmergencyAlert)],
+      ['query'],
+    ),
+  'listInquiries' : IDL.Func([SchoolId], [IDL.Vec(Inquiry)], ['query']),
+  'listNotices' : IDL.Func([SchoolId], [IDL.Vec(Notice)], ['query']),
+  'listRoutes' : IDL.Func([SchoolId], [IDL.Vec(TransportRoute)], ['query']),
+  'listStudents' : IDL.Func([SchoolId], [IDL.Vec(StudentPublic)], ['query']),
+  'listStudentsByClass' : IDL.Func(
+      [SchoolId, IDL.Text],
+      [IDL.Vec(StudentPublic)],
+      ['query'],
+    ),
+  'listTeachers' : IDL.Func([SchoolId], [IDL.Vec(TeacherPublic)], ['query']),
+  'logPickup' : IDL.Func(
+      [SchoolId, IDL.Text, UserId, UserId, PickupAction],
+      [IDL.Nat],
+      [],
+    ),
+  'loginDriver' : IDL.Func([UserId, IDL.Text, SchoolId], [IDL.Bool], []),
+  'loginMainController' : IDL.Func([IDL.Text], [IDL.Bool], []),
+  'loginPrincipal' : IDL.Func([SchoolId, IDL.Text], [IDL.Bool], []),
+  'loginStudent' : IDL.Func([UserId, IDL.Text, SchoolId], [IDL.Bool], []),
+  'loginTeacher' : IDL.Func([IDL.Text, IDL.Text, SchoolId], [IDL.Bool], []),
+  'markAttendance' : IDL.Func(
+      [
+        SchoolId,
+        IDL.Text,
+        UserId,
+        IDL.Text,
+        AttendanceStatus,
+        UserId,
+        IDL.Text,
+      ],
+      [IDL.Nat],
+      [],
+    ),
+  'markFeePaid' : IDL.Func(
+      [SchoolId, IDL.Text, IDL.Nat, IDL.Text],
+      [IDL.Bool],
+      [],
+    ),
+  'markParentMessageRead' : IDL.Func([SchoolId, IDL.Nat], [IDL.Bool], []),
+  'resetDriverPassword' : IDL.Func(
+      [SchoolId, IDL.Text, UserId, IDL.Text],
+      [IDL.Bool],
+      [],
+    ),
+  'resetTeacherPassword' : IDL.Func(
+      [SchoolId, IDL.Text, UserId, IDL.Text],
+      [IDL.Bool],
+      [],
+    ),
+  'resolveEmergencyAlert' : IDL.Func(
+      [SchoolId, IDL.Text, IDL.Nat],
+      [IDL.Bool],
+      [],
+    ),
+  'sendParentMessage' : IDL.Func(
+      [SchoolId, IDL.Text, UserId, UserId, IDL.Text],
+      [IDL.Nat],
+      [],
+    ),
+  'setPrincipalPassword' : IDL.Func(
+      [SchoolId, IDL.Text, IDL.Text],
+      [IDL.Bool],
+      [],
+    ),
+  'setSchoolConfig' : IDL.Func([IDL.Text, SchoolConfig], [IDL.Bool], []),
+  'setStudentPassword' : IDL.Func(
+      [SchoolId, IDL.Text, UserId, IDL.Text],
+      [IDL.Bool],
+      [],
+    ),
+  'setSyllabus' : IDL.Func(
+      [SchoolId, IDL.Text, IDL.Text, IDL.Text, IDL.Text, UserId],
+      [IDL.Nat],
+      [],
+    ),
+  'setTimetable' : IDL.Func(
+      [SchoolId, IDL.Text, IDL.Text, IDL.Text, IDL.Vec(Period)],
+      [IDL.Nat],
+      [],
+    ),
+  'submitAssignment' : IDL.Func(
+      [SchoolId, IDL.Text, IDL.Nat, UserId, IDL.Text, IDL.Opt(IDL.Text)],
+      [IDL.Nat],
+      [],
+    ),
+  'updateBusLocation' : IDL.Func(
+      [SchoolId, IDL.Text, UserId, IDL.Float64, IDL.Float64],
+      [IDL.Bool],
+      [],
+    ),
+  'updateDriver' : IDL.Func([SchoolId, IDL.Text, DriverPublic], [IDL.Bool], []),
+  'updateExamTimetable' : IDL.Func(
+      [SchoolId, IDL.Text, ExamTimetable],
+      [IDL.Bool],
+      [],
+    ),
+  'updateFeeRecord' : IDL.Func([SchoolId, IDL.Text, FeeRecord], [IDL.Bool], []),
+  'updateInquiryStatus' : IDL.Func(
+      [
+        SchoolId,
+        IDL.Text,
+        IDL.Nat,
+        IDL.Variant({
+          'new' : IDL.Null,
+          'closed' : IDL.Null,
+          'inProgress' : IDL.Null,
+        }),
+        IDL.Text,
+      ],
+      [IDL.Bool],
+      [],
+    ),
+  'updateLessonPlan' : IDL.Func(
+      [SchoolId, IDL.Text, LessonPlan],
+      [IDL.Bool],
+      [],
+    ),
+  'updateMark' : IDL.Func([SchoolId, IDL.Text, ExamMark], [IDL.Bool], []),
+  'updateRoute' : IDL.Func(
+      [SchoolId, IDL.Text, TransportRoute],
+      [IDL.Bool],
+      [],
+    ),
+  'updateStudent' : IDL.Func(
+      [SchoolId, IDL.Text, StudentPublic],
+      [IDL.Bool],
+      [],
+    ),
+  'updateTeacher' : IDL.Func(
+      [SchoolId, IDL.Text, TeacherPublic],
+      [IDL.Bool],
+      [],
+    ),
 });
 
 export const idlInitArgs = [];
 
 export const idlFactory = ({ IDL }) => {
-  const _CaffeineStorageCreateCertificateResult = IDL.Record({
-    'method' : IDL.Text,
-    'blob_hash' : IDL.Text,
+  const SchoolId = IDL.Nat;
+  const UserId = IDL.Nat;
+  const MaintenanceType = IDL.Variant({
+    'service' : IDL.Null,
+    'fuel' : IDL.Null,
   });
-  const _CaffeineStorageRefillInformation = IDL.Record({
-    'proposed_top_up_amount' : IDL.Opt(IDL.Nat),
+  const ExamSlot = IDL.Record({
+    'startTime' : IDL.Text,
+    'subject' : IDL.Text,
+    'endTime' : IDL.Text,
+    'date' : IDL.Text,
   });
-  const _CaffeineStorageRefillResult = IDL.Record({
-    'success' : IDL.Opt(IDL.Bool),
-    'topped_up_amount' : IDL.Opt(IDL.Nat),
+  const TargetPortal = IDL.Variant({
+    'principal' : IDL.Null,
+    'teacher' : IDL.Null,
+    'student' : IDL.Null,
+    'driver' : IDL.Null,
   });
-  const FileType = IDL.Variant({ 'video' : IDL.Null, 'photo' : IDL.Null });
-  const MediaItem = IDL.Record({
-    'studentId' : IDL.Nat,
-    'fileType' : FileType,
-    'timestamp' : IDL.Text,
-    'caption' : IDL.Text,
-    'blobReferenceId' : IDL.Text,
-  });
-  const UserRole = IDL.Variant({
-    'admin' : IDL.Null,
-    'user' : IDL.Null,
-    'guest' : IDL.Null,
-  });
-  const UserProfile = IDL.Record({
-    'studentId' : IDL.Opt(IDL.Nat),
+  const RouteStop = IDL.Record({
     'name' : IDL.Text,
+    'studentIds' : IDL.Vec(UserId),
+  });
+  const Timestamp = IDL.Int;
+  const BusLocation = IDL.Record({
+    'latitude' : IDL.Float64,
+    'driverId' : UserId,
+    'schoolId' : SchoolId,
+    'longitude' : IDL.Float64,
+    'timestamp' : Timestamp,
+  });
+  const FeeStatus = IDL.Variant({
+    'paid' : IDL.Null,
+    'unpaid' : IDL.Null,
+    'partial' : IDL.Null,
+  });
+  const FeeRecord = IDL.Record({
+    'id' : IDL.Nat,
+    'status' : FeeStatus,
+    'studentId' : UserId,
+    'dueDate' : IDL.Text,
+    'description' : IDL.Text,
+    'paidDate' : IDL.Opt(IDL.Text),
+    'schoolId' : SchoolId,
+    'amount' : IDL.Nat,
+  });
+  const Assignment = IDL.Record({
+    'id' : IDL.Nat,
+    'attachmentUrl' : IDL.Opt(IDL.Text),
+    'title' : IDL.Text,
+    'subject' : IDL.Text,
+    'class' : IDL.Text,
+    'createdAt' : Timestamp,
+    'dueDate' : IDL.Text,
+    'section' : IDL.Text,
+    'description' : IDL.Text,
+    'schoolId' : SchoolId,
+    'teacherId' : UserId,
+  });
+  const AttendanceStatus = IDL.Variant({
+    'present' : IDL.Null,
+    'late' : IDL.Null,
+    'absent' : IDL.Null,
+  });
+  const AttendanceRecord = IDL.Record({
+    'id' : IDL.Nat,
+    'status' : AttendanceStatus,
+    'studentId' : UserId,
+    'date' : IDL.Text,
+    'note' : IDL.Text,
+    'markedByTeacherId' : UserId,
+    'schoolId' : SchoolId,
+  });
+  const DiaryEntry = IDL.Record({
+    'id' : IDL.Nat,
+    'content' : IDL.Text,
+    'date' : IDL.Text,
+    'class' : IDL.Text,
+    'createdAt' : Timestamp,
+    'section' : IDL.Text,
+    'schoolId' : SchoolId,
+    'teacherId' : UserId,
+  });
+  const DigitalResource = IDL.Record({
+    'id' : IDL.Nat,
+    'url' : IDL.Text,
+    'title' : IDL.Text,
+    'subject' : IDL.Text,
+    'class' : IDL.Text,
+    'createdAt' : Timestamp,
+    'type' : IDL.Variant({
+      'pdf' : IDL.Null,
+      'video' : IDL.Null,
+      'note' : IDL.Null,
+    }),
+    'schoolId' : SchoolId,
+    'uploadedBy' : UserId,
+  });
+  const DriverPublic = IDL.Record({
+    'id' : UserId,
+    'name' : IDL.Text,
+    'schoolId' : SchoolId,
+    'route' : IDL.Text,
+    'vehicleNo' : IDL.Text,
+  });
+  const ExamTimetable = IDL.Record({
+    'id' : IDL.Nat,
+    'subjects' : IDL.Vec(ExamSlot),
+    'class' : IDL.Text,
+    'createdAt' : Timestamp,
+    'section' : IDL.Text,
+    'schoolId' : SchoolId,
+    'examName' : IDL.Text,
+  });
+  const LessonPlan = IDL.Record({
+    'id' : IDL.Nat,
+    'content' : IDL.Text,
+    'subject' : IDL.Text,
+    'class' : IDL.Text,
+    'section' : IDL.Text,
+    'schoolId' : SchoolId,
+    'teacherId' : UserId,
+    'weekOf' : IDL.Text,
+  });
+  const MaintenanceLog = IDL.Record({
+    'id' : IDL.Nat,
+    'driverId' : UserId,
+    'cost' : IDL.Nat,
+    'date' : IDL.Text,
+    'type' : MaintenanceType,
+    'schoolId' : SchoolId,
+    'notes' : IDL.Text,
+    'vehicleNo' : IDL.Text,
+  });
+  const ExamMark = IDL.Record({
+    'id' : IDL.Nat,
+    'studentId' : UserId,
+    'subject' : IDL.Text,
+    'date' : IDL.Text,
+    'schoolId' : SchoolId,
+    'teacherId' : UserId,
+    'maxMarks' : IDL.Nat,
+    'obtainedMarks' : IDL.Nat,
+    'examName' : IDL.Text,
+  });
+  const ParentMessage = IDL.Record({
+    'id' : IDL.Nat,
+    'studentId' : UserId,
+    'read' : IDL.Bool,
+    'schoolId' : SchoolId,
+    'message' : IDL.Text,
+    'teacherId' : UserId,
+    'timestamp' : Timestamp,
+  });
+  const PickupAction = IDL.Variant({ 'drop' : IDL.Null, 'pickup' : IDL.Null });
+  const PickupLog = IDL.Record({
+    'id' : IDL.Nat,
+    'driverId' : UserId,
+    'action' : PickupAction,
+    'studentId' : UserId,
+    'schoolId' : SchoolId,
+    'timestamp' : Timestamp,
+  });
+  const TransportRoute = IDL.Record({
+    'id' : IDL.Nat,
+    'stops' : IDL.Vec(RouteStop),
+    'schoolId' : SchoolId,
+    'driverName' : IDL.Text,
+    'vehicleNo' : IDL.Text,
+  });
+  const SchoolConfig = IDL.Record({
+    'subjects' : IDL.Vec(IDL.Text),
+    'classes' : IDL.Vec(IDL.Text),
+    'schoolId' : SchoolId,
+    'sections' : IDL.Vec(IDL.Text),
+    'schoolName' : IDL.Text,
+  });
+  const StudentPublic = IDL.Record({
+    'id' : UserId,
+    'class' : IDL.Text,
+    'name' : IDL.Text,
+    'section' : IDL.Text,
+    'schoolId' : SchoolId,
+    'profilePictureUrl' : IDL.Opt(IDL.Text),
+    'rollNo' : IDL.Nat,
+    'parentMobile' : IDL.Text,
+  });
+  const SubmissionStatus = IDL.Variant({
+    'graded' : IDL.Null,
+    'submitted' : IDL.Null,
+    'pending' : IDL.Null,
+  });
+  const Submission = IDL.Record({
+    'id' : IDL.Nat,
+    'attachmentUrl' : IDL.Opt(IDL.Text),
+    'status' : SubmissionStatus,
+    'content' : IDL.Text,
+    'studentId' : UserId,
+    'submittedAt' : Timestamp,
+    'schoolId' : SchoolId,
+    'assignmentId' : IDL.Nat,
+  });
+  const Syllabus = IDL.Record({
+    'id' : IDL.Nat,
+    'content' : IDL.Text,
+    'subject' : IDL.Text,
+    'class' : IDL.Text,
+    'updatedAt' : Timestamp,
+    'schoolId' : SchoolId,
+    'teacherId' : UserId,
+  });
+  const TeacherPublic = IDL.Record({
+    'id' : UserId,
+    'subjects' : IDL.Vec(IDL.Text),
+    'name' : IDL.Text,
+    'assignedClass' : IDL.Text,
+    'email' : IDL.Text,
+    'schoolId' : SchoolId,
+  });
+  const Period = IDL.Record({
+    'day' : IDL.Text,
+    'subject' : IDL.Text,
+    'teacherName' : IDL.Text,
+    'timeSlot' : IDL.Text,
+  });
+  const Timetable = IDL.Record({
+    'id' : IDL.Nat,
+    'class' : IDL.Text,
+    'section' : IDL.Text,
+    'periods' : IDL.Vec(Period),
+    'schoolId' : SchoolId,
+  });
+  const EmergencyAlert = IDL.Record({
+    'id' : IDL.Nat,
+    'driverId' : UserId,
+    'resolved' : IDL.Bool,
+    'schoolId' : SchoolId,
+    'message' : IDL.Text,
+    'timestamp' : Timestamp,
+    'location' : IDL.Text,
+  });
+  const Inquiry = IDL.Record({
+    'id' : IDL.Nat,
+    'status' : IDL.Variant({
+      'new' : IDL.Null,
+      'closed' : IDL.Null,
+      'inProgress' : IDL.Null,
+    }),
+    'studentName' : IDL.Text,
+    'class' : IDL.Text,
+    'createdAt' : Timestamp,
+    'email' : IDL.Text,
+    'schoolId' : SchoolId,
+    'notes' : IDL.Text,
+    'phone' : IDL.Text,
+    'parentName' : IDL.Text,
+  });
+  const Notice = IDL.Record({
+    'id' : IDL.Nat,
+    'title' : IDL.Text,
+    'createdAt' : Timestamp,
+    'createdBy' : UserId,
+    'schoolId' : SchoolId,
+    'message' : IDL.Text,
+    'targetPortals' : IDL.Vec(TargetPortal),
+    'priority' : IDL.Variant({
+      'low' : IDL.Null,
+      'high' : IDL.Null,
+      'medium' : IDL.Null,
+    }),
   });
   
   return IDL.Service({
-    '_caffeineStorageBlobIsLive' : IDL.Func(
-        [IDL.Vec(IDL.Nat8)],
-        [IDL.Bool],
-        ['query'],
-      ),
-    '_caffeineStorageBlobsToDelete' : IDL.Func(
-        [],
-        [IDL.Vec(IDL.Vec(IDL.Nat8))],
-        ['query'],
-      ),
-    '_caffeineStorageConfirmBlobDeletion' : IDL.Func(
-        [IDL.Vec(IDL.Vec(IDL.Nat8))],
-        [],
-        [],
-      ),
-    '_caffeineStorageCreateCertificate' : IDL.Func(
-        [IDL.Text],
-        [_CaffeineStorageCreateCertificateResult],
-        [],
-      ),
-    '_caffeineStorageRefillCashier' : IDL.Func(
-        [IDL.Opt(_CaffeineStorageRefillInformation)],
-        [_CaffeineStorageRefillResult],
-        [],
-      ),
-    '_caffeineStorageUpdateGatewayPrincipals' : IDL.Func([], [], []),
-    '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
-    'addMedia' : IDL.Func([MediaItem], [], []),
-    'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
-    'deleteMedia' : IDL.Func([IDL.Text], [], []),
-    'getAllKeys' : IDL.Func([], [IDL.Vec(IDL.Text)], ['query']),
-    'getAllMedia' : IDL.Func([], [IDL.Vec(MediaItem)], ['query']),
-    'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
-    'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
-    'getData' : IDL.Func([IDL.Text], [IDL.Opt(IDL.Text)], ['query']),
-    'getMedia' : IDL.Func([IDL.Text], [IDL.Opt(MediaItem)], ['query']),
-    'getMediaByStudentId' : IDL.Func(
+    'addDigitalResource' : IDL.Func(
+        [
+          SchoolId,
+          IDL.Text,
+          IDL.Text,
+          IDL.Variant({
+            'pdf' : IDL.Null,
+            'video' : IDL.Null,
+            'note' : IDL.Null,
+          }),
+          IDL.Text,
+          IDL.Text,
+          IDL.Text,
+          UserId,
+        ],
         [IDL.Nat],
-        [IDL.Vec(MediaItem)],
+        [],
+      ),
+    'addDriver' : IDL.Func(
+        [SchoolId, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text],
+        [UserId],
+        [],
+      ),
+    'addFeeRecord' : IDL.Func(
+        [SchoolId, IDL.Text, UserId, IDL.Nat, IDL.Text, IDL.Text],
+        [IDL.Nat],
+        [],
+      ),
+    'addMaintenanceLog' : IDL.Func(
+        [
+          SchoolId,
+          IDL.Text,
+          IDL.Text,
+          MaintenanceType,
+          IDL.Text,
+          IDL.Nat,
+          IDL.Text,
+          UserId,
+        ],
+        [IDL.Nat],
+        [],
+      ),
+    'addMark' : IDL.Func(
+        [
+          SchoolId,
+          IDL.Text,
+          UserId,
+          IDL.Text,
+          IDL.Text,
+          IDL.Nat,
+          IDL.Nat,
+          UserId,
+          IDL.Text,
+        ],
+        [IDL.Nat],
+        [],
+      ),
+    'addStudent' : IDL.Func(
+        [SchoolId, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Nat, IDL.Text],
+        [UserId],
+        [],
+      ),
+    'addTeacher' : IDL.Func(
+        [
+          SchoolId,
+          IDL.Text,
+          IDL.Text,
+          IDL.Text,
+          IDL.Text,
+          IDL.Text,
+          IDL.Vec(IDL.Text),
+        ],
+        [UserId],
+        [],
+      ),
+    'autoGenerateStudentPasswords' : IDL.Func(
+        [SchoolId, IDL.Text],
+        [IDL.Vec(IDL.Tuple(UserId, IDL.Text))],
+        [],
+      ),
+    'changeMainControllerPassword' : IDL.Func(
+        [IDL.Text, IDL.Text],
+        [IDL.Bool],
+        [],
+      ),
+    'createAssignment' : IDL.Func(
+        [
+          SchoolId,
+          IDL.Text,
+          IDL.Text,
+          IDL.Text,
+          IDL.Text,
+          IDL.Text,
+          IDL.Text,
+          IDL.Text,
+          UserId,
+          IDL.Opt(IDL.Text),
+        ],
+        [IDL.Nat],
+        [],
+      ),
+    'createDiaryEntry' : IDL.Func(
+        [SchoolId, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text, UserId],
+        [IDL.Nat],
+        [],
+      ),
+    'createEmergencyAlert' : IDL.Func(
+        [SchoolId, IDL.Text, UserId, IDL.Text, IDL.Text],
+        [IDL.Nat],
+        [],
+      ),
+    'createExamTimetable' : IDL.Func(
+        [SchoolId, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Vec(ExamSlot)],
+        [IDL.Nat],
+        [],
+      ),
+    'createInquiry' : IDL.Func(
+        [SchoolId, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text],
+        [IDL.Nat],
+        [],
+      ),
+    'createLessonPlan' : IDL.Func(
+        [
+          SchoolId,
+          IDL.Text,
+          IDL.Text,
+          IDL.Text,
+          IDL.Text,
+          IDL.Text,
+          IDL.Text,
+          UserId,
+        ],
+        [IDL.Nat],
+        [],
+      ),
+    'createNotice' : IDL.Func(
+        [
+          SchoolId,
+          IDL.Text,
+          IDL.Text,
+          IDL.Text,
+          IDL.Vec(TargetPortal),
+          IDL.Variant({
+            'low' : IDL.Null,
+            'high' : IDL.Null,
+            'medium' : IDL.Null,
+          }),
+          UserId,
+        ],
+        [IDL.Nat],
+        [],
+      ),
+    'createRoute' : IDL.Func(
+        [SchoolId, IDL.Text, IDL.Text, IDL.Text, IDL.Vec(RouteStop)],
+        [IDL.Nat],
+        [],
+      ),
+    'deleteAssignment' : IDL.Func(
+        [SchoolId, IDL.Text, IDL.Nat],
+        [IDL.Bool],
+        [],
+      ),
+    'deleteDiaryEntry' : IDL.Func(
+        [SchoolId, IDL.Text, IDL.Nat],
+        [IDL.Bool],
+        [],
+      ),
+    'deleteDigitalResource' : IDL.Func(
+        [SchoolId, IDL.Text, IDL.Nat],
+        [IDL.Bool],
+        [],
+      ),
+    'deleteDriver' : IDL.Func([SchoolId, IDL.Text, UserId], [IDL.Bool], []),
+    'deleteExamTimetable' : IDL.Func(
+        [SchoolId, IDL.Text, IDL.Nat],
+        [IDL.Bool],
+        [],
+      ),
+    'deleteFeeRecord' : IDL.Func([SchoolId, IDL.Text, IDL.Nat], [IDL.Bool], []),
+    'deleteLessonPlan' : IDL.Func(
+        [SchoolId, IDL.Text, IDL.Nat],
+        [IDL.Bool],
+        [],
+      ),
+    'deleteMark' : IDL.Func([SchoolId, IDL.Text, IDL.Nat], [IDL.Bool], []),
+    'deleteNotice' : IDL.Func([SchoolId, IDL.Text, IDL.Nat], [IDL.Bool], []),
+    'deleteRoute' : IDL.Func([SchoolId, IDL.Text, IDL.Nat], [IDL.Bool], []),
+    'deleteStudent' : IDL.Func([SchoolId, IDL.Text, UserId], [IDL.Bool], []),
+    'deleteTeacher' : IDL.Func([SchoolId, IDL.Text, UserId], [IDL.Bool], []),
+    'exportAllData' : IDL.Func([IDL.Text], [IDL.Text], ['query']),
+    'getAllBusLocations' : IDL.Func(
+        [SchoolId],
+        [IDL.Vec(BusLocation)],
         ['query'],
       ),
-    'getMediaByType' : IDL.Func(
-        [IDL.Nat, FileType],
-        [IDL.Vec(MediaItem)],
+    'getAllFees' : IDL.Func([SchoolId], [IDL.Vec(FeeRecord)], ['query']),
+    'getAssignmentsByClass' : IDL.Func(
+        [SchoolId, IDL.Text],
+        [IDL.Vec(Assignment)],
         ['query'],
       ),
-    'getStudentMediaCount' : IDL.Func([IDL.Nat], [IDL.Nat], ['query']),
-    'getUserProfile' : IDL.Func(
-        [IDL.Principal],
-        [IDL.Opt(UserProfile)],
+    'getAttendanceByClass' : IDL.Func(
+        [SchoolId, IDL.Text, IDL.Text],
+        [IDL.Vec(AttendanceRecord)],
         ['query'],
       ),
-    'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
-    'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
-    'setData' : IDL.Func([IDL.Text, IDL.Text], [], []),
-    'updateCaption' : IDL.Func([IDL.Text, IDL.Text], [], []),
+    'getAttendanceByStudent' : IDL.Func(
+        [SchoolId, UserId],
+        [IDL.Vec(AttendanceRecord)],
+        ['query'],
+      ),
+    'getBusLocation' : IDL.Func(
+        [SchoolId, UserId],
+        [IDL.Opt(BusLocation)],
+        ['query'],
+      ),
+    'getDiaryByClass' : IDL.Func(
+        [SchoolId, IDL.Text],
+        [IDL.Vec(DiaryEntry)],
+        ['query'],
+      ),
+    'getDigitalResourcesByClass' : IDL.Func(
+        [SchoolId, IDL.Text],
+        [IDL.Vec(DigitalResource)],
+        ['query'],
+      ),
+    'getDriver' : IDL.Func(
+        [SchoolId, UserId],
+        [IDL.Opt(DriverPublic)],
+        ['query'],
+      ),
+    'getExamTimetablesByClass' : IDL.Func(
+        [SchoolId, IDL.Text],
+        [IDL.Vec(ExamTimetable)],
+        ['query'],
+      ),
+    'getFeesByStudent' : IDL.Func(
+        [SchoolId, UserId],
+        [IDL.Vec(FeeRecord)],
+        ['query'],
+      ),
+    'getLessonPlansByClass' : IDL.Func(
+        [SchoolId, IDL.Text],
+        [IDL.Vec(LessonPlan)],
+        ['query'],
+      ),
+    'getMaintenanceLogs' : IDL.Func(
+        [SchoolId, IDL.Text],
+        [IDL.Vec(MaintenanceLog)],
+        ['query'],
+      ),
+    'getMarksByExam' : IDL.Func(
+        [SchoolId, IDL.Text],
+        [IDL.Vec(ExamMark)],
+        ['query'],
+      ),
+    'getMarksByStudent' : IDL.Func(
+        [SchoolId, UserId],
+        [IDL.Vec(ExamMark)],
+        ['query'],
+      ),
+    'getParentMessagesByStudent' : IDL.Func(
+        [SchoolId, UserId],
+        [IDL.Vec(ParentMessage)],
+        ['query'],
+      ),
+    'getPendingFees' : IDL.Func([SchoolId], [IDL.Vec(FeeRecord)], ['query']),
+    'getPickupLogsByDriver' : IDL.Func(
+        [SchoolId, UserId],
+        [IDL.Vec(PickupLog)],
+        ['query'],
+      ),
+    'getRoute' : IDL.Func(
+        [SchoolId, IDL.Nat],
+        [IDL.Opt(TransportRoute)],
+        ['query'],
+      ),
+    'getSchoolConfig' : IDL.Func(
+        [SchoolId],
+        [IDL.Opt(SchoolConfig)],
+        ['query'],
+      ),
+    'getStudent' : IDL.Func(
+        [SchoolId, UserId],
+        [IDL.Opt(StudentPublic)],
+        ['query'],
+      ),
+    'getStudentRank' : IDL.Func(
+        [SchoolId, UserId, IDL.Text],
+        [IDL.Nat],
+        ['query'],
+      ),
+    'getSubmissionsByAssignment' : IDL.Func(
+        [SchoolId, IDL.Nat],
+        [IDL.Vec(Submission)],
+        ['query'],
+      ),
+    'getSubmissionsByStudent' : IDL.Func(
+        [SchoolId, UserId],
+        [IDL.Vec(Submission)],
+        ['query'],
+      ),
+    'getSyllabusByClass' : IDL.Func(
+        [SchoolId, IDL.Text],
+        [IDL.Vec(Syllabus)],
+        ['query'],
+      ),
+    'getTeacher' : IDL.Func(
+        [SchoolId, UserId],
+        [IDL.Opt(TeacherPublic)],
+        ['query'],
+      ),
+    'getTimetable' : IDL.Func(
+        [SchoolId, IDL.Text, IDL.Text],
+        [IDL.Opt(Timetable)],
+        ['query'],
+      ),
+    'getTotalRevenue' : IDL.Func([SchoolId], [IDL.Nat], ['query']),
+    'listDrivers' : IDL.Func([SchoolId], [IDL.Vec(DriverPublic)], ['query']),
+    'listEmergencyAlerts' : IDL.Func(
+        [SchoolId],
+        [IDL.Vec(EmergencyAlert)],
+        ['query'],
+      ),
+    'listInquiries' : IDL.Func([SchoolId], [IDL.Vec(Inquiry)], ['query']),
+    'listNotices' : IDL.Func([SchoolId], [IDL.Vec(Notice)], ['query']),
+    'listRoutes' : IDL.Func([SchoolId], [IDL.Vec(TransportRoute)], ['query']),
+    'listStudents' : IDL.Func([SchoolId], [IDL.Vec(StudentPublic)], ['query']),
+    'listStudentsByClass' : IDL.Func(
+        [SchoolId, IDL.Text],
+        [IDL.Vec(StudentPublic)],
+        ['query'],
+      ),
+    'listTeachers' : IDL.Func([SchoolId], [IDL.Vec(TeacherPublic)], ['query']),
+    'logPickup' : IDL.Func(
+        [SchoolId, IDL.Text, UserId, UserId, PickupAction],
+        [IDL.Nat],
+        [],
+      ),
+    'loginDriver' : IDL.Func([UserId, IDL.Text, SchoolId], [IDL.Bool], []),
+    'loginMainController' : IDL.Func([IDL.Text], [IDL.Bool], []),
+    'loginPrincipal' : IDL.Func([SchoolId, IDL.Text], [IDL.Bool], []),
+    'loginStudent' : IDL.Func([UserId, IDL.Text, SchoolId], [IDL.Bool], []),
+    'loginTeacher' : IDL.Func([IDL.Text, IDL.Text, SchoolId], [IDL.Bool], []),
+    'markAttendance' : IDL.Func(
+        [
+          SchoolId,
+          IDL.Text,
+          UserId,
+          IDL.Text,
+          AttendanceStatus,
+          UserId,
+          IDL.Text,
+        ],
+        [IDL.Nat],
+        [],
+      ),
+    'markFeePaid' : IDL.Func(
+        [SchoolId, IDL.Text, IDL.Nat, IDL.Text],
+        [IDL.Bool],
+        [],
+      ),
+    'markParentMessageRead' : IDL.Func([SchoolId, IDL.Nat], [IDL.Bool], []),
+    'resetDriverPassword' : IDL.Func(
+        [SchoolId, IDL.Text, UserId, IDL.Text],
+        [IDL.Bool],
+        [],
+      ),
+    'resetTeacherPassword' : IDL.Func(
+        [SchoolId, IDL.Text, UserId, IDL.Text],
+        [IDL.Bool],
+        [],
+      ),
+    'resolveEmergencyAlert' : IDL.Func(
+        [SchoolId, IDL.Text, IDL.Nat],
+        [IDL.Bool],
+        [],
+      ),
+    'sendParentMessage' : IDL.Func(
+        [SchoolId, IDL.Text, UserId, UserId, IDL.Text],
+        [IDL.Nat],
+        [],
+      ),
+    'setPrincipalPassword' : IDL.Func(
+        [SchoolId, IDL.Text, IDL.Text],
+        [IDL.Bool],
+        [],
+      ),
+    'setSchoolConfig' : IDL.Func([IDL.Text, SchoolConfig], [IDL.Bool], []),
+    'setStudentPassword' : IDL.Func(
+        [SchoolId, IDL.Text, UserId, IDL.Text],
+        [IDL.Bool],
+        [],
+      ),
+    'setSyllabus' : IDL.Func(
+        [SchoolId, IDL.Text, IDL.Text, IDL.Text, IDL.Text, UserId],
+        [IDL.Nat],
+        [],
+      ),
+    'setTimetable' : IDL.Func(
+        [SchoolId, IDL.Text, IDL.Text, IDL.Text, IDL.Vec(Period)],
+        [IDL.Nat],
+        [],
+      ),
+    'submitAssignment' : IDL.Func(
+        [SchoolId, IDL.Text, IDL.Nat, UserId, IDL.Text, IDL.Opt(IDL.Text)],
+        [IDL.Nat],
+        [],
+      ),
+    'updateBusLocation' : IDL.Func(
+        [SchoolId, IDL.Text, UserId, IDL.Float64, IDL.Float64],
+        [IDL.Bool],
+        [],
+      ),
+    'updateDriver' : IDL.Func(
+        [SchoolId, IDL.Text, DriverPublic],
+        [IDL.Bool],
+        [],
+      ),
+    'updateExamTimetable' : IDL.Func(
+        [SchoolId, IDL.Text, ExamTimetable],
+        [IDL.Bool],
+        [],
+      ),
+    'updateFeeRecord' : IDL.Func(
+        [SchoolId, IDL.Text, FeeRecord],
+        [IDL.Bool],
+        [],
+      ),
+    'updateInquiryStatus' : IDL.Func(
+        [
+          SchoolId,
+          IDL.Text,
+          IDL.Nat,
+          IDL.Variant({
+            'new' : IDL.Null,
+            'closed' : IDL.Null,
+            'inProgress' : IDL.Null,
+          }),
+          IDL.Text,
+        ],
+        [IDL.Bool],
+        [],
+      ),
+    'updateLessonPlan' : IDL.Func(
+        [SchoolId, IDL.Text, LessonPlan],
+        [IDL.Bool],
+        [],
+      ),
+    'updateMark' : IDL.Func([SchoolId, IDL.Text, ExamMark], [IDL.Bool], []),
+    'updateRoute' : IDL.Func(
+        [SchoolId, IDL.Text, TransportRoute],
+        [IDL.Bool],
+        [],
+      ),
+    'updateStudent' : IDL.Func(
+        [SchoolId, IDL.Text, StudentPublic],
+        [IDL.Bool],
+        [],
+      ),
+    'updateTeacher' : IDL.Func(
+        [SchoolId, IDL.Text, TeacherPublic],
+        [IDL.Bool],
+        [],
+      ),
   });
 };
 

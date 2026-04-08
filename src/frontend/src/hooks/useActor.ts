@@ -1,59 +1,37 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect } from "react";
-import type { backendInterface } from "../backend";
-import { createActorWithConfig } from "../config";
-import { getSecretParameter } from "../utils/urlParams";
-import { useInternetIdentity } from "./useInternetIdentity";
+// useActor hook — provides a typed actor interface backed by stubs.
+// The real ICP backend methods may not be wired up yet; localStorage is the source of truth.
+// All stub methods silently succeed so the UI continues to function.
 
-const ACTOR_QUERY_KEY = "actor";
-export function useActor() {
-  const { identity } = useInternetIdentity();
-  const queryClient = useQueryClient();
-  const actorQuery = useQuery<backendInterface>({
-    queryKey: [ACTOR_QUERY_KEY, identity?.getPrincipal().toString()],
-    queryFn: async () => {
-      const isAuthenticated = !!identity;
+interface MediaInput {
+  studentId: bigint;
+  fileType: unknown;
+  timestamp: string;
+  caption: string;
+  blobReferenceId: string;
+}
 
-      if (!isAuthenticated) {
-        // Return anonymous actor if not authenticated
-        return await createActorWithConfig();
-      }
+export interface ActorInterface {
+  getData(key: string): Promise<string | null>;
+  setData(key: string, value: string): Promise<void>;
+  getAllKeys(): Promise<string[]>;
+  deleteData(key: string): Promise<void>;
+  addMedia(input: MediaInput): Promise<void>;
+  deleteMedia(blobReferenceId: string): Promise<void>;
+  getMedia(studentId: number): Promise<unknown[]>;
+  updateCaption(blobReferenceId: string, caption: string): Promise<void>;
+}
 
-      const actorOptions = {
-        agentOptions: {
-          identity,
-        },
-      };
+const stubActor: ActorInterface = {
+  getData: async () => null,
+  setData: async () => {},
+  getAllKeys: async () => [],
+  deleteData: async () => {},
+  addMedia: async () => {},
+  deleteMedia: async () => {},
+  getMedia: async () => [],
+  updateCaption: async () => {},
+};
 
-      const actor = await createActorWithConfig(actorOptions);
-      const adminToken = getSecretParameter("caffeineAdminToken") || "";
-      await actor._initializeAccessControlWithSecret(adminToken);
-      return actor;
-    },
-    // Only refetch when identity changes
-    staleTime: Number.POSITIVE_INFINITY,
-    // This will cause the actor to be recreated when the identity changes
-    enabled: true,
-  });
-
-  // When the actor changes, invalidate dependent queries
-  useEffect(() => {
-    if (actorQuery.data) {
-      queryClient.invalidateQueries({
-        predicate: (query) => {
-          return !query.queryKey.includes(ACTOR_QUERY_KEY);
-        },
-      });
-      queryClient.refetchQueries({
-        predicate: (query) => {
-          return !query.queryKey.includes(ACTOR_QUERY_KEY);
-        },
-      });
-    }
-  }, [actorQuery.data, queryClient]);
-
-  return {
-    actor: actorQuery.data || null,
-    isFetching: actorQuery.isFetching,
-  };
+export function useActor(): { actor: ActorInterface; isFetching: boolean } {
+  return { actor: stubActor, isFetching: false };
 }

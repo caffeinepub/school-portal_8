@@ -1,0 +1,497 @@
+type UserId = nat;
+type TransportRoute = 
+ record {
+   driverName: text;
+   id: nat;
+   schoolId: SchoolId;
+   stops: vec RouteStop;
+   vehicleNo: text;
+ };
+type Timetable = 
+ record {
+   class: text;
+   id: nat;
+   periods: vec Period;
+   schoolId: SchoolId;
+   section: text;
+ };
+type Timestamp = int;
+type TeacherPublic = 
+ record {
+   assignedClass: text;
+   email: text;
+   id: UserId;
+   name: text;
+   schoolId: SchoolId;
+   subjects: vec text;
+ };
+type TargetPortal = 
+ variant {
+   driver;
+   "principal";
+   student;
+   teacher;
+ };
+type Syllabus = 
+ record {
+   class: text;
+   content: text;
+   id: nat;
+   schoolId: SchoolId;
+   subject: text;
+   teacherId: UserId;
+   updatedAt: Timestamp;
+ };
+type SubmissionStatus = 
+ variant {
+   graded;
+   pending;
+   submitted;
+ };
+type Submission = 
+ record {
+   assignmentId: nat;
+   attachmentUrl: opt text;
+   content: text;
+   id: nat;
+   schoolId: SchoolId;
+   status: SubmissionStatus;
+   studentId: UserId;
+   submittedAt: Timestamp;
+ };
+type StudentPublic = 
+ record {
+   class: text;
+   id: UserId;
+   name: text;
+   parentMobile: text;
+   profilePictureUrl: opt text;
+   rollNo: nat;
+   schoolId: SchoolId;
+   section: text;
+ };
+type SchoolId = nat;
+type SchoolConfig = 
+ record {
+   classes: vec text;
+   schoolId: SchoolId;
+   schoolName: text;
+   sections: vec text;
+   subjects: vec text;
+ };
+type RouteStop = 
+ record {
+   name: text;
+   studentIds: vec UserId;
+ };
+type PickupLog = 
+ record {
+   action: PickupAction;
+   driverId: UserId;
+   id: nat;
+   schoolId: SchoolId;
+   studentId: UserId;
+   timestamp: Timestamp;
+ };
+type PickupAction = 
+ variant {
+   drop;
+   pickup;
+ };
+type Period = 
+ record {
+   day: text;
+   subject: text;
+   teacherName: text;
+   timeSlot: text;
+ };
+type ParentMessage = 
+ record {
+   id: nat;
+   message: text;
+   read: bool;
+   schoolId: SchoolId;
+   studentId: UserId;
+   teacherId: UserId;
+   timestamp: Timestamp;
+ };
+type Notice = 
+ record {
+   createdAt: Timestamp;
+   createdBy: UserId;
+   id: nat;
+   message: text;
+   priority: variant {
+               high;
+               low;
+               medium;
+             };
+   schoolId: SchoolId;
+   targetPortals: vec TargetPortal;
+   title: text;
+ };
+type MaintenanceType = 
+ variant {
+   fuel;
+   "service";
+ };
+type MaintenanceLog = 
+ record {
+   cost: nat;
+   date: text;
+   driverId: UserId;
+   id: nat;
+   notes: text;
+   schoolId: SchoolId;
+   "type": MaintenanceType;
+   vehicleNo: text;
+ };
+type LessonPlan = 
+ record {
+   class: text;
+   content: text;
+   id: nat;
+   schoolId: SchoolId;
+   section: text;
+   subject: text;
+   teacherId: UserId;
+   weekOf: text;
+ };
+type Inquiry = 
+ record {
+   class: text;
+   createdAt: Timestamp;
+   email: text;
+   id: nat;
+   notes: text;
+   parentName: text;
+   phone: text;
+   schoolId: SchoolId;
+   status: variant {
+             closed;
+             inProgress;
+             new;
+           };
+   studentName: text;
+ };
+type FeeStatus = 
+ variant {
+   paid;
+   partial;
+   unpaid;
+ };
+type FeeRecord = 
+ record {
+   amount: nat;
+   description: text;
+   dueDate: text;
+   id: nat;
+   paidDate: opt text;
+   schoolId: SchoolId;
+   status: FeeStatus;
+   studentId: UserId;
+ };
+type ExamTimetable = 
+ record {
+   class: text;
+   createdAt: Timestamp;
+   examName: text;
+   id: nat;
+   schoolId: SchoolId;
+   section: text;
+   subjects: vec ExamSlot;
+ };
+type ExamSlot = 
+ record {
+   date: text;
+   endTime: text;
+   startTime: text;
+   subject: text;
+ };
+type ExamMark = 
+ record {
+   date: text;
+   examName: text;
+   id: nat;
+   maxMarks: nat;
+   obtainedMarks: nat;
+   schoolId: SchoolId;
+   studentId: UserId;
+   subject: text;
+   teacherId: UserId;
+ };
+type EmergencyAlert = 
+ record {
+   driverId: UserId;
+   id: nat;
+   location: text;
+   message: text;
+   resolved: bool;
+   schoolId: SchoolId;
+   timestamp: Timestamp;
+ };
+type DriverPublic = 
+ record {
+   id: UserId;
+   name: text;
+   route: text;
+   schoolId: SchoolId;
+   vehicleNo: text;
+ };
+type DigitalResource = 
+ record {
+   class: text;
+   createdAt: Timestamp;
+   id: nat;
+   schoolId: SchoolId;
+   subject: text;
+   title: text;
+   "type": variant {
+             note;
+             pdf;
+             video;
+           };
+   uploadedBy: UserId;
+   url: text;
+ };
+type DiaryEntry = 
+ record {
+   class: text;
+   content: text;
+   createdAt: Timestamp;
+   date: text;
+   id: nat;
+   schoolId: SchoolId;
+   section: text;
+   teacherId: UserId;
+ };
+type BusLocation = 
+ record {
+   driverId: UserId;
+   latitude: float64;
+   longitude: float64;
+   schoolId: SchoolId;
+   timestamp: Timestamp;
+ };
+type AttendanceStatus = 
+ variant {
+   absent;
+   late;
+   present;
+ };
+type AttendanceRecord = 
+ record {
+   date: text;
+   id: nat;
+   markedByTeacherId: UserId;
+   note: text;
+   schoolId: SchoolId;
+   status: AttendanceStatus;
+   studentId: UserId;
+ };
+type Assignment = 
+ record {
+   attachmentUrl: opt text;
+   class: text;
+   createdAt: Timestamp;
+   description: text;
+   dueDate: text;
+   id: nat;
+   schoolId: SchoolId;
+   section: text;
+   subject: text;
+   teacherId: UserId;
+   title: text;
+ };
+service : {
+  addDigitalResource: (schoolId: SchoolId, callerPassword: text, title: 
+   text, "type": variant {
+                   note;
+                   pdf;
+                   video;
+                 }, url: text, class: text, subject: text, uploadedBy:
+   UserId) -> (nat);
+  addDriver: (schoolId: SchoolId, callerPassword: text, name: text, password:
+   text, vehicleNo: text, route: text) -> (UserId);
+  addFeeRecord: (schoolId: SchoolId, callerPassword: text, studentId: 
+   UserId, amount: nat, dueDate: text, description: text) -> (nat);
+  addMaintenanceLog: (schoolId: SchoolId, callerPassword: text, vehicleNo:
+   text, "type": MaintenanceType, date: text, cost: nat, notes: text,
+   driverId: UserId) -> (nat);
+  addMark: (schoolId: SchoolId, callerPassword: text, studentId: UserId,
+   examName: text, subject: text, maxMarks: nat, obtainedMarks: nat,
+   teacherId: UserId, date: text) -> (nat);
+  addStudent: (schoolId: SchoolId, callerPassword: text, name: text, class:
+   text, section: text, rollNo: nat, parentMobile: text) -> (UserId);
+  addTeacher: (schoolId: SchoolId, callerPassword: text, name: text, email:
+   text, password: text, assignedClass: text, subjects: vec text) -> (
+   UserId);
+  autoGenerateStudentPasswords: (schoolId: SchoolId, callerPassword: 
+   text) -> (vec record {
+                   UserId;
+                   text;
+                 });
+  changeMainControllerPassword: (oldPassword: text, newPassword: text) ->
+   (bool);
+  createAssignment: (schoolId: SchoolId, callerPassword: text, class: 
+   text, section: text, subject: text, title: text, description: text,
+   dueDate: text, teacherId: UserId, attachmentUrl: opt text) -> (nat);
+  createDiaryEntry: (schoolId: SchoolId, callerPassword: text, class: 
+   text, section: text, date: text, content: text, teacherId: UserId) ->
+   (nat);
+  createEmergencyAlert: (schoolId: SchoolId, driverPassword: text, driverId:
+   UserId, message: text, location: text) -> (nat);
+  createExamTimetable: (schoolId: SchoolId, callerPassword: text, class:
+   text, section: text, examName: text, subjects: vec ExamSlot) -> (nat);
+  createInquiry: (schoolId: SchoolId, studentName: text, parentName: 
+   text, phone: text, email: text, class: text) -> (nat);
+  createLessonPlan: (schoolId: SchoolId, callerPassword: text, class: 
+   text, section: text, subject: text, weekOf: text, content: text,
+   teacherId: UserId) -> (nat);
+  createNotice: (schoolId: SchoolId, callerPassword: text, title: text,
+   message: text, targetPortals: vec TargetPortal, priority:
+   variant {
+     high;
+     low;
+     medium;
+   }, createdBy: UserId) -> (nat);
+  createRoute: (schoolId: SchoolId, callerPassword: text, driverName: 
+   text, vehicleNo: text, stops: vec RouteStop) -> (nat);
+  deleteAssignment: (schoolId: SchoolId, callerPassword: text, id: nat) ->
+   (bool);
+  deleteDiaryEntry: (schoolId: SchoolId, callerPassword: text, id: nat) ->
+   (bool);
+  deleteDigitalResource: (schoolId: SchoolId, callerPassword: text, id:
+   nat) -> (bool);
+  deleteDriver: (schoolId: SchoolId, callerPassword: text, id: UserId) ->
+   (bool);
+  deleteExamTimetable: (schoolId: SchoolId, callerPassword: text, id: 
+   nat) -> (bool);
+  deleteFeeRecord: (schoolId: SchoolId, callerPassword: text, id: nat) ->
+   (bool);
+  deleteLessonPlan: (schoolId: SchoolId, callerPassword: text, id: nat) ->
+   (bool);
+  deleteMark: (schoolId: SchoolId, callerPassword: text, id: nat) -> (bool);
+  deleteNotice: (schoolId: SchoolId, callerPassword: text, id: nat) -> (bool);
+  deleteRoute: (schoolId: SchoolId, callerPassword: text, id: nat) -> (bool);
+  deleteStudent: (schoolId: SchoolId, callerPassword: text, id: UserId) ->
+   (bool);
+  deleteTeacher: (schoolId: SchoolId, callerPassword: text, id: UserId) ->
+   (bool);
+  exportAllData: (password: text) -> (text) query;
+  getAllBusLocations: (schoolId: SchoolId) -> (vec BusLocation) query;
+  getAllFees: (schoolId: SchoolId) -> (vec FeeRecord) query;
+  getAssignmentsByClass: (schoolId: SchoolId, class: text) ->
+   (vec Assignment) query;
+  getAttendanceByClass: (schoolId: SchoolId, class: text, date: text) ->
+   (vec AttendanceRecord) query;
+  getAttendanceByStudent: (schoolId: SchoolId, studentId: UserId) ->
+   (vec AttendanceRecord) query;
+  getBusLocation: (schoolId: SchoolId, driverId: UserId) ->
+   (opt BusLocation) query;
+  getDiaryByClass: (schoolId: SchoolId, class: text) ->
+   (vec DiaryEntry) query;
+  getDigitalResourcesByClass: (schoolId: SchoolId, class: text) ->
+   (vec DigitalResource) query;
+  getDriver: (schoolId: SchoolId, id: UserId) -> (opt DriverPublic) query;
+  getExamTimetablesByClass: (schoolId: SchoolId, class: text) ->
+   (vec ExamTimetable) query;
+  getFeesByStudent: (schoolId: SchoolId, studentId: UserId) ->
+   (vec FeeRecord) query;
+  getLessonPlansByClass: (schoolId: SchoolId, class: text) ->
+   (vec LessonPlan) query;
+  getMaintenanceLogs: (schoolId: SchoolId, vehicleNo: text) ->
+   (vec MaintenanceLog) query;
+  getMarksByExam: (schoolId: SchoolId, examName: text) ->
+   (vec ExamMark) query;
+  getMarksByStudent: (schoolId: SchoolId, studentId: UserId) ->
+   (vec ExamMark) query;
+  getParentMessagesByStudent: (schoolId: SchoolId, studentId: UserId) ->
+   (vec ParentMessage) query;
+  getPendingFees: (schoolId: SchoolId) -> (vec FeeRecord) query;
+  getPickupLogsByDriver: (schoolId: SchoolId, driverId: UserId) ->
+   (vec PickupLog) query;
+  getRoute: (schoolId: SchoolId, id: nat) -> (opt TransportRoute) query;
+  getSchoolConfig: (schoolId: SchoolId) -> (opt SchoolConfig) query;
+  getStudent: (schoolId: SchoolId, id: UserId) -> (opt StudentPublic) query;
+  getStudentRank: (schoolId: SchoolId, studentId: UserId, examName: text) ->
+   (nat) query;
+  getSubmissionsByAssignment: (schoolId: SchoolId, assignmentId: nat) ->
+   (vec Submission) query;
+  getSubmissionsByStudent: (schoolId: SchoolId, studentId: UserId) ->
+   (vec Submission) query;
+  getSyllabusByClass: (schoolId: SchoolId, class: text) ->
+   (vec Syllabus) query;
+  getTeacher: (schoolId: SchoolId, id: UserId) -> (opt TeacherPublic) query;
+  getTimetable: (schoolId: SchoolId, class: text, section: text) ->
+   (opt Timetable) query;
+  getTotalRevenue: (schoolId: SchoolId) -> (nat) query;
+  listDrivers: (schoolId: SchoolId) -> (vec DriverPublic) query;
+  listEmergencyAlerts: (schoolId: SchoolId) -> (vec EmergencyAlert) query;
+  listInquiries: (schoolId: SchoolId) -> (vec Inquiry) query;
+  listNotices: (schoolId: SchoolId) -> (vec Notice) query;
+  listRoutes: (schoolId: SchoolId) -> (vec TransportRoute) query;
+  listStudents: (schoolId: SchoolId) -> (vec StudentPublic) query;
+  listStudentsByClass: (schoolId: SchoolId, class: text) ->
+   (vec StudentPublic) query;
+  listTeachers: (schoolId: SchoolId) -> (vec TeacherPublic) query;
+  logPickup: (schoolId: SchoolId, driverPassword: text, driverId: UserId,
+   studentId: UserId, action: PickupAction) -> (nat);
+  loginDriver: (driverId: UserId, password: text, schoolId: SchoolId) ->
+   (bool);
+  loginMainController: (password: text) -> (bool);
+  loginPrincipal: (schoolId: SchoolId, password: text) -> (bool);
+  loginStudent: (studentId: UserId, password: text, schoolId: SchoolId) ->
+   (bool);
+  loginTeacher: (email: text, password: text, schoolId: SchoolId) -> (bool);
+  markAttendance: (schoolId: SchoolId, callerPassword: text, studentId:
+   UserId, date: text, status: AttendanceStatus, teacherId: UserId, note:
+   text) -> (nat);
+  markFeePaid: (schoolId: SchoolId, callerPassword: text, id: nat, paidDate:
+   text) -> (bool);
+  markParentMessageRead: (schoolId: SchoolId, id: nat) -> (bool);
+  resetDriverPassword: (schoolId: SchoolId, callerPassword: text, driverId:
+   UserId, newPassword: text) -> (bool);
+  resetTeacherPassword: (schoolId: SchoolId, callerPassword: text, teacherId:
+   UserId, newPassword: text) -> (bool);
+  resolveEmergencyAlert: (schoolId: SchoolId, callerPassword: text, id:
+   nat) -> (bool);
+  sendParentMessage: (schoolId: SchoolId, callerPassword: text, teacherId:
+   UserId, studentId: UserId, message: text) -> (nat);
+  setPrincipalPassword: (schoolId: SchoolId, oldPassword: text, newPassword:
+   text) -> (bool);
+  setSchoolConfig: (callerPassword: text, config: SchoolConfig) -> (bool);
+  setStudentPassword: (schoolId: SchoolId, callerPassword: text, studentId:
+   UserId, newPassword: text) -> (bool);
+  setSyllabus: (schoolId: SchoolId, callerPassword: text, class: text,
+   subject: text, content: text, teacherId: UserId) -> (nat);
+  setTimetable: (schoolId: SchoolId, callerPassword: text, class: text,
+   section: text, periods: vec Period) -> (nat);
+  submitAssignment: (schoolId: SchoolId, studentPassword: text, assignmentId:
+   nat, studentId: UserId, content: text, attachmentUrl: opt text) -> (
+   nat);
+  updateBusLocation: (schoolId: SchoolId, driverPassword: text, driverId:
+   UserId, latitude: float64, longitude: float64) -> (bool);
+  updateDriver: (schoolId: SchoolId, callerPassword: text, driver:
+   DriverPublic) -> (bool);
+  updateExamTimetable: (schoolId: SchoolId, callerPassword: text, timetable:
+   ExamTimetable) -> (bool);
+  updateFeeRecord: (schoolId: SchoolId, callerPassword: text, "record":
+   FeeRecord) -> (bool);
+  updateInquiryStatus: (schoolId: SchoolId, callerPassword: text, id: 
+   nat, status: variant {
+                  closed;
+                  inProgress;
+                  new;
+                }, notes: text) -> (bool);
+  updateLessonPlan: (schoolId: SchoolId, callerPassword: text, plan:
+   LessonPlan) -> (bool);
+  updateMark: (schoolId: SchoolId, callerPassword: text, mark: ExamMark) ->
+   (bool);
+  updateRoute: (schoolId: SchoolId, callerPassword: text, route:
+   TransportRoute) -> (bool);
+  updateStudent: (schoolId: SchoolId, callerPassword: text, student:
+   StudentPublic) -> (bool);
+  updateTeacher: (schoolId: SchoolId, callerPassword: text, teacher:
+   TeacherPublic) -> (bool);
+}

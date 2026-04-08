@@ -49,6 +49,17 @@
     --sidebar-accent-foreground: 0.92 0.02 260;
     --sidebar-border: 0.26 0.05 265;
     --sidebar-ring: 0.5 0.14 260;
+    /* Portal accent colors */
+    --portal-principal: 0.35 0.12 260;
+    --portal-principal-light: 0.92 0.04 260;
+    --portal-teachers: 0.55 0.16 150;
+    --portal-teachers-light: 0.9 0.06 150;
+    --portal-students: 0.58 0.15 130;
+    --portal-students-light: 0.92 0.05 130;
+    --portal-driver: 0.62 0.18 55;
+    --portal-driver-light: 0.94 0.08 55;
+    --portal-controller: 0.48 0.14 280;
+    --portal-controller-light: 0.9 0.05 280;
   }
 
   * {

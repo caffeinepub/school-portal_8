@@ -10,64 +10,499 @@ import type { ActorMethod } from '@icp-sdk/core/agent';
 import type { IDL } from '@icp-sdk/core/candid';
 import type { Principal } from '@icp-sdk/core/principal';
 
-export type FileType = { 'video' : null } |
-  { 'photo' : null };
-export interface MediaItem {
-  'studentId' : bigint,
-  'fileType' : FileType,
-  'timestamp' : string,
-  'caption' : string,
-  'blobReferenceId' : string,
+export interface Assignment {
+  'id' : bigint,
+  'attachmentUrl' : [] | [string],
+  'title' : string,
+  'subject' : string,
+  'class' : string,
+  'createdAt' : Timestamp,
+  'dueDate' : string,
+  'section' : string,
+  'description' : string,
+  'schoolId' : SchoolId,
+  'teacherId' : UserId,
 }
-export interface UserProfile { 'studentId' : [] | [bigint], 'name' : string }
-export type UserRole = { 'admin' : null } |
-  { 'user' : null } |
-  { 'guest' : null };
-export interface _CaffeineStorageCreateCertificateResult {
-  'method' : string,
-  'blob_hash' : string,
+export interface AttendanceRecord {
+  'id' : bigint,
+  'status' : AttendanceStatus,
+  'studentId' : UserId,
+  'date' : string,
+  'note' : string,
+  'markedByTeacherId' : UserId,
+  'schoolId' : SchoolId,
 }
-export interface _CaffeineStorageRefillInformation {
-  'proposed_top_up_amount' : [] | [bigint],
+export type AttendanceStatus = { 'present' : null } |
+  { 'late' : null } |
+  { 'absent' : null };
+export interface BusLocation {
+  'latitude' : number,
+  'driverId' : UserId,
+  'schoolId' : SchoolId,
+  'longitude' : number,
+  'timestamp' : Timestamp,
 }
-export interface _CaffeineStorageRefillResult {
-  'success' : [] | [boolean],
-  'topped_up_amount' : [] | [bigint],
+export interface DiaryEntry {
+  'id' : bigint,
+  'content' : string,
+  'date' : string,
+  'class' : string,
+  'createdAt' : Timestamp,
+  'section' : string,
+  'schoolId' : SchoolId,
+  'teacherId' : UserId,
 }
+export interface DigitalResource {
+  'id' : bigint,
+  'url' : string,
+  'title' : string,
+  'subject' : string,
+  'class' : string,
+  'createdAt' : Timestamp,
+  'type' : { 'pdf' : null } |
+    { 'video' : null } |
+    { 'note' : null },
+  'schoolId' : SchoolId,
+  'uploadedBy' : UserId,
+}
+export interface DriverPublic {
+  'id' : UserId,
+  'name' : string,
+  'schoolId' : SchoolId,
+  'route' : string,
+  'vehicleNo' : string,
+}
+export interface EmergencyAlert {
+  'id' : bigint,
+  'driverId' : UserId,
+  'resolved' : boolean,
+  'schoolId' : SchoolId,
+  'message' : string,
+  'timestamp' : Timestamp,
+  'location' : string,
+}
+export interface ExamMark {
+  'id' : bigint,
+  'studentId' : UserId,
+  'subject' : string,
+  'date' : string,
+  'schoolId' : SchoolId,
+  'teacherId' : UserId,
+  'maxMarks' : bigint,
+  'obtainedMarks' : bigint,
+  'examName' : string,
+}
+export interface ExamSlot {
+  'startTime' : string,
+  'subject' : string,
+  'endTime' : string,
+  'date' : string,
+}
+export interface ExamTimetable {
+  'id' : bigint,
+  'subjects' : Array<ExamSlot>,
+  'class' : string,
+  'createdAt' : Timestamp,
+  'section' : string,
+  'schoolId' : SchoolId,
+  'examName' : string,
+}
+export interface FeeRecord {
+  'id' : bigint,
+  'status' : FeeStatus,
+  'studentId' : UserId,
+  'dueDate' : string,
+  'description' : string,
+  'paidDate' : [] | [string],
+  'schoolId' : SchoolId,
+  'amount' : bigint,
+}
+export type FeeStatus = { 'paid' : null } |
+  { 'unpaid' : null } |
+  { 'partial' : null };
+export interface Inquiry {
+  'id' : bigint,
+  'status' : { 'new' : null } |
+    { 'closed' : null } |
+    { 'inProgress' : null },
+  'studentName' : string,
+  'class' : string,
+  'createdAt' : Timestamp,
+  'email' : string,
+  'schoolId' : SchoolId,
+  'notes' : string,
+  'phone' : string,
+  'parentName' : string,
+}
+export interface LessonPlan {
+  'id' : bigint,
+  'content' : string,
+  'subject' : string,
+  'class' : string,
+  'section' : string,
+  'schoolId' : SchoolId,
+  'teacherId' : UserId,
+  'weekOf' : string,
+}
+export interface MaintenanceLog {
+  'id' : bigint,
+  'driverId' : UserId,
+  'cost' : bigint,
+  'date' : string,
+  'type' : MaintenanceType,
+  'schoolId' : SchoolId,
+  'notes' : string,
+  'vehicleNo' : string,
+}
+export type MaintenanceType = { 'service' : null } |
+  { 'fuel' : null };
+export interface Notice {
+  'id' : bigint,
+  'title' : string,
+  'createdAt' : Timestamp,
+  'createdBy' : UserId,
+  'schoolId' : SchoolId,
+  'message' : string,
+  'targetPortals' : Array<TargetPortal>,
+  'priority' : { 'low' : null } |
+    { 'high' : null } |
+    { 'medium' : null },
+}
+export interface ParentMessage {
+  'id' : bigint,
+  'studentId' : UserId,
+  'read' : boolean,
+  'schoolId' : SchoolId,
+  'message' : string,
+  'teacherId' : UserId,
+  'timestamp' : Timestamp,
+}
+export interface Period {
+  'day' : string,
+  'subject' : string,
+  'teacherName' : string,
+  'timeSlot' : string,
+}
+export type PickupAction = { 'drop' : null } |
+  { 'pickup' : null };
+export interface PickupLog {
+  'id' : bigint,
+  'driverId' : UserId,
+  'action' : PickupAction,
+  'studentId' : UserId,
+  'schoolId' : SchoolId,
+  'timestamp' : Timestamp,
+}
+export interface RouteStop { 'name' : string, 'studentIds' : Array<UserId> }
+export interface SchoolConfig {
+  'subjects' : Array<string>,
+  'classes' : Array<string>,
+  'schoolId' : SchoolId,
+  'sections' : Array<string>,
+  'schoolName' : string,
+}
+export type SchoolId = bigint;
+export interface StudentPublic {
+  'id' : UserId,
+  'class' : string,
+  'name' : string,
+  'section' : string,
+  'schoolId' : SchoolId,
+  'profilePictureUrl' : [] | [string],
+  'rollNo' : bigint,
+  'parentMobile' : string,
+}
+export interface Submission {
+  'id' : bigint,
+  'attachmentUrl' : [] | [string],
+  'status' : SubmissionStatus,
+  'content' : string,
+  'studentId' : UserId,
+  'submittedAt' : Timestamp,
+  'schoolId' : SchoolId,
+  'assignmentId' : bigint,
+}
+export type SubmissionStatus = { 'graded' : null } |
+  { 'submitted' : null } |
+  { 'pending' : null };
+export interface Syllabus {
+  'id' : bigint,
+  'content' : string,
+  'subject' : string,
+  'class' : string,
+  'updatedAt' : Timestamp,
+  'schoolId' : SchoolId,
+  'teacherId' : UserId,
+}
+export type TargetPortal = { 'principal' : null } |
+  { 'teacher' : null } |
+  { 'student' : null } |
+  { 'driver' : null };
+export interface TeacherPublic {
+  'id' : UserId,
+  'subjects' : Array<string>,
+  'name' : string,
+  'assignedClass' : string,
+  'email' : string,
+  'schoolId' : SchoolId,
+}
+export type Timestamp = bigint;
+export interface Timetable {
+  'id' : bigint,
+  'class' : string,
+  'section' : string,
+  'periods' : Array<Period>,
+  'schoolId' : SchoolId,
+}
+export interface TransportRoute {
+  'id' : bigint,
+  'stops' : Array<RouteStop>,
+  'schoolId' : SchoolId,
+  'driverName' : string,
+  'vehicleNo' : string,
+}
+export type UserId = bigint;
 export interface _SERVICE {
-  '_caffeineStorageBlobIsLive' : ActorMethod<[Uint8Array], boolean>,
-  '_caffeineStorageBlobsToDelete' : ActorMethod<[], Array<Uint8Array>>,
-  '_caffeineStorageConfirmBlobDeletion' : ActorMethod<
-    [Array<Uint8Array>],
-    undefined
+  'addDigitalResource' : ActorMethod<
+    [
+      SchoolId,
+      string,
+      string,
+      { 'pdf' : null } |
+        { 'video' : null } |
+        { 'note' : null },
+      string,
+      string,
+      string,
+      UserId,
+    ],
+    bigint
   >,
-  '_caffeineStorageCreateCertificate' : ActorMethod<
-    [string],
-    _CaffeineStorageCreateCertificateResult
+  'addDriver' : ActorMethod<
+    [SchoolId, string, string, string, string, string],
+    UserId
   >,
-  '_caffeineStorageRefillCashier' : ActorMethod<
-    [[] | [_CaffeineStorageRefillInformation]],
-    _CaffeineStorageRefillResult
+  'addFeeRecord' : ActorMethod<
+    [SchoolId, string, UserId, bigint, string, string],
+    bigint
   >,
-  '_caffeineStorageUpdateGatewayPrincipals' : ActorMethod<[], undefined>,
-  '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
-  'addMedia' : ActorMethod<[MediaItem], undefined>,
-  'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
-  'deleteMedia' : ActorMethod<[string], undefined>,
-  'getAllKeys' : ActorMethod<[], Array<string>>,
-  'getAllMedia' : ActorMethod<[], Array<MediaItem>>,
-  'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
-  'getCallerUserRole' : ActorMethod<[], UserRole>,
-  'getData' : ActorMethod<[string], [] | [string]>,
-  'getMedia' : ActorMethod<[string], [] | [MediaItem]>,
-  'getMediaByStudentId' : ActorMethod<[bigint], Array<MediaItem>>,
-  'getMediaByType' : ActorMethod<[bigint, FileType], Array<MediaItem>>,
-  'getStudentMediaCount' : ActorMethod<[bigint], bigint>,
-  'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
-  'isCallerAdmin' : ActorMethod<[], boolean>,
-  'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
-  'setData' : ActorMethod<[string, string], undefined>,
-  'updateCaption' : ActorMethod<[string, string], undefined>,
+  'addMaintenanceLog' : ActorMethod<
+    [SchoolId, string, string, MaintenanceType, string, bigint, string, UserId],
+    bigint
+  >,
+  'addMark' : ActorMethod<
+    [SchoolId, string, UserId, string, string, bigint, bigint, UserId, string],
+    bigint
+  >,
+  'addStudent' : ActorMethod<
+    [SchoolId, string, string, string, string, bigint, string],
+    UserId
+  >,
+  'addTeacher' : ActorMethod<
+    [SchoolId, string, string, string, string, string, Array<string>],
+    UserId
+  >,
+  'autoGenerateStudentPasswords' : ActorMethod<
+    [SchoolId, string],
+    Array<[UserId, string]>
+  >,
+  'changeMainControllerPassword' : ActorMethod<[string, string], boolean>,
+  'createAssignment' : ActorMethod<
+    [
+      SchoolId,
+      string,
+      string,
+      string,
+      string,
+      string,
+      string,
+      string,
+      UserId,
+      [] | [string],
+    ],
+    bigint
+  >,
+  'createDiaryEntry' : ActorMethod<
+    [SchoolId, string, string, string, string, string, UserId],
+    bigint
+  >,
+  'createEmergencyAlert' : ActorMethod<
+    [SchoolId, string, UserId, string, string],
+    bigint
+  >,
+  'createExamTimetable' : ActorMethod<
+    [SchoolId, string, string, string, string, Array<ExamSlot>],
+    bigint
+  >,
+  'createInquiry' : ActorMethod<
+    [SchoolId, string, string, string, string, string],
+    bigint
+  >,
+  'createLessonPlan' : ActorMethod<
+    [SchoolId, string, string, string, string, string, string, UserId],
+    bigint
+  >,
+  'createNotice' : ActorMethod<
+    [
+      SchoolId,
+      string,
+      string,
+      string,
+      Array<TargetPortal>,
+      { 'low' : null } |
+        { 'high' : null } |
+        { 'medium' : null },
+      UserId,
+    ],
+    bigint
+  >,
+  'createRoute' : ActorMethod<
+    [SchoolId, string, string, string, Array<RouteStop>],
+    bigint
+  >,
+  'deleteAssignment' : ActorMethod<[SchoolId, string, bigint], boolean>,
+  'deleteDiaryEntry' : ActorMethod<[SchoolId, string, bigint], boolean>,
+  'deleteDigitalResource' : ActorMethod<[SchoolId, string, bigint], boolean>,
+  'deleteDriver' : ActorMethod<[SchoolId, string, UserId], boolean>,
+  'deleteExamTimetable' : ActorMethod<[SchoolId, string, bigint], boolean>,
+  'deleteFeeRecord' : ActorMethod<[SchoolId, string, bigint], boolean>,
+  'deleteLessonPlan' : ActorMethod<[SchoolId, string, bigint], boolean>,
+  'deleteMark' : ActorMethod<[SchoolId, string, bigint], boolean>,
+  'deleteNotice' : ActorMethod<[SchoolId, string, bigint], boolean>,
+  'deleteRoute' : ActorMethod<[SchoolId, string, bigint], boolean>,
+  'deleteStudent' : ActorMethod<[SchoolId, string, UserId], boolean>,
+  'deleteTeacher' : ActorMethod<[SchoolId, string, UserId], boolean>,
+  'exportAllData' : ActorMethod<[string], string>,
+  'getAllBusLocations' : ActorMethod<[SchoolId], Array<BusLocation>>,
+  'getAllFees' : ActorMethod<[SchoolId], Array<FeeRecord>>,
+  'getAssignmentsByClass' : ActorMethod<[SchoolId, string], Array<Assignment>>,
+  'getAttendanceByClass' : ActorMethod<
+    [SchoolId, string, string],
+    Array<AttendanceRecord>
+  >,
+  'getAttendanceByStudent' : ActorMethod<
+    [SchoolId, UserId],
+    Array<AttendanceRecord>
+  >,
+  'getBusLocation' : ActorMethod<[SchoolId, UserId], [] | [BusLocation]>,
+  'getDiaryByClass' : ActorMethod<[SchoolId, string], Array<DiaryEntry>>,
+  'getDigitalResourcesByClass' : ActorMethod<
+    [SchoolId, string],
+    Array<DigitalResource>
+  >,
+  'getDriver' : ActorMethod<[SchoolId, UserId], [] | [DriverPublic]>,
+  'getExamTimetablesByClass' : ActorMethod<
+    [SchoolId, string],
+    Array<ExamTimetable>
+  >,
+  'getFeesByStudent' : ActorMethod<[SchoolId, UserId], Array<FeeRecord>>,
+  'getLessonPlansByClass' : ActorMethod<[SchoolId, string], Array<LessonPlan>>,
+  'getMaintenanceLogs' : ActorMethod<[SchoolId, string], Array<MaintenanceLog>>,
+  'getMarksByExam' : ActorMethod<[SchoolId, string], Array<ExamMark>>,
+  'getMarksByStudent' : ActorMethod<[SchoolId, UserId], Array<ExamMark>>,
+  'getParentMessagesByStudent' : ActorMethod<
+    [SchoolId, UserId],
+    Array<ParentMessage>
+  >,
+  'getPendingFees' : ActorMethod<[SchoolId], Array<FeeRecord>>,
+  'getPickupLogsByDriver' : ActorMethod<[SchoolId, UserId], Array<PickupLog>>,
+  'getRoute' : ActorMethod<[SchoolId, bigint], [] | [TransportRoute]>,
+  'getSchoolConfig' : ActorMethod<[SchoolId], [] | [SchoolConfig]>,
+  'getStudent' : ActorMethod<[SchoolId, UserId], [] | [StudentPublic]>,
+  'getStudentRank' : ActorMethod<[SchoolId, UserId, string], bigint>,
+  'getSubmissionsByAssignment' : ActorMethod<
+    [SchoolId, bigint],
+    Array<Submission>
+  >,
+  'getSubmissionsByStudent' : ActorMethod<
+    [SchoolId, UserId],
+    Array<Submission>
+  >,
+  'getSyllabusByClass' : ActorMethod<[SchoolId, string], Array<Syllabus>>,
+  'getTeacher' : ActorMethod<[SchoolId, UserId], [] | [TeacherPublic]>,
+  'getTimetable' : ActorMethod<[SchoolId, string, string], [] | [Timetable]>,
+  'getTotalRevenue' : ActorMethod<[SchoolId], bigint>,
+  'listDrivers' : ActorMethod<[SchoolId], Array<DriverPublic>>,
+  'listEmergencyAlerts' : ActorMethod<[SchoolId], Array<EmergencyAlert>>,
+  'listInquiries' : ActorMethod<[SchoolId], Array<Inquiry>>,
+  'listNotices' : ActorMethod<[SchoolId], Array<Notice>>,
+  'listRoutes' : ActorMethod<[SchoolId], Array<TransportRoute>>,
+  'listStudents' : ActorMethod<[SchoolId], Array<StudentPublic>>,
+  'listStudentsByClass' : ActorMethod<[SchoolId, string], Array<StudentPublic>>,
+  'listTeachers' : ActorMethod<[SchoolId], Array<TeacherPublic>>,
+  'logPickup' : ActorMethod<
+    [SchoolId, string, UserId, UserId, PickupAction],
+    bigint
+  >,
+  'loginDriver' : ActorMethod<[UserId, string, SchoolId], boolean>,
+  'loginMainController' : ActorMethod<[string], boolean>,
+  'loginPrincipal' : ActorMethod<[SchoolId, string], boolean>,
+  'loginStudent' : ActorMethod<[UserId, string, SchoolId], boolean>,
+  'loginTeacher' : ActorMethod<[string, string, SchoolId], boolean>,
+  'markAttendance' : ActorMethod<
+    [SchoolId, string, UserId, string, AttendanceStatus, UserId, string],
+    bigint
+  >,
+  'markFeePaid' : ActorMethod<[SchoolId, string, bigint, string], boolean>,
+  'markParentMessageRead' : ActorMethod<[SchoolId, bigint], boolean>,
+  'resetDriverPassword' : ActorMethod<
+    [SchoolId, string, UserId, string],
+    boolean
+  >,
+  'resetTeacherPassword' : ActorMethod<
+    [SchoolId, string, UserId, string],
+    boolean
+  >,
+  'resolveEmergencyAlert' : ActorMethod<[SchoolId, string, bigint], boolean>,
+  'sendParentMessage' : ActorMethod<
+    [SchoolId, string, UserId, UserId, string],
+    bigint
+  >,
+  'setPrincipalPassword' : ActorMethod<[SchoolId, string, string], boolean>,
+  'setSchoolConfig' : ActorMethod<[string, SchoolConfig], boolean>,
+  'setStudentPassword' : ActorMethod<
+    [SchoolId, string, UserId, string],
+    boolean
+  >,
+  'setSyllabus' : ActorMethod<
+    [SchoolId, string, string, string, string, UserId],
+    bigint
+  >,
+  'setTimetable' : ActorMethod<
+    [SchoolId, string, string, string, Array<Period>],
+    bigint
+  >,
+  'submitAssignment' : ActorMethod<
+    [SchoolId, string, bigint, UserId, string, [] | [string]],
+    bigint
+  >,
+  'updateBusLocation' : ActorMethod<
+    [SchoolId, string, UserId, number, number],
+    boolean
+  >,
+  'updateDriver' : ActorMethod<[SchoolId, string, DriverPublic], boolean>,
+  'updateExamTimetable' : ActorMethod<
+    [SchoolId, string, ExamTimetable],
+    boolean
+  >,
+  'updateFeeRecord' : ActorMethod<[SchoolId, string, FeeRecord], boolean>,
+  'updateInquiryStatus' : ActorMethod<
+    [
+      SchoolId,
+      string,
+      bigint,
+      { 'new' : null } |
+        { 'closed' : null } |
+        { 'inProgress' : null },
+      string,
+    ],
+    boolean
+  >,
+  'updateLessonPlan' : ActorMethod<[SchoolId, string, LessonPlan], boolean>,
+  'updateMark' : ActorMethod<[SchoolId, string, ExamMark], boolean>,
+  'updateRoute' : ActorMethod<[SchoolId, string, TransportRoute], boolean>,
+  'updateStudent' : ActorMethod<[SchoolId, string, StudentPublic], boolean>,
+  'updateTeacher' : ActorMethod<[SchoolId, string, TeacherPublic], boolean>,
 }
 export declare const idlService: IDL.ServiceClass;
 export declare const idlInitArgs: IDL.Type[];

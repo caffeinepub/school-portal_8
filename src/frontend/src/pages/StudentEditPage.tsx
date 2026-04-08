@@ -1,4 +1,5 @@
-import { FileType } from "@/backend";
+// FileType enum for ICP backend media type encoding
+const FileType = { photo: "photo" as const, video: "video" as const };
 import {
   AlertDialog,
   AlertDialogAction,

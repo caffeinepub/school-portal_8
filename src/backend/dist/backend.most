@@ -1,0 +1,619 @@
+// Version: 3.0.0
+type Assignment__784644677 =
+  {
+    attachmentUrl : ?Text;
+    class_ : Text;
+    createdAt : Timestamp__758100541;
+    description : Text;
+    dueDate : Text;
+    id : Nat;
+    schoolId : SchoolId__360432075;
+    section : Text;
+    subject : Text;
+    teacherId : UserId__545501520;
+    title : Text
+  };
+type AttendanceRecord__316822366 =
+  {
+    date : Text;
+    id : Nat;
+    markedByTeacherId : UserId__545501520;
+    note : Text;
+    schoolId : SchoolId__360432075;
+    status : AttendanceStatus__74584376;
+    studentId : UserId__545501520
+  };
+type AttendanceStatus__74584376 = {#absent; #late; #present};
+type BusLocation__1054090552 =
+  {
+    driverId : UserId__335840997;
+    latitude : Float;
+    longitude : Float;
+    schoolId : SchoolId__898445937;
+    timestamp : Timestamp__410791544
+  };
+type DiaryEntry__696796303 =
+  {
+    class_ : Text;
+    content : Text;
+    createdAt : Timestamp__572090000;
+    date : Text;
+    id : Nat;
+    schoolId : SchoolId__625501392;
+    section : Text;
+    teacherId : UserId__42494632
+  };
+type DigitalResource__587761865 =
+  {
+    class_ : Text;
+    createdAt : Timestamp__758100541;
+    id : Nat;
+    schoolId : SchoolId__360432075;
+    subject : Text;
+    title : Text;
+    type_ : {#note; #pdf; #video};
+    uploadedBy : UserId__545501520;
+    url : Text
+  };
+type Driver__391230584 =
+  {
+    id : UserId__1043627770;
+    name : Text;
+    password : Text;
+    route : Text;
+    schoolId : SchoolId__581894677;
+    vehicleNo : Text
+  };
+type EmergencyAlert__546755080 =
+  {
+    driverId : UserId__335840997;
+    id : Nat;
+    location : Text;
+    message : Text;
+    resolved : Bool;
+    schoolId : SchoolId__898445937;
+    timestamp : Timestamp__410791544
+  };
+type ExamMark__662571132 =
+  {
+    date : Text;
+    examName : Text;
+    id : Nat;
+    maxMarks : Nat;
+    obtainedMarks : Nat;
+    schoolId : SchoolId__360432075;
+    studentId : UserId__545501520;
+    subject : Text;
+    teacherId : UserId__545501520
+  };
+type ExamSlot__538325247 =
+  {date : Text; endTime : Text; startTime : Text; subject : Text};
+type ExamTimetable__261389186 =
+  {
+    class_ : Text;
+    createdAt : Timestamp__837559627;
+    examName : Text;
+    id : Nat;
+    schoolId : SchoolId__740018272;
+    section : Text;
+    subjects : [ExamSlot__538325247]
+  };
+type FeeRecord__470971371 =
+  {
+    amount : Nat;
+    description : Text;
+    dueDate : Text;
+    id : Nat;
+    paidDate : ?Text;
+    schoolId : SchoolId__450996974;
+    status : FeeStatus__691265901;
+    studentId : UserId__402605910
+  };
+type FeeStatus__691265901 = {#paid; #partial; #unpaid};
+type FileType__258036990 = {#photo; #video};
+type Inquiry__51646785 =
+  {
+    class_ : Text;
+    createdAt : Timestamp__572090000;
+    email : Text;
+    id : Nat;
+    notes : Text;
+    parentName : Text;
+    phone : Text;
+    schoolId : SchoolId__625501392;
+    status : {#closed; #inProgress; #new_};
+    studentName : Text
+  };
+type Int__270357528 = Int__616954475;
+type Int__616954475 = Int;
+type LessonPlan__324667691 =
+  {
+    class_ : Text;
+    content : Text;
+    id : Nat;
+    schoolId : SchoolId__360432075;
+    section : Text;
+    subject : Text;
+    teacherId : UserId__545501520;
+    weekOf : Text
+  };
+type MaintenanceLog__738724502 =
+  {
+    cost : Nat;
+    date : Text;
+    driverId : UserId__335840997;
+    id : Nat;
+    notes : Text;
+    schoolId : SchoolId__898445937;
+    type_ : MaintenanceType__550589167;
+    vehicleNo : Text
+  };
+type MaintenanceType__550589167 = {#fuel; #service};
+type MediaItem__414599954 =
+  {
+    blobReferenceId : Text;
+    caption : Text;
+    fileType : FileType__258036990;
+    studentId : Nat;
+    timestamp : Text
+  };
+type Nat__490723111 = Nat__920180692;
+type Nat__920180692 = Nat;
+type Notice__565132029 =
+  {
+    createdAt : Timestamp__572090000;
+    createdBy : UserId__42494632;
+    id : Nat;
+    message : Text;
+    priority : {#high; #low; #medium};
+    schoolId : SchoolId__625501392;
+    targetPortals : [TargetPortal__158099092];
+    title : Text
+  };
+type OldAccessControlState__841599830 =
+  {
+    var adminAssigned : Bool;
+    userRoles : OldMap__30246564<Principal, UserRole__717262347>
+  };
+type OldData__631653343<K, V> = {var count : Nat; kvs : [var ?(K, V)]};
+type OldInternal__924628788<K, V> =
+  {
+    children : [var ?OldNode__460320417<K, V>];
+    data : OldData__631653343<K, V>
+  };
+type OldLeaf__30383961<K, V> = {data : OldData__631653343<K, V>};
+type OldMap__30246564<K, V> =
+  {var root : OldNode__460320417<K, V>; var size : Nat};
+type OldNode__460320417<K, V> =
+  {#internal : OldInternal__924628788<K, V>; #leaf : OldLeaf__30383961<K, V>};
+type ParentMessage__415727678 =
+  {
+    id : Nat;
+    message : Text;
+    read : Bool;
+    schoolId : SchoolId__625501392;
+    studentId : UserId__42494632;
+    teacherId : UserId__42494632;
+    timestamp : Timestamp__572090000
+  };
+type Period__675315915 =
+  {day : Text; subject : Text; teacherName : Text; timeSlot : Text};
+type PickupAction__880418104 = {#drop; #pickup};
+type PickupLog__234183343 =
+  {
+    action : PickupAction__880418104;
+    driverId : UserId__335840997;
+    id : Nat;
+    schoolId : SchoolId__898445937;
+    studentId : UserId__335840997;
+    timestamp : Timestamp__410791544
+  };
+type PrincipalAccount__565257707 =
+  {
+    email : Text;
+    id : UserId__1043627770;
+    name : Text;
+    password : Text;
+    schoolId : SchoolId__581894677
+  };
+type RouteStop__494804409 = {name : Text; studentIds : [UserId__335840997]};
+type SchoolConfig__567716582 =
+  {
+    classes : [Text];
+    schoolId : SchoolId__740018272;
+    schoolName : Text;
+    sections : [Text];
+    subjects : [Text]
+  };
+type SchoolId__360432075 = SchoolId__906431266;
+type SchoolId__450996974 = SchoolId__906431266;
+type SchoolId__581894677 = SchoolId__906431266;
+type SchoolId__625501392 = SchoolId__906431266;
+type SchoolId__740018272 = SchoolId__906431266;
+type SchoolId__898445937 = SchoolId__906431266;
+type SchoolId__906431266 = Nat;
+type Student__358725642 =
+  {
+    class_ : Text;
+    id : UserId__1043627770;
+    name : Text;
+    parentMobile : Text;
+    password : Text;
+    profilePictureUrl : ?Text;
+    rollNo : Nat;
+    schoolId : SchoolId__581894677;
+    section : Text
+  };
+type SubmissionStatus__407097793 = {#graded; #pending; #submitted};
+type Submission__873294075 =
+  {
+    assignmentId : Nat;
+    attachmentUrl : ?Text;
+    content : Text;
+    id : Nat;
+    schoolId : SchoolId__360432075;
+    status : SubmissionStatus__407097793;
+    studentId : UserId__545501520;
+    submittedAt : Timestamp__758100541
+  };
+type Syllabus__56120153 =
+  {
+    class_ : Text;
+    content : Text;
+    id : Nat;
+    schoolId : SchoolId__360432075;
+    subject : Text;
+    teacherId : UserId__545501520;
+    updatedAt : Timestamp__758100541
+  };
+type TargetPortal__158099092 = {#driver; #principal; #student; #teacher};
+type Teacher__914648471 =
+  {
+    assignedClass : Text;
+    email : Text;
+    id : UserId__1043627770;
+    name : Text;
+    password : Text;
+    schoolId : SchoolId__581894677;
+    subjects : [Text]
+  };
+type Time__796480547 = Int__270357528;
+type Time__900049286 = Time__796480547;
+type Timestamp__301639476 = Time__900049286;
+type Timestamp__410791544 = Timestamp__301639476;
+type Timestamp__572090000 = Timestamp__301639476;
+type Timestamp__758100541 = Timestamp__301639476;
+type Timestamp__837559627 = Timestamp__301639476;
+type Timetable__209577744 =
+  {
+    class_ : Text;
+    id : Nat;
+    periods : [Period__675315915];
+    schoolId : SchoolId__360432075;
+    section : Text
+  };
+type TransportRoute__650781819 =
+  {
+    driverName : Text;
+    id : Nat;
+    schoolId : SchoolId__898445937;
+    stops : [RouteStop__494804409];
+    vehicleNo : Text
+  };
+type UserId__1043627770 = UserId__158757552;
+type UserId__158757552 = Nat;
+type UserId__335840997 = UserId__158757552;
+type UserId__402605910 = UserId__158757552;
+type UserId__42494632 = UserId__158757552;
+type UserId__545501520 = UserId__158757552;
+type UserProfile__315128327 = {name : Text; studentId : ?Nat};
+type UserRole__717262347 = {#admin; #guest; #user};
+actor ({
+  in accessControlState : OldAccessControlState__841599830;
+  stable assignments :
+    {
+      var blockIndex : Nat__490723111;
+      var blocks : [var [var ?Assignment__784644677]];
+      var elementIndex : Nat__490723111
+    };
+  stable attendanceRecords :
+    {
+      var blockIndex : Nat__490723111;
+      var blocks : [var [var ?AttendanceRecord__316822366]];
+      var elementIndex : Nat__490723111
+    };
+  stable busLocations :
+    {
+      var blockIndex : Nat__490723111;
+      var blocks : [var [var ?BusLocation__1054090552]];
+      var elementIndex : Nat__490723111
+    };
+  stable diaryEntries :
+    {
+      var blockIndex : Nat__490723111;
+      var blocks : [var [var ?DiaryEntry__696796303]];
+      var elementIndex : Nat__490723111
+    };
+  stable digitalResources :
+    {
+      var blockIndex : Nat__490723111;
+      var blocks : [var [var ?DigitalResource__587761865]];
+      var elementIndex : Nat__490723111
+    };
+  stable drivers :
+    {
+      var blockIndex : Nat__490723111;
+      var blocks : [var [var ?Driver__391230584]];
+      var elementIndex : Nat__490723111
+    };
+  stable emergencyAlerts :
+    {
+      var blockIndex : Nat__490723111;
+      var blocks : [var [var ?EmergencyAlert__546755080]];
+      var elementIndex : Nat__490723111
+    };
+  stable examMarks :
+    {
+      var blockIndex : Nat__490723111;
+      var blocks : [var [var ?ExamMark__662571132]];
+      var elementIndex : Nat__490723111
+    };
+  stable examTimetables :
+    {
+      var blockIndex : Nat__490723111;
+      var blocks : [var [var ?ExamTimetable__261389186]];
+      var elementIndex : Nat__490723111
+    };
+  stable feeRecords :
+    {
+      var blockIndex : Nat__490723111;
+      var blocks : [var [var ?FeeRecord__470971371]];
+      var elementIndex : Nat__490723111
+    };
+  stable inquiries :
+    {
+      var blockIndex : Nat__490723111;
+      var blocks : [var [var ?Inquiry__51646785]];
+      var elementIndex : Nat__490723111
+    };
+  stable lessonPlans :
+    {
+      var blockIndex : Nat__490723111;
+      var blocks : [var [var ?LessonPlan__324667691]];
+      var elementIndex : Nat__490723111
+    };
+  stable var mainControllerPasswordHash : {var value : Text};
+  stable maintenanceLogs :
+    {
+      var blockIndex : Nat__490723111;
+      var blocks : [var [var ?MaintenanceLog__738724502]];
+      var elementIndex : Nat__490723111
+    };
+  in mediaStore : OldMap__30246564<Text, MediaItem__414599954>;
+  stable var nextAcademicId : {var value : Nat};
+  stable var nextCommId : {var value : Nat};
+  stable var nextFinanceId : {var value : Nat};
+  stable var nextSysId : {var value : Nat};
+  stable var nextTransportId : {var value : Nat};
+  stable var nextUserId : {var value : Nat};
+  stable notices :
+    {
+      var blockIndex : Nat__490723111;
+      var blocks : [var [var ?Notice__565132029]];
+      var elementIndex : Nat__490723111
+    };
+  stable parentMessages :
+    {
+      var blockIndex : Nat__490723111;
+      var blocks : [var [var ?ParentMessage__415727678]];
+      var elementIndex : Nat__490723111
+    };
+  stable pickupLogs :
+    {
+      var blockIndex : Nat__490723111;
+      var blocks : [var [var ?PickupLog__234183343]];
+      var elementIndex : Nat__490723111
+    };
+  stable principals :
+    {
+      var blockIndex : Nat__490723111;
+      var blocks : [var [var ?PrincipalAccount__565257707]];
+      var elementIndex : Nat__490723111
+    };
+  stable routes :
+    {
+      var blockIndex : Nat__490723111;
+      var blocks : [var [var ?TransportRoute__650781819]];
+      var elementIndex : Nat__490723111
+    };
+  stable schoolConfigs :
+    {
+      var blockIndex : Nat__490723111;
+      var blocks : [var [var ?SchoolConfig__567716582]];
+      var elementIndex : Nat__490723111
+    };
+  in storedData : OldMap__30246564<Text, Text>;
+  stable students :
+    {
+      var blockIndex : Nat__490723111;
+      var blocks : [var [var ?Student__358725642]];
+      var elementIndex : Nat__490723111
+    };
+  stable submissions :
+    {
+      var blockIndex : Nat__490723111;
+      var blocks : [var [var ?Submission__873294075]];
+      var elementIndex : Nat__490723111
+    };
+  stable syllabi :
+    {
+      var blockIndex : Nat__490723111;
+      var blocks : [var [var ?Syllabus__56120153]];
+      var elementIndex : Nat__490723111
+    };
+  stable teachers :
+    {
+      var blockIndex : Nat__490723111;
+      var blocks : [var [var ?Teacher__914648471]];
+      var elementIndex : Nat__490723111
+    };
+  stable timetables :
+    {
+      var blockIndex : Nat__490723111;
+      var blocks : [var [var ?Timetable__209577744]];
+      var elementIndex : Nat__490723111
+    };
+  in userProfiles : OldMap__30246564<Principal, UserProfile__315128327>
+}, {
+  stable assignments :
+    {
+      var blockIndex : Nat__490723111;
+      var blocks : [var [var ?Assignment__784644677]];
+      var elementIndex : Nat__490723111
+    };
+  stable attendanceRecords :
+    {
+      var blockIndex : Nat__490723111;
+      var blocks : [var [var ?AttendanceRecord__316822366]];
+      var elementIndex : Nat__490723111
+    };
+  stable busLocations :
+    {
+      var blockIndex : Nat__490723111;
+      var blocks : [var [var ?BusLocation__1054090552]];
+      var elementIndex : Nat__490723111
+    };
+  stable diaryEntries :
+    {
+      var blockIndex : Nat__490723111;
+      var blocks : [var [var ?DiaryEntry__696796303]];
+      var elementIndex : Nat__490723111
+    };
+  stable digitalResources :
+    {
+      var blockIndex : Nat__490723111;
+      var blocks : [var [var ?DigitalResource__587761865]];
+      var elementIndex : Nat__490723111
+    };
+  stable drivers :
+    {
+      var blockIndex : Nat__490723111;
+      var blocks : [var [var ?Driver__391230584]];
+      var elementIndex : Nat__490723111
+    };
+  stable emergencyAlerts :
+    {
+      var blockIndex : Nat__490723111;
+      var blocks : [var [var ?EmergencyAlert__546755080]];
+      var elementIndex : Nat__490723111
+    };
+  stable examMarks :
+    {
+      var blockIndex : Nat__490723111;
+      var blocks : [var [var ?ExamMark__662571132]];
+      var elementIndex : Nat__490723111
+    };
+  stable examTimetables :
+    {
+      var blockIndex : Nat__490723111;
+      var blocks : [var [var ?ExamTimetable__261389186]];
+      var elementIndex : Nat__490723111
+    };
+  stable feeRecords :
+    {
+      var blockIndex : Nat__490723111;
+      var blocks : [var [var ?FeeRecord__470971371]];
+      var elementIndex : Nat__490723111
+    };
+  stable inquiries :
+    {
+      var blockIndex : Nat__490723111;
+      var blocks : [var [var ?Inquiry__51646785]];
+      var elementIndex : Nat__490723111
+    };
+  stable lessonPlans :
+    {
+      var blockIndex : Nat__490723111;
+      var blocks : [var [var ?LessonPlan__324667691]];
+      var elementIndex : Nat__490723111
+    };
+  stable var mainControllerPasswordHash : {var value : Text};
+  stable maintenanceLogs :
+    {
+      var blockIndex : Nat__490723111;
+      var blocks : [var [var ?MaintenanceLog__738724502]];
+      var elementIndex : Nat__490723111
+    };
+  stable var nextAcademicId : {var value : Nat};
+  stable var nextCommId : {var value : Nat};
+  stable var nextFinanceId : {var value : Nat};
+  stable var nextSysId : {var value : Nat};
+  stable var nextTransportId : {var value : Nat};
+  stable var nextUserId : {var value : Nat};
+  stable notices :
+    {
+      var blockIndex : Nat__490723111;
+      var blocks : [var [var ?Notice__565132029]];
+      var elementIndex : Nat__490723111
+    };
+  stable parentMessages :
+    {
+      var blockIndex : Nat__490723111;
+      var blocks : [var [var ?ParentMessage__415727678]];
+      var elementIndex : Nat__490723111
+    };
+  stable pickupLogs :
+    {
+      var blockIndex : Nat__490723111;
+      var blocks : [var [var ?PickupLog__234183343]];
+      var elementIndex : Nat__490723111
+    };
+  stable principals :
+    {
+      var blockIndex : Nat__490723111;
+      var blocks : [var [var ?PrincipalAccount__565257707]];
+      var elementIndex : Nat__490723111
+    };
+  stable routes :
+    {
+      var blockIndex : Nat__490723111;
+      var blocks : [var [var ?TransportRoute__650781819]];
+      var elementIndex : Nat__490723111
+    };
+  stable schoolConfigs :
+    {
+      var blockIndex : Nat__490723111;
+      var blocks : [var [var ?SchoolConfig__567716582]];
+      var elementIndex : Nat__490723111
+    };
+  stable students :
+    {
+      var blockIndex : Nat__490723111;
+      var blocks : [var [var ?Student__358725642]];
+      var elementIndex : Nat__490723111
+    };
+  stable submissions :
+    {
+      var blockIndex : Nat__490723111;
+      var blocks : [var [var ?Submission__873294075]];
+      var elementIndex : Nat__490723111
+    };
+  stable syllabi :
+    {
+      var blockIndex : Nat__490723111;
+      var blocks : [var [var ?Syllabus__56120153]];
+      var elementIndex : Nat__490723111
+    };
+  stable teachers :
+    {
+      var blockIndex : Nat__490723111;
+      var blocks : [var [var ?Teacher__914648471]];
+      var elementIndex : Nat__490723111
+    };
+  stable timetables :
+    {
+      var blockIndex : Nat__490723111;
+      var blocks : [var [var ?Timetable__209577744]];
+      var elementIndex : Nat__490723111
+    }
+}) ;

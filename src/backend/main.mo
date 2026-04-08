@@ -1,140 +1,84 @@
-import Map "mo:core/Map";
-import Text "mo:core/Text";
 import List "mo:core/List";
-import Principal "mo:core/Principal";
-import Runtime "mo:core/Runtime";
-import Iter "mo:core/Iter";
-import Int "mo:core/Int";
-import MixinStorage "blob-storage/Mixin";
-import MixinAuthorization "authorization/MixinAuthorization";
-import AccessControl "authorization/access-control";
 
-import Set "mo:core/Set";
+import UserTypes "types/users";
+import AcademicTypes "types/academics";
+import FinanceTypes "types/finance";
+import TransportTypes "types/transport";
+import CommTypes "types/communication";
+import SysTypes "types/system_";
 
+import MixinUsers "mixins/users-api";
+import MixinAcademics "mixins/academics-api";
+import MixinFinance "mixins/finance-api";
+import MixinTransport "mixins/transport-api";
+import MixinCommunication "mixins/communication-api";
+import MixinSystem "mixins/system-api";
 
+import Migration "migration";
+
+(with migration = Migration.run)
 actor {
-  type MediaItem = {
-    studentId : Nat;
-    blobReferenceId : Text;
-    fileType : FileType;
-    caption : Text;
-    timestamp : Text;
-  };
 
-  type FileType = {
-    #photo;
-    #video;
-  };
+  // --- Shared counters ---
+  var nextUserId : { var value : Nat } = { var value = 1 };
+  var nextAcademicId : { var value : Nat } = { var value = 1 };
+  var nextFinanceId : { var value : Nat } = { var value = 1 };
+  var nextTransportId : { var value : Nat } = { var value = 1 };
+  var nextCommId : { var value : Nat } = { var value = 1 };
+  var nextSysId : { var value : Nat } = { var value = 1 };
 
-  public type UserProfile = {
-    name : Text;
-    studentId : ?Nat;
-  };
+  // --- Main Controller ---
+  var mainControllerPasswordHash : { var value : Text } = { var value = "Admin@Lords2026" };
 
-  let accessControlState = AccessControl.initState();
-  include MixinAuthorization(accessControlState);
-  include MixinStorage();
+  // --- Users state ---
+  let teachers = List.empty<UserTypes.Teacher>();
+  let students = List.empty<UserTypes.Student>();
+  let drivers = List.empty<UserTypes.Driver>();
 
-  let mediaStore = Map.empty<Text, MediaItem>();
-  let userProfiles = Map.empty<Principal, UserProfile>();
-  let storedData = Map.empty<Text, Text>();
+  // Pre-seed 5 principal accounts
+  let principals : List.List<UserTypes.PrincipalAccount> = List.fromArray([
+    { id = 1; name = "Lords School Alwar/Chikani"; password = "Lordsalwar@2026"; schoolId = 1; email = "alwar@lords.edu" },
+    { id = 2; name = "Lords School Churu";         password = "Lordschuru@2026"; schoolId = 2; email = "churu@lords.edu" },
+    { id = 3; name = "Lords School Sadulpur";      password = "Lordssadulpur@2026"; schoolId = 3; email = "sadulpur@lords.edu" },
+    { id = 4; name = "Lords School Principal 4";   password = "Lords4@2026"; schoolId = 4; email = "p4@lords.edu" },
+    { id = 5; name = "Lords School Principal 5";   password = "Lords5@2026"; schoolId = 5; email = "p5@lords.edu" },
+  ]);
 
-  // Dynamic data manager functions (admin or user)
-  public shared ({ caller }) func setData(key : Text, value : Text) : async () {
-    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
-      Runtime.trap("Unauthorized: Only authenticated users can set data");
-    };
-    storedData.add(key, value);
-  };
+  // --- Academics state ---
+  let attendanceRecords = List.empty<AcademicTypes.AttendanceRecord>();
+  let examMarks = List.empty<AcademicTypes.ExamMark>();
+  let lessonPlans = List.empty<AcademicTypes.LessonPlan>();
+  let assignments = List.empty<AcademicTypes.Assignment>();
+  let submissions = List.empty<AcademicTypes.Submission>();
+  let syllabi = List.empty<AcademicTypes.Syllabus>();
+  let timetables = List.empty<AcademicTypes.Timetable>();
+  let digitalResources = List.empty<AcademicTypes.DigitalResource>();
 
-  public query func getData(key : Text) : async ?Text {
-    storedData.get(key);
-  };
+  // --- Finance state ---
+  let feeRecords = List.empty<FinanceTypes.FeeRecord>();
 
-  public query func getAllKeys() : async [Text] {
-    storedData.keys().toArray();
-  };
+  // --- Transport state ---
+  let routes = List.empty<TransportTypes.TransportRoute>();
+  let busLocations = List.empty<TransportTypes.BusLocation>();
+  let pickupLogs = List.empty<TransportTypes.PickupLog>();
+  let emergencyAlerts = List.empty<TransportTypes.EmergencyAlert>();
+  let maintenanceLogs = List.empty<TransportTypes.MaintenanceLog>();
 
-  // User profile management functions
-  public query ({ caller }) func getCallerUserProfile() : async ?UserProfile {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can access profiles");
-    };
-    userProfiles.get(caller);
-  };
+  // --- Communication state ---
+  let notices = List.empty<CommTypes.Notice>();
+  let parentMessages = List.empty<CommTypes.ParentMessage>();
+  let inquiries = List.empty<CommTypes.Inquiry>();
+  let diaryEntries = List.empty<CommTypes.DiaryEntry>();
 
-  public query ({ caller }) func getUserProfile(user : Principal) : async ?UserProfile {
-    if (caller != user and not AccessControl.isAdmin(accessControlState, caller)) {
-      Runtime.trap("Unauthorized: Can only view your own profile");
-    };
-    userProfiles.get(user);
-  };
+  // --- System state ---
+  let schoolConfigs = List.empty<SysTypes.SchoolConfig>();
+  let examTimetables = List.empty<SysTypes.ExamTimetable>();
 
-  public shared ({ caller }) func saveCallerUserProfile(profile : UserProfile) : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can save profiles");
-    };
-    userProfiles.add(caller, profile);
-  };
-
-  // Media management functions - Admin only
-  public shared ({ caller }) func addMedia(media : MediaItem) : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only admins can add media");
-    };
-    mediaStore.add(media.blobReferenceId, media);
-  };
-
-  public shared ({ caller }) func updateCaption(blobReferenceId : Text, newCaption : Text) : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only admins can update media captions");
-    };
-    switch (mediaStore.get(blobReferenceId)) {
-      case (null) { Runtime.trap("Media not found") };
-      case (?media) {
-        let updatedMedia = { media with caption = newCaption };
-        mediaStore.add(blobReferenceId, updatedMedia);
-      };
-    };
-  };
-
-  public shared ({ caller }) func deleteMedia(blobReferenceId : Text) : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only admins can delete media");
-    };
-    ignore mediaStore.remove(blobReferenceId);
-  };
-
-  // Query functions - Accessible to students, parents, and guests (no authorization check)
-  public query ({ caller }) func getMediaByStudentId(studentId : Nat) : async [MediaItem] {
-    mediaStore.values().toArray().filter(
-      func(media) {
-        media.studentId == studentId;
-      }
-    );
-  };
-
-  public query ({ caller }) func getAllMedia() : async [MediaItem] {
-    mediaStore.values().toArray();
-  };
-
-  public query ({ caller }) func getMedia(blobReferenceId : Text) : async ?MediaItem {
-    mediaStore.get(blobReferenceId);
-  };
-
-  public query ({ caller }) func getMediaByType(studentId : Nat, fileType : FileType) : async [MediaItem] {
-    mediaStore.values().toArray().filter(
-      func(media) {
-        media.studentId == studentId and media.fileType == fileType;
-      }
-    );
-  };
-
-  public query ({ caller }) func getStudentMediaCount(studentId : Nat) : async Nat {
-    mediaStore.values().toArray().filter(
-      func(media) {
-        media.studentId == studentId;
-      }
-    ).size();
-  };
+  // --- Mixin inclusions ---
+  include MixinUsers(teachers, students, drivers, principals, nextUserId);
+  include MixinAcademics(attendanceRecords, examMarks, lessonPlans, assignments, submissions, syllabi, timetables, digitalResources, nextAcademicId, principals, students);
+  include MixinFinance(feeRecords, nextFinanceId, principals);
+  include MixinTransport(routes, busLocations, pickupLogs, emergencyAlerts, maintenanceLogs, nextTransportId, principals, drivers);
+  include MixinCommunication(notices, parentMessages, inquiries, diaryEntries, nextCommId, principals);
+  include MixinSystem(schoolConfigs, examTimetables, nextSysId, mainControllerPasswordHash, principals, teachers, students, drivers);
 };

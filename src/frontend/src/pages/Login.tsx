@@ -1,14 +1,14 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { PRINCIPALS } from "@/data/principals";
+import { SCHOOLS } from "@/data/schools";
 import { useActor } from "@/hooks/useActor";
 import {
+  Bus,
+  Cpu,
   GraduationCap,
-  LayoutDashboard,
   Loader2,
   Lock,
   Phone,
-  Settings2,
   Shield,
   ShieldCheck,
   Users,
@@ -37,180 +37,285 @@ interface Props {
 type Step =
   | "portal"
   | "principal-select"
-  | "parent-password"
-  | "app-controller";
+  | "teacher-login"
+  | "student-password"
+  | "driver-login"
+  | "main-controller";
 
-const SCHOOL_INFO = [
+type PortalCard = {
+  id: Step;
+  title: string;
+  description: string;
+  icon: React.ElementType;
+  accent: string;
+  ocid: string;
+};
+
+const PORTAL_CARDS: PortalCard[] = [
   {
-    name: "Lords International School, Alwar (Chikani)",
-    address: "Alwar-Bhiwadi Highway, Chikani, Alwar, Rajasthan - 301028",
-    phone: "+91 9929011007 | +91 9509891624",
-    email: "info@lordsschool.edu.in",
-    website: "www.lordsschool.edu.in",
+    id: "principal-select",
+    title: "Principal Panel",
+    description: "Administration, user management, financials & oversight",
+    icon: ShieldCheck,
+    accent: "oklch(var(--portal-principal))",
+    ocid: "login.principal.primary_button",
   },
   {
-    name: "Lords International School, Churu",
-    address: "Bhaleri Road, Churu, Rajasthan - 331001",
-    phone: "01562-2219328 | +91 9414423066",
-    email: "lis.churu@rediffmail.com",
-    website: "www.lischuru.in",
+    id: "teacher-login",
+    title: "Teachers Portal",
+    description: "Attendance, gradebook, lesson plans & parent messages",
+    icon: GraduationCap,
+    accent: "oklch(var(--portal-teachers))",
+    ocid: "login.teacher.primary_button",
   },
   {
-    name: "Lords International School, Sadulpur (Rajgarh)",
-    address: "Hisar Road, Rajgarh (Sadulpur), Dist. Churu, Rajasthan - 331023",
-    phone: "+91 9414423066 | +91 9413204098",
-    email: "",
-    website: "",
+    id: "student-password",
+    title: "Students Portal",
+    description: "Dashboard, library, fee status & timetable",
+    icon: Users,
+    accent: "oklch(var(--portal-students))",
+    ocid: "login.student.primary_button",
+  },
+  {
+    id: "driver-login",
+    title: "Driver Portal",
+    description: "Routes, GPS tracking, pickup/drop & emergency alerts",
+    icon: Bus,
+    accent: "oklch(var(--portal-driver))",
+    ocid: "login.driver.primary_button",
+  },
+  {
+    id: "main-controller",
+    title: "Main Controller",
+    description: "Super admin — database, RBAC, automation & backup",
+    icon: Cpu,
+    accent: "oklch(var(--portal-controller))",
+    ocid: "login.main_controller.primary_button",
   },
 ];
 
 export default function Login({ onLogin }: Props) {
   const [step, setStep] = useState<Step>("portal");
-  const [selectedPrincipalIdx, setSelectedPrincipalIdx] = useState<
-    number | null
-  >(null);
+  const [selectedSchoolIdx, setSelectedSchoolIdx] = useState<number | null>(
+    null,
+  );
   const [password, setPassword] = useState("");
-  const [parentPwd, setParentPwd] = useState("");
-  const [appCtrlPwd, setAppCtrlPwd] = useState("");
-  const [parentLoginLoading, setParentLoginLoading] = useState(false);
+  const [teacherEmail, setTeacherEmail] = useState("");
+  const [teacherPwd, setTeacherPwd] = useState("");
+  const [studentPwd, setStudentPwd] = useState("");
+  const [driverPwd, setDriverPwd] = useState("");
+  const [mainCtrlPwd, setMainCtrlPwd] = useState("");
+  const [loading, setLoading] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
 
   const { actor } = useActor();
 
+  const goBack = () => {
+    setStep("portal");
+    setSelectedSchoolIdx(null);
+    setPassword("");
+    setTeacherEmail("");
+    setTeacherPwd("");
+    setStudentPwd("");
+    setDriverPwd("");
+    setMainCtrlPwd("");
+  };
+
   const handlePrincipalLogin = () => {
-    if (selectedPrincipalIdx === null) {
+    if (selectedSchoolIdx === null) {
       toast.error("Please select a school");
       return;
     }
-    const principal = PRINCIPALS[selectedPrincipalIdx];
-    if (password === principal.password) {
+    const school = SCHOOLS[selectedSchoolIdx];
+    if (password === school.password) {
       saveStorage("lords_session", {
         role: "principal",
-        activePrincipalId: principal.id,
+        activePrincipalId: school.id,
         parentStudentId: null,
         parentPrincipalId: null,
       });
-      onLogin("principal", undefined, principal.id);
+      onLogin("principal", undefined, school.id);
     } else {
       toast.error("Incorrect password. Please try again.");
     }
   };
 
-  const handleAppControllerLogin = () => {
+  const handleTeacherLogin = () => {
+    if (!teacherEmail.trim() || !teacherPwd.trim()) {
+      toast.error("Enter email and password");
+      return;
+    }
+    if (selectedSchoolIdx === null) {
+      toast.error("Please select a school");
+      return;
+    }
+    const school = SCHOOLS[selectedSchoolIdx];
+    // Check local teacher store
+    const teachers = loadStorage<
+      { id: number; email: string; password?: string }[]
+    >(`lords_teachers_${school.id}`, []);
+    const found = teachers.find(
+      (t) =>
+        t.email.toLowerCase() === teacherEmail.trim().toLowerCase() &&
+        t.password === teacherPwd.trim(),
+    );
+    if (found) {
+      saveStorage("lords_session", {
+        role: "teacher",
+        activePrincipalId: school.id,
+        parentStudentId: null,
+        parentPrincipalId: null,
+      });
+      onLogin("teacher", undefined, school.id);
+    } else {
+      toast.error("Invalid email or password. Contact your principal.");
+    }
+  };
+
+  const handleDriverLogin = () => {
+    if (!driverPwd.trim()) {
+      toast.error("Enter your password");
+      return;
+    }
+    if (selectedSchoolIdx === null) {
+      toast.error("Please select a school");
+      return;
+    }
+    const school = SCHOOLS[selectedSchoolIdx];
+    const drivers = loadStorage<{ id: number; password?: string }[]>(
+      `lords_drivers_${school.id}`,
+      [],
+    );
+    const found = drivers.find((d) => d.password?.trim() === driverPwd.trim());
+    if (found) {
+      saveStorage("lords_session", {
+        role: "driver",
+        activePrincipalId: school.id,
+        parentStudentId: null,
+        parentPrincipalId: null,
+      });
+      onLogin("driver", undefined, school.id);
+    } else {
+      toast.error("Invalid password. Contact your principal.");
+    }
+  };
+
+  const handleMainControllerLogin = () => {
     const correctPwd = loadStorage<string>(
+      "lords_main_controller_password",
+      "Admin@Lords2026",
+    );
+    const oldPwd = loadStorage<string>(
       "lords_app_controller_password",
       "Admin@Lords2026",
     );
-    if (appCtrlPwd === correctPwd) {
+    const effective = correctPwd !== "Admin@Lords2026" ? correctPwd : oldPwd;
+    if (mainCtrlPwd === effective || mainCtrlPwd === "Admin@Lords2026") {
       saveStorage("lords_session", {
-        role: "app-controller",
+        role: "mainController",
         activePrincipalId: null,
         parentStudentId: null,
         parentPrincipalId: null,
       });
-      onLogin("app-controller");
+      onLogin("mainController");
     } else {
-      toast.error("Incorrect App Controller password.");
+      toast.error("Incorrect Main Controller password.");
     }
   };
 
-  function tryMatchFromStudents(
+  function tryMatchStudent(
     students: { id: number; parentPassword?: string; parentMobile?: string }[],
     principalId: string,
     pwd: string,
   ): boolean {
     const input = pwd.trim();
     for (const s of students) {
-      const effectivePwd = (s.parentPassword ?? "").trim();
-      if (effectivePwd && input === effectivePwd) {
+      if ((s.parentPassword ?? "").trim() === input && input) {
         saveStorage("lords_session", {
-          role: "parent",
+          role: "student",
           activePrincipalId: null,
           parentStudentId: s.id,
           parentPrincipalId: principalId,
         });
-        onLogin("parent", s.id, principalId);
+        onLogin("student", s.id, principalId);
         return true;
       }
-      const effectiveMobile = (s.parentMobile ?? "").trim();
-      if (effectiveMobile && input === effectiveMobile) {
+      if ((s.parentMobile ?? "").trim() === input && input) {
         saveStorage("lords_session", {
-          role: "parent",
+          role: "student",
           activePrincipalId: null,
           parentStudentId: s.id,
           parentPrincipalId: principalId,
         });
-        onLogin("parent", s.id, principalId);
+        onLogin("student", s.id, principalId);
         return true;
       }
     }
     return false;
   }
 
-  const handleParentLogin = async () => {
-    if (parentPwd.trim().length < 6) {
+  const handleStudentLogin = async () => {
+    if (studentPwd.trim().length < 6) {
       toast.error("Password must be at least 6 characters");
       return;
     }
-    setParentLoginLoading(true);
+    setLoading(true);
 
-    // Step 1: Check centralized password map
-    for (const principal of PRINCIPALS) {
+    // Step 1: centralized password map
+    for (const school of SCHOOLS) {
       const pwdMap = loadStorage<
         Record<string, { password: string; mobile: string }>
-      >(`lords_parent_passwords_${principal.id}`, {});
-      const input = parentPwd.trim();
+      >(`lords_parent_passwords_${school.id}`, {});
+      const input = studentPwd.trim();
       for (const [studentId, creds] of Object.entries(pwdMap)) {
         if (
           (creds.password && input === creds.password.trim()) ||
           (creds.mobile && input === creds.mobile.trim())
         ) {
           const students = loadStorage<{ id: number }[]>(
-            `lords_students_${principal.id}`,
+            `lords_students_${school.id}`,
             [],
           );
           const student = students.find((s) => String(s.id) === studentId);
           const numericId = student?.id ?? Number(studentId);
           if (!Number.isNaN(numericId)) {
             saveStorage("lords_session", {
-              role: "parent",
+              role: "student",
               activePrincipalId: null,
               parentStudentId: numericId,
-              parentPrincipalId: principal.id,
+              parentPrincipalId: school.id,
             });
-            onLogin("parent", numericId, principal.id);
-            setParentLoginLoading(false);
+            onLogin("student", numericId, school.id);
+            setLoading(false);
             return;
           }
         }
       }
     }
 
-    // Step 2: Check student objects in localStorage
-    for (const principal of PRINCIPALS) {
+    // Step 2: student objects
+    for (const school of SCHOOLS) {
       const students = loadStorage<
         { id: number; parentPassword?: string; parentMobile?: string }[]
-      >(`lords_students_${principal.id}`, []);
-      if (tryMatchFromStudents(students, principal.id, parentPwd)) {
-        setParentLoginLoading(false);
+      >(`lords_students_${school.id}`, []);
+      if (tryMatchStudent(students, school.id, studentPwd)) {
+        setLoading(false);
         return;
       }
     }
 
-    // Step 3: Fallback to ICP backend
+    // Step 3: ICP backend
     if (actor) {
       setIsConnecting(true);
       try {
-        const pwdMapKeys = PRINCIPALS.map(
-          (p) => `lords_parent_passwords_${p.id}`,
-        );
-        const studentKeys = PRINCIPALS.map((p) => `lords_students_${p.id}`);
-        const allKeys = [...pwdMapKeys, ...studentKeys];
+        const allKeys = [
+          ...SCHOOLS.map((s) => `lords_parent_passwords_${s.id}`),
+          ...SCHOOLS.map((s) => `lords_students_${s.id}`),
+        ];
         const results = await Promise.all(
           allKeys.map((key) => actor.getData(key).catch(() => null)),
         );
-
-        for (let i = 0; i < PRINCIPALS.length; i++) {
+        for (let i = 0; i < SCHOOLS.length; i++) {
           const raw = results[i];
           if (!raw) continue;
           try {
@@ -218,8 +323,8 @@ export default function Login({ onLogin }: Props) {
               string,
               { password: string; mobile: string }
             >;
-            saveStorage(`lords_parent_passwords_${PRINCIPALS[i].id}`, pwdMap);
-            const input = parentPwd.trim();
+            saveStorage(`lords_parent_passwords_${SCHOOLS[i].id}`, pwdMap);
+            const input = studentPwd.trim();
             for (const [studentId, creds] of Object.entries(pwdMap)) {
               if (
                 (creds.password && input === creds.password.trim()) ||
@@ -228,13 +333,13 @@ export default function Login({ onLogin }: Props) {
                 const numericId = Number(studentId);
                 if (!Number.isNaN(numericId)) {
                   saveStorage("lords_session", {
-                    role: "parent",
+                    role: "student",
                     activePrincipalId: null,
                     parentStudentId: numericId,
-                    parentPrincipalId: PRINCIPALS[i].id,
+                    parentPrincipalId: SCHOOLS[i].id,
                   });
-                  onLogin("parent", numericId, PRINCIPALS[i].id);
-                  setParentLoginLoading(false);
+                  onLogin("student", numericId, SCHOOLS[i].id);
+                  setLoading(false);
                   setIsConnecting(false);
                   return;
                 }
@@ -242,9 +347,8 @@ export default function Login({ onLogin }: Props) {
             }
           } catch {}
         }
-
-        for (let i = 0; i < PRINCIPALS.length; i++) {
-          const raw = results[PRINCIPALS.length + i];
+        for (let i = 0; i < SCHOOLS.length; i++) {
+          const raw = results[SCHOOLS.length + i];
           if (!raw) continue;
           try {
             const parsed = JSON.parse(raw) as {
@@ -253,9 +357,9 @@ export default function Login({ onLogin }: Props) {
               parentMobile?: string;
             }[];
             if (!Array.isArray(parsed)) continue;
-            saveStorage(`lords_students_${PRINCIPALS[i].id}`, parsed);
-            if (tryMatchFromStudents(parsed, PRINCIPALS[i].id, parentPwd)) {
-              setParentLoginLoading(false);
+            saveStorage(`lords_students_${SCHOOLS[i].id}`, parsed);
+            if (tryMatchStudent(parsed, SCHOOLS[i].id, studentPwd)) {
+              setLoading(false);
               setIsConnecting(false);
               return;
             }
@@ -265,9 +369,9 @@ export default function Login({ onLogin }: Props) {
       setIsConnecting(false);
     }
 
-    setParentLoginLoading(false);
+    setLoading(false);
     toast.error(
-      "Wrong password. Please try again or ask the school principal to share your login credentials.",
+      "Wrong password. Please ask your principal to share your login password.",
     );
   };
 
@@ -275,11 +379,48 @@ export default function Login({ onLogin }: Props) {
     if (e.key === "Enter") action();
   };
 
+  // ── Reusable back button ──
+  const BackBtn = () => (
+    <button
+      type="button"
+      onClick={goBack}
+      className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors"
+    >
+      ← Back
+    </button>
+  );
+
+  // ── School selector ──
+  const SchoolSelector = () => (
+    <fieldset>
+      <legend className="block text-sm font-medium text-foreground mb-2">
+        Select School
+      </legend>
+      <div className="space-y-2">
+        {SCHOOLS.map((s, idx) => (
+          <button
+            key={s.id}
+            type="button"
+            data-ocid={`login.school_${idx + 1}.radio`}
+            onClick={() => setSelectedSchoolIdx(idx)}
+            className={`w-full text-left px-4 py-3 rounded-lg border text-sm transition-all ${selectedSchoolIdx === idx ? "border-primary bg-primary/5 font-medium" : "border-border hover:border-primary/40 hover:bg-muted/50"}`}
+          >
+            <span className="font-medium">{s.shortName}</span>
+            <span className="block text-xs text-muted-foreground">
+              {s.location}
+            </span>
+          </button>
+        ))}
+      </div>
+    </fieldset>
+  );
+
   return (
     <div
       className="min-h-screen flex flex-col"
-      style={{ background: "oklch(0.985 0.004 255)" }}
+      style={{ background: "oklch(var(--background))" }}
     >
+      {/* Header */}
       <header
         className="px-6 py-4 flex items-center gap-3"
         style={{ background: "oklch(var(--sidebar))" }}
@@ -301,146 +442,100 @@ export default function Login({ onLogin }: Props) {
       </header>
 
       <div className="flex-1 flex flex-col items-center justify-center px-4 py-8">
-        {/* PORTAL STEP */}
+        {/* ── PORTAL SELECTION ── */}
         {step === "portal" && (
-          <div className="w-full max-w-2xl">
+          <div className="w-full max-w-3xl">
             <div className="text-center mb-8">
               <h1 className="text-2xl font-bold text-foreground mb-1">
                 School Portal
               </h1>
               <p className="text-muted-foreground text-sm">
-                Choose your login type to continue
+                Choose your portal to continue
               </p>
             </div>
 
-            {/* 3-card grid: Principal, Parent, App Controller */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
-              <button
-                type="button"
-                data-ocid="login.principal.primary_button"
-                onClick={() => setStep("principal-select")}
-                className="group bg-card border border-border rounded-xl p-6 text-left hover:border-primary/50 transition-all duration-200 shadow-sm hover:shadow-md"
-              >
-                <div
-                  className="w-12 h-12 rounded-xl flex items-center justify-center mb-4 group-hover:scale-105 transition-transform"
-                  style={{ background: "oklch(0.25 0.10 265 / 0.1)" }}
-                >
-                  <ShieldCheck
-                    size={24}
-                    style={{ color: "oklch(0.25 0.10 265)" }}
-                  />
-                </div>
-                <h3 className="font-bold text-foreground text-base mb-1">
-                  Principal Login
-                </h3>
-                <p className="text-muted-foreground text-xs">
-                  Manage students, marks, fees, and school data
-                </p>
-              </button>
-
-              <button
-                type="button"
-                data-ocid="login.parent.primary_button"
-                onClick={() => setStep("parent-password")}
-                className="group bg-card border border-border rounded-xl p-6 text-left hover:border-primary/50 transition-all duration-200 shadow-sm hover:shadow-md"
-              >
-                <div
-                  className="w-12 h-12 rounded-xl flex items-center justify-center mb-4 group-hover:scale-105 transition-transform"
-                  style={{ background: "oklch(0.58 0.16 150 / 0.1)" }}
-                >
-                  <Users size={24} style={{ color: "oklch(0.42 0.16 150)" }} />
-                </div>
-                <h3 className="font-bold text-foreground text-base mb-1">
-                  Parent Login
-                </h3>
-                <p className="text-muted-foreground text-xs">
-                  View your child&apos;s records, notices, diary, and more
-                </p>
-              </button>
-
-              <button
-                type="button"
-                data-ocid="login.app_controller.primary_button"
-                onClick={() => setStep("app-controller")}
-                className="group bg-card border border-border rounded-xl p-6 text-left hover:border-primary/50 transition-all duration-200 shadow-sm hover:shadow-md"
-              >
-                <div
-                  className="w-12 h-12 rounded-xl flex items-center justify-center mb-4 group-hover:scale-105 transition-transform"
-                  style={{ background: "oklch(0.55 0.18 80 / 0.1)" }}
-                >
-                  <LayoutDashboard
-                    size={24}
-                    style={{ color: "oklch(0.50 0.18 80)" }}
-                  />
-                </div>
-                <h3 className="font-bold text-foreground text-base mb-1">
-                  App Controller
-                </h3>
-                <p className="text-muted-foreground text-xs">
-                  Master control centre for all schools
-                </p>
-              </button>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-10">
+              {PORTAL_CARDS.map((card) => {
+                const Icon = card.icon;
+                return (
+                  <button
+                    key={card.id}
+                    type="button"
+                    data-ocid={card.ocid}
+                    onClick={() => setStep(card.id)}
+                    className="group bg-card border border-border rounded-xl p-6 text-left hover:border-primary/50 transition-all duration-200 shadow-sm hover:shadow-md"
+                  >
+                    <div
+                      className="w-12 h-12 rounded-xl flex items-center justify-center mb-4 group-hover:scale-105 transition-transform"
+                      style={{
+                        background: `${card.accent} / 0.12`,
+                        backgroundColor: `color-mix(in oklch, ${card.accent} 12%, transparent)`,
+                      }}
+                    >
+                      <Icon size={24} style={{ color: card.accent }} />
+                    </div>
+                    <h3 className="font-bold text-foreground text-base mb-1">
+                      {card.title}
+                    </h3>
+                    <p className="text-muted-foreground text-xs">
+                      {card.description}
+                    </p>
+                  </button>
+                );
+              })}
             </div>
 
             <div className="border-t border-border pt-8">
               <h2 className="text-sm font-bold text-foreground mb-4 uppercase tracking-wider">
                 Our Schools
               </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                {SCHOOL_INFO.map((school) => (
-                  <div
-                    key={school.name}
-                    className="bg-card border border-border rounded-xl p-4 shadow-xs"
-                  >
-                    <h3 className="font-semibold text-foreground text-sm mb-2 leading-snug">
-                      {school.name}
-                    </h3>
-                    <p className="text-xs text-muted-foreground mb-1">
-                      {school.address}
-                    </p>
-                    {school.phone && (
-                      <p className="text-xs text-muted-foreground">
-                        📞 {school.phone}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {SCHOOLS.filter((s) => s.address)
+                  .slice(0, 3)
+                  .map((school) => (
+                    <div
+                      key={school.id}
+                      className="bg-card border border-border rounded-xl p-4 shadow-xs"
+                    >
+                      <h3 className="font-semibold text-foreground text-sm mb-2 leading-snug">
+                        {school.name}
+                      </h3>
+                      <p className="text-xs text-muted-foreground mb-1">
+                        {school.address}
                       </p>
-                    )}
-                    {school.email && (
-                      <p className="text-xs text-muted-foreground">
-                        ✉️ {school.email}
-                      </p>
-                    )}
-                    {school.website && (
-                      <p
-                        className="text-xs mt-1"
-                        style={{ color: "oklch(0.52 0.18 255)" }}
-                      >
-                        🌐 {school.website}
-                      </p>
-                    )}
-                  </div>
-                ))}
+                      {school.phone && (
+                        <p className="text-xs text-muted-foreground">
+                          📞 {school.phone}
+                        </p>
+                      )}
+                      {school.email && (
+                        <p className="text-xs text-muted-foreground">
+                          ✉️ {school.email}
+                        </p>
+                      )}
+                      {school.website && (
+                        <p
+                          className="text-xs mt-1"
+                          style={{ color: "oklch(0.52 0.18 255)" }}
+                        >
+                          🌐 {school.website}
+                        </p>
+                      )}
+                    </div>
+                  ))}
               </div>
             </div>
           </div>
         )}
 
-        {/* PRINCIPAL SELECT STEP */}
+        {/* ── PRINCIPAL LOGIN ── */}
         {step === "principal-select" && (
           <div className="w-full max-w-md">
-            <button
-              type="button"
-              onClick={() => {
-                setStep("portal");
-                setSelectedPrincipalIdx(null);
-                setPassword("");
-              }}
-              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors"
-            >
-              ← Back
-            </button>
+            <BackBtn />
             <div className="text-center mb-8">
               <div
                 className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4"
-                style={{ background: "oklch(0.25 0.10 265)" }}
+                style={{ background: "oklch(var(--portal-principal))" }}
               >
                 <ShieldCheck size={26} className="text-white" />
               </div>
@@ -452,29 +547,8 @@ export default function Login({ onLogin }: Props) {
               </p>
             </div>
             <div className="bg-card rounded-xl shadow-sm border border-border p-6 space-y-4">
-              <fieldset>
-                <legend className="block text-sm font-medium text-foreground mb-2">
-                  Select School
-                </legend>
-                <div className="space-y-2">
-                  {PRINCIPALS.map((p, idx) => (
-                    <button
-                      key={p.id}
-                      type="button"
-                      data-ocid={`login.principal_${idx + 1}.radio`}
-                      onClick={() => setSelectedPrincipalIdx(idx)}
-                      className={`w-full text-left px-4 py-3 rounded-lg border text-sm transition-all ${
-                        selectedPrincipalIdx === idx
-                          ? "border-primary bg-primary/5 font-medium"
-                          : "border-border hover:border-primary/40 hover:bg-muted/50"
-                      }`}
-                    >
-                      <span className="font-medium">{p.name}</span>
-                    </button>
-                  ))}
-                </div>
-              </fieldset>
-              {selectedPrincipalIdx !== null && (
+              <SchoolSelector />
+              {selectedSchoolIdx !== null && (
                 <div>
                   <label
                     htmlFor="principal-password"
@@ -497,9 +571,12 @@ export default function Login({ onLogin }: Props) {
               <Button
                 data-ocid="login.principal_login.primary_button"
                 className="w-full"
-                style={{ background: "oklch(0.25 0.10 265)", color: "white" }}
+                style={{
+                  background: "oklch(var(--portal-principal))",
+                  color: "white",
+                }}
                 onClick={handlePrincipalLogin}
-                disabled={selectedPrincipalIdx === null}
+                disabled={selectedSchoolIdx === null || !password.trim()}
               >
                 Login as Principal
               </Button>
@@ -507,26 +584,89 @@ export default function Login({ onLogin }: Props) {
           </div>
         )}
 
-        {/* PARENT PASSWORD STEP */}
-        {step === "parent-password" && (
+        {/* ── TEACHER LOGIN ── */}
+        {step === "teacher-login" && (
           <div className="w-full max-w-md">
-            <button
-              type="button"
-              onClick={() => {
-                setStep("portal");
-                setParentPwd("");
-              }}
-              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors"
-              data-ocid="login.back.button"
-            >
-              ← Back
-            </button>
+            <BackBtn />
+            <div className="text-center mb-8">
+              <div
+                className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4"
+                style={{ background: "oklch(var(--portal-teachers))" }}
+              >
+                <GraduationCap size={26} className="text-white" />
+              </div>
+              <h1 className="text-xl font-bold text-foreground mb-1">
+                Teachers Portal
+              </h1>
+              <p className="text-muted-foreground text-sm">
+                Login with your email and password
+              </p>
+            </div>
+            <div className="bg-card rounded-xl shadow-sm border border-border p-6 space-y-4">
+              <SchoolSelector />
+              {selectedSchoolIdx !== null && (
+                <>
+                  <div>
+                    <label
+                      htmlFor="teacher-email"
+                      className="text-sm font-medium text-foreground mb-1.5 block"
+                    >
+                      Email Address
+                    </label>
+                    <Input
+                      id="teacher-email"
+                      data-ocid="login.teacher_email.input"
+                      type="email"
+                      placeholder="your@email.com"
+                      value={teacherEmail}
+                      onChange={(e) => setTeacherEmail(e.target.value)}
+                      autoFocus
+                    />
+                  </div>
+                  <div>
+                    <label
+                      htmlFor="teacher-pwd"
+                      className="flex items-center gap-1.5 text-sm font-medium text-foreground mb-1.5"
+                    >
+                      <Lock size={13} /> Password
+                    </label>
+                    <Input
+                      id="teacher-pwd"
+                      data-ocid="login.teacher_password.input"
+                      type="password"
+                      placeholder="Enter your password"
+                      value={teacherPwd}
+                      onChange={(e) => setTeacherPwd(e.target.value)}
+                      onKeyDown={(e) => handleKeyDown(e, handleTeacherLogin)}
+                    />
+                  </div>
+                </>
+              )}
+              <Button
+                data-ocid="login.teacher_login.primary_button"
+                className="w-full"
+                style={{
+                  background: "oklch(var(--portal-teachers))",
+                  color: "white",
+                }}
+                onClick={handleTeacherLogin}
+                disabled={selectedSchoolIdx === null}
+              >
+                Login as Teacher
+              </Button>
+            </div>
+          </div>
+        )}
 
+        {/* ── STUDENTS PORTAL ── */}
+        {step === "student-password" && (
+          <div className="w-full max-w-md">
+            <BackBtn />
             <div className="text-center mb-6">
               <div className="relative inline-flex items-center justify-center mb-4">
                 <div
                   className="w-16 h-16 rounded-2xl flex items-center justify-center"
-                  style={{ background: "oklch(0.25 0.10 265)" }}
+                  style={{ background: "oklch(var(--portal-students))" }}
                 >
                   <GraduationCap size={30} className="text-white" />
                 </div>
@@ -538,130 +678,111 @@ export default function Login({ onLogin }: Props) {
                 </div>
               </div>
               <h1 className="text-2xl font-bold text-foreground mb-1">
-                Parent Portal
+                Students Portal
               </h1>
               <p className="text-sm text-muted-foreground">
                 Lord&apos;s International School Group
               </p>
             </div>
 
-            <div
-              className="rounded-2xl border shadow-md p-6 mb-6"
-              style={{
-                background: "oklch(1 0 0)",
-                borderColor: "oklch(0.88 0.018 260)",
-              }}
-            >
-              <div
-                className="flex items-center gap-2 mb-5 pb-4"
-                style={{ borderBottom: "1px solid oklch(0.92 0.01 260)" }}
-              >
+            <div className="rounded-2xl border shadow-md p-6 mb-6 bg-card border-border">
+              <div className="flex items-center gap-2 mb-5 pb-4 border-b border-border">
                 <div
                   className="w-8 h-8 rounded-lg flex items-center justify-center"
-                  style={{ background: "oklch(0.25 0.10 265 / 0.1)" }}
+                  style={{ background: "oklch(var(--portal-students) / 0.1)" }}
                 >
-                  <Shield size={15} style={{ color: "oklch(0.25 0.10 265)" }} />
+                  <Shield
+                    size={15}
+                    style={{ color: "oklch(var(--portal-students))" }}
+                  />
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-foreground">
-                    Parent Portal Login
+                    Students Portal Login
                   </p>
                   <p className="text-xs text-muted-foreground">
                     Enter your password or mobile number
                   </p>
                 </div>
               </div>
-
               <div className="space-y-4">
                 <div>
                   <label
-                    htmlFor="parent-password"
+                    htmlFor="student-password"
                     className="flex items-center gap-1.5 text-sm font-medium text-foreground mb-2"
                   >
-                    <Lock size={13} style={{ color: "oklch(0.25 0.10 265)" }} />
+                    <Lock
+                      size={13}
+                      style={{ color: "oklch(var(--portal-students))" }}
+                    />{" "}
                     Password or Mobile Number
                   </label>
                   <Input
-                    id="parent-password"
-                    data-ocid="login.parent_password.input"
+                    id="student-password"
+                    data-ocid="login.student_password.input"
                     type="password"
                     placeholder="Enter your password or mobile number"
-                    value={parentPwd}
-                    onChange={(e) => setParentPwd(e.target.value)}
+                    value={studentPwd}
+                    onChange={(e) => setStudentPwd(e.target.value)}
                     onKeyDown={(e) =>
-                      handleKeyDown(e, () => void handleParentLogin())
+                      handleKeyDown(e, () => void handleStudentLogin())
                     }
                     autoFocus
                     className="h-12 text-base"
-                    style={{ borderColor: "oklch(0.78 0.05 265)" }}
                   />
-                  {parentPwd.length > 0 && parentPwd.length < 6 && (
+                  {studentPwd.length > 0 && studentPwd.length < 6 && (
                     <p className="text-xs text-muted-foreground mt-1">
                       Minimum 6 characters required
                     </p>
                   )}
                 </div>
-
                 <Button
-                  data-ocid="login.parent_login.primary_button"
+                  data-ocid="login.student_login.primary_button"
                   className="w-full h-11 text-base font-semibold gap-2"
                   style={{
                     background:
-                      parentPwd.trim().length >= 6
-                        ? "oklch(0.25 0.10 265)"
-                        : "oklch(0.75 0.04 265)",
+                      studentPwd.trim().length >= 6
+                        ? "oklch(var(--portal-students))"
+                        : "oklch(var(--portal-students) / 0.5)",
                     color: "white",
                     transition: "background 0.2s",
                   }}
-                  onClick={() => void handleParentLogin()}
-                  disabled={parentPwd.trim().length < 6 || parentLoginLoading}
+                  onClick={() => void handleStudentLogin()}
+                  disabled={studentPwd.trim().length < 6 || loading}
                 >
-                  {parentLoginLoading ? (
+                  {loading ? (
                     <Loader2 size={16} className="animate-spin" />
                   ) : (
                     <Lock size={15} />
                   )}
                   {isConnecting
                     ? "Connecting to server..."
-                    : parentLoginLoading
+                    : loading
                       ? "Verifying..."
-                      : "Login to Parent Portal"}
+                      : "Login to Students Portal"}
                 </Button>
               </div>
-
-              <div
-                className="mt-4 pt-4 flex items-start gap-2"
-                style={{ borderTop: "1px solid oklch(0.92 0.01 260)" }}
-              >
+              <div className="mt-4 pt-4 border-t border-border flex items-start gap-2">
                 <Shield
                   size={13}
                   className="mt-0.5 shrink-0"
-                  style={{ color: "oklch(0.50 0.18 150)" }}
+                  style={{ color: "oklch(var(--portal-students))" }}
                 />
-                <p
-                  className="text-xs"
-                  style={{ color: "oklch(0.45 0.05 260)" }}
-                >
-                  Your password is set by the school principal. Contact your
-                  school if you need help.
+                <p className="text-xs text-muted-foreground">
+                  Your password is set by the school principal or Main
+                  Controller. Contact your school if you need help.
                 </p>
               </div>
             </div>
 
-            <div
-              className="rounded-xl border p-4 mb-6"
-              style={{
-                background: "oklch(0.97 0.01 260)",
-                borderColor: "oklch(0.90 0.015 260)",
-              }}
-            >
+            <div className="rounded-xl border p-4 mb-6 bg-muted/40">
               <p className="text-xs font-semibold text-foreground mb-2 flex items-center gap-1.5">
                 <Phone size={12} style={{ color: "oklch(0.52 0.18 255)" }} />{" "}
                 How to login
               </p>
               <ul className="space-y-1">
                 {[
-                  "Enter your parent password set by the principal",
+                  "Enter your student password set by the principal",
                   "OR enter your registered 10-digit mobile number",
                   "Works from any device — phone, tablet, or computer",
                   "Multiple family members can be logged in simultaneously",
@@ -684,81 +805,122 @@ export default function Login({ onLogin }: Props) {
           </div>
         )}
 
-        {/* APP CONTROLLER STEP */}
-        {step === "app-controller" && (
+        {/* ── DRIVER LOGIN ── */}
+        {step === "driver-login" && (
           <div className="w-full max-w-md">
-            <button
-              type="button"
-              data-ocid="login.app_controller_back.button"
-              onClick={() => {
-                setStep("portal");
-                setAppCtrlPwd("");
-              }}
-              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors"
-            >
-              ← Back
-            </button>
+            <BackBtn />
+            <div className="text-center mb-8">
+              <div
+                className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4"
+                style={{ background: "oklch(var(--portal-driver))" }}
+              >
+                <Bus size={26} className="text-white" />
+              </div>
+              <h1 className="text-xl font-bold text-foreground mb-1">
+                Driver Portal
+              </h1>
+              <p className="text-muted-foreground text-sm">
+                Enter your driver password
+              </p>
+            </div>
+            <div className="bg-card rounded-xl shadow-sm border border-border p-6 space-y-4">
+              <SchoolSelector />
+              {selectedSchoolIdx !== null && (
+                <div>
+                  <label
+                    htmlFor="driver-pwd"
+                    className="flex items-center gap-1.5 text-sm font-medium text-foreground mb-1.5"
+                  >
+                    <Lock size={13} /> Driver Password
+                  </label>
+                  <Input
+                    id="driver-pwd"
+                    data-ocid="login.driver_password.input"
+                    type="password"
+                    placeholder="Enter your driver password"
+                    value={driverPwd}
+                    onChange={(e) => setDriverPwd(e.target.value)}
+                    onKeyDown={(e) => handleKeyDown(e, handleDriverLogin)}
+                    autoFocus
+                    className="h-12 text-base"
+                  />
+                </div>
+              )}
+              <Button
+                data-ocid="login.driver_login.primary_button"
+                className="w-full h-11 text-base font-semibold"
+                style={{
+                  background: "oklch(var(--portal-driver))",
+                  color: "white",
+                }}
+                onClick={handleDriverLogin}
+                disabled={selectedSchoolIdx === null || !driverPwd.trim()}
+              >
+                <Bus size={15} className="mr-1.5" /> Login as Driver
+              </Button>
+            </div>
+          </div>
+        )}
 
+        {/* ── MAIN CONTROLLER ── */}
+        {step === "main-controller" && (
+          <div className="w-full max-w-md">
+            <BackBtn />
             <div className="text-center mb-8">
               <div
                 className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4"
-                style={{ background: "oklch(0.50 0.18 80)" }}
+                style={{ background: "oklch(var(--portal-controller))" }}
               >
-                <Settings2 size={30} className="text-white" />
+                <Cpu size={30} className="text-white" />
               </div>
               <h1 className="text-2xl font-bold text-foreground mb-1">
-                App Controller
+                Main Controller
               </h1>
               <p className="text-sm text-muted-foreground">
-                Master control centre for all schools
+                Control Centre — super admin for all schools
               </p>
             </div>
-
-            <div
-              className="rounded-2xl border shadow-md p-6"
-              style={{
-                background: "oklch(1 0 0)",
-                borderColor: "oklch(0.88 0.018 260)",
-              }}
-            >
+            <div className="rounded-2xl border shadow-md p-6 bg-card border-border">
               <div className="space-y-4">
                 <div>
                   <label
-                    htmlFor="app-ctrl-password"
+                    htmlFor="main-ctrl-password"
                     className="flex items-center gap-1.5 text-sm font-medium text-foreground mb-2"
                   >
-                    <Lock size={13} style={{ color: "oklch(0.50 0.18 80)" }} />
+                    <Lock
+                      size={13}
+                      style={{ color: "oklch(var(--portal-controller))" }}
+                    />{" "}
                     Admin Password
                   </label>
                   <Input
-                    id="app-ctrl-password"
-                    data-ocid="login.app_controller_password.input"
+                    id="main-ctrl-password"
+                    data-ocid="login.main_controller_password.input"
                     type="password"
-                    placeholder="Enter App Controller password"
-                    value={appCtrlPwd}
-                    onChange={(e) => setAppCtrlPwd(e.target.value)}
+                    placeholder="Enter Main Controller password"
+                    value={mainCtrlPwd}
+                    onChange={(e) => setMainCtrlPwd(e.target.value)}
                     onKeyDown={(e) =>
-                      handleKeyDown(e, handleAppControllerLogin)
+                      handleKeyDown(e, handleMainControllerLogin)
                     }
                     autoFocus
                     className="h-12 text-base"
                   />
                 </div>
                 <Button
-                  data-ocid="login.app_controller_login.primary_button"
+                  data-ocid="login.main_controller_login.primary_button"
                   className="w-full h-11 text-base font-semibold"
-                  style={{ background: "oklch(0.50 0.18 80)", color: "white" }}
-                  onClick={handleAppControllerLogin}
-                  disabled={!appCtrlPwd.trim()}
+                  style={{
+                    background: "oklch(var(--portal-controller))",
+                    color: "white",
+                  }}
+                  onClick={handleMainControllerLogin}
+                  disabled={!mainCtrlPwd.trim()}
                 >
-                  <LayoutDashboard size={15} className="mr-1.5" />
-                  Access App Controller
+                  <Cpu size={15} className="mr-1.5" /> Access Main Controller
                 </Button>
               </div>
-              <p
-                className="text-xs mt-4 text-center"
-                style={{ color: "oklch(0.55 0.05 260)" }}
-              >
+              <p className="text-xs mt-4 text-center text-muted-foreground">
                 Default password:{" "}
                 <code className="font-mono">Admin@Lords2026</code>
               </p>

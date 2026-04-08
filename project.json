@@ -1,0 +1,25 @@
+{
+  "overview": "Lord's International School Group is a comprehensive, role-based school management platform with 5 distinct portals: Principal (administrative hub), Teachers (academic engine), Students (learning hub), Driver (safety & logistics), and Main Controller (technical core). All data is stored securely on the ICP blockchain, enabling real-time multi-device access for all stakeholders.",
+  "features": [
+    "5 independent role-based portals on the landing page",
+    "Principal Panel: User Management, Financial Dashboard, Academic Oversight, Notice Broadcaster, Inquiry Management",
+    "Teachers Portal: Attendance Marker, Gradebook, Lesson Planner, Assignment Manager, Parent Messaging",
+    "Students Portal: Personal Dashboard, Digital Library, Fee Status, Online Submission, Timetable",
+    "Driver Portal: Route Management, GPS Tracking, Pickup/Drop Check, Emergency Alert, Maintenance Log",
+    "Main Controller: Database Management, RBAC, Automation Engine, System Configuration, Backup & Security",
+    "Real-time data sync across all portals via ICP backend",
+    "Permanent sessions with password-based login for all roles"
+  ],
+  "category": "education",
+  "tags": [
+    "school-management",
+    "education",
+    "multi-role",
+    "icp",
+    "dashboard",
+    "attendance",
+    "grades",
+    "transport"
+  ],
+  "last_updated": "2026-04-08T16:07:41.289Z"
+}

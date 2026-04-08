@@ -1,0 +1,71 @@
+import type { School } from "../types/index";
+
+export const SCHOOLS: School[] = [
+  {
+    id: "p1",
+    numericId: BigInt(1),
+    name: "Lords International School, Churu",
+    shortName: "Lords Churu",
+    location: "Churu, Rajasthan",
+    password: "Lordschuru@2026",
+    address: "Bhaleri Road, Churu, Rajasthan - 331001",
+    phone: "01562-2219328 | +91 9414423066",
+    email: "lis.churu@rediffmail.com",
+    website: "www.lischuru.in",
+  },
+  {
+    id: "p2",
+    numericId: BigInt(2),
+    name: "Lords International School, Sadulpur",
+    shortName: "Lords Sadulpur",
+    location: "Sadulpur, Rajasthan",
+    password: "Lordssadulpur@2026",
+    address: "Hisar Road, Rajgarh (Sadulpur), Dist. Churu, Rajasthan - 331023",
+    phone: "+91 9414423066 | +91 9413204098",
+    email: "",
+    website: "",
+  },
+  {
+    id: "p3",
+    numericId: BigInt(3),
+    name: "Lords International School, Taranagar",
+    shortName: "Lords Taranagar",
+    location: "Taranagar, Rajasthan",
+    password: "Lordstaranagar@2026",
+    address: "Taranagar, Dist. Churu, Rajasthan",
+    phone: "+91 9414423066",
+    email: "",
+    website: "",
+  },
+  {
+    id: "p4",
+    numericId: BigInt(4),
+    name: "Lords International School, Alwar",
+    shortName: "Lords Alwar",
+    location: "Alwar, Rajasthan",
+    password: "principal4",
+    address: "Alwar-Bhiwadi Highway, Chikani, Alwar, Rajasthan - 301028",
+    phone: "+91 9929011007 | +91 9509891624",
+    email: "info@lordsschool.edu.in",
+    website: "www.lordsschool.edu.in",
+  },
+  {
+    id: "p5",
+    numericId: BigInt(5),
+    name: "Lords International School, Hanumangarh",
+    shortName: "Lords Hanumangarh",
+    location: "Hanumangarh, Rajasthan",
+    password: "principal5",
+    address: "Hanumangarh, Rajasthan",
+    phone: "+91 9414423066",
+    email: "",
+    website: "",
+  },
+];
+
+// Legacy compat — same structure as principals.ts
+export const PRINCIPALS = SCHOOLS.map((s) => ({
+  id: s.id,
+  name: s.shortName,
+  password: s.password,
+}));
